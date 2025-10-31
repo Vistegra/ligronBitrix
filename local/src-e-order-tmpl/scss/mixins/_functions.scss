@@ -1,0 +1,83 @@
+@use "sass:math";
+@use "sass:meta";
+@use "../variables" as *;
+
+// Percent
+@function percent($px, $from) {
+  @return math.div($px, $from) * 100%;
+}
+// Px to rem
+@function rem($px) {
+  @if (meta.type-of($px) != number) {
+    @return $px;
+  }
+  @return math.div($px, 16) + rem;
+}
+// Px to em
+@function em($px, $current: 16) {
+  @if (meta.type-of($px) != number) {
+    @return $px;
+  }
+  @return math.div($px, $current) + em;
+}
+
+@function imgUrl($path) {
+  @return url('#{$IMG_DIR}/#{$path}');
+}
+
+/// Функция масштабирования значения $from в диапазоне от $maxV до $minV
+/// и возврат строки для использования в свойствах CSS.
+/// @param {Number} $maxV - Максимальное значение viewport.
+/// @param {Number} $minV - Минимальное значение viewport.
+/// @param {Number} $from - Значение, которое нужно масштабировать.
+/// @param {Number} $to - Значение, к которому нужно масштабировать.
+/// @return {String} Строка для использования в свойствах CSS.
+
+@function scaleV($maxV, $minV, $from, $to, $unit: 'vw') {
+  $v: math.div($from - $to, $maxV - $minV);
+  $v: math.div(round($v * 1000), 10);
+  $l: round($from - $v * math.div($maxV, 100));
+
+  @return unquote("calc(#{$l}px + #{$v}#{$unit})");
+}
+
+
+$breakpoints-xs: 350!default;
+$breakpoints-sm: 479!default; /** viewport =  360px */
+$breakpoints-md: 767!default; /** viewport =  480px */
+$breakpoints-lg: 959!default; /** viewport =  768px */
+$breakpoints-xl: 1310!default; /** viewport =  960px */
+$breakpoints-xxl: 1919!default;
+$breakpoints-3xl: 2560!default;
+
+/**
+ * $breakpoint keys: phone/mobile/sm | phone-land/ | tab-port | tab-land | desktop | lg
+ */
+@mixin respond($breakpoint: 'old-phone', $rule: 'max-width') {
+  @if $breakpoint == "old-phone" or $breakpoint == "old-mobile" or $breakpoint == "xs" {
+    @media only screen and ($rule: em($breakpoints-xs)) { @content; }
+
+  } @else if $breakpoint == "phone" or $breakpoint == "mobile" or $breakpoint == "sm" {
+    @media only screen and ($rule: em($breakpoints-sm)) { @content; }
+
+  } @else if $breakpoint == "phone-land" or $breakpoint == "md" {
+    @media only screen and ($rule: em($breakpoints-md)) { @content; }
+
+  } @else if $breakpoint == "tab-port" or $breakpoint == "lg" {
+    @media only screen and ($rule: em($breakpoints-lg)) { @content; }
+
+  } @else if $breakpoint == "desktop" or $breakpoint == "xl" {
+    @media only screen and ($rule: em($breakpoints-xl)) { @content; }
+
+  } @else if $breakpoint == "xxl" {
+    @media only screen and ($rule: em($breakpoints-xxl)) { @content; }
+
+  } @else if $breakpoint == "3xl" {
+    @media only screen and ($rule: em($breakpoints-3xl)) { @content; }
+
+  } @else {
+    @media only screen and ($rule: em($breakpoint)) { @content; }
+  }
+}
+
+

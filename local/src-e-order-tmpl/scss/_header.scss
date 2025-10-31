@@ -1,0 +1,14 @@
+@use "mixins/functions" as *;
+@use "variables" as *;
+
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  height: rem(80);
+  border-radius: 0 0 rem(10) rem(10);
+  border-bottom: 1px solid #C3C3C3;
+
+  background: #FFF;
+}

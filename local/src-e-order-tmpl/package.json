@@ -1,0 +1,16 @@
+{
+  "name": "e-order-template",
+  "version": "1.0.0",
+  "description": "Bitrix template build configuration",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build --mode production",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "sass": "^1.93.2",
+    "vite": "^7.1.12"
+  }
+}
+
