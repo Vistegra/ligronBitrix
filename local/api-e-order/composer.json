@@ -1,0 +1,12 @@
+{
+  "name": "vistegra/api-e-order",
+  "autoload": {
+    "psr-4": {
+      "Api\\": "/"
+    }
+  },
+  "require": {
+    "firebase/php-jwt": "^6.0",
+    "nikic/fast-route": "^1.3"
+  }
+}

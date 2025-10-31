@@ -45,7 +45,7 @@ $title = $APPLICATION->GetTitle(false, false);
 
   $asset->addString('<meta name="author" content="ligron.ru" />');
   $asset->addString('<meta name="generator" content="ligron.ru" />');
-  $asset->addString('<meta name="yandex-verification" content="48302fd5e3dac20c" />');
+
   $asset->addString('<link rel="canonical" href="' . CUR_CANONICAL_URL . '" />');
   $asset->addString('<link rel="icon" type="image/x-icon" href="/favicon.ico" />');
 
