@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+
 use OrderApi\DB\Models\DealerUserTable;
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
@@ -74,13 +75,14 @@ $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
 
   $r->addRoute('GET', '/users', function () {
 
-    DealerUserTable::setPrefix('pro_');
+    //DealerUserTable::setPrefix('pro_');
 
-    $user = DealerUserTable::query()
-      ->setSelect(['ID', 'login', 'name', 'activity'])
-      ->where('activity', 1)
-      ->fetch();
-
+    $user = DealerUserTable::getList([
+      'prefix' => 'pro_',
+      'select' => ['ID', 'name'],
+        'limit' => 1,
+      ]
+    )->fetch();
 
 
     return ['message' => $user];

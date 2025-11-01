@@ -49,6 +49,18 @@ class DealerUserTable extends DataManager
     ];
   }
 
+  public static function getList($parameters = []): \Bitrix\Main\ORM\Query\Result
+  {
+
+    if ($parameters['prefix']) {
+      self::$prefix = $parameters['prefix'];
+      self::setPrefix($parameters['prefix']);
+      unset($parameters['prefix']);
+    }
+
+    return parent::getList($parameters);
+  }
+
 
   public static function resetPrefix(): void
   {
