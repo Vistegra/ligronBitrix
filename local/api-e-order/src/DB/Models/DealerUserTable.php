@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Api\Orm;
+namespace OrderApi\DB\Models;
 
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
@@ -12,6 +12,11 @@ use RuntimeException;
 class DealerUserTable extends DataManager
 {
   private static string $prefix = '';
+
+  public static function getConnectionName(): string
+  {
+    return 'calc';
+  }
 
   public static function setPrefix(string $prefix): void
   {
@@ -27,7 +32,7 @@ class DealerUserTable extends DataManager
       throw new RuntimeException('Префикс не установлен перед использованием.');
     }
 
-    return self::$prefix . '_users';
+    return self::$prefix . 'users';
   }
 
   /**
