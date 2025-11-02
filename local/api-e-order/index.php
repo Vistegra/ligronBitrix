@@ -1,8 +1,9 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 
+use OrderApi\DB\Models\DealerTable;
 use OrderApi\DB\Models\DealerUserTable;
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
@@ -15,14 +16,14 @@ header('Content-Type: application/json; charset=utf-8');
 error_reporting(E_ALL);*/
 
 // Глобальная обработка всех ошибок и исключений
-set_exception_handler(function(Throwable $e) {
+set_exception_handler(function (Throwable $e) {
   http_response_code(500);
   error_log("API Exception: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
 
   echo json_encode([
     'error' => 'Internal Server Error',
     'message' => $e->getMessage(),
-    'type' =>  get_class($e)
+    'type' => get_class($e)
   ], JSON_UNESCAPED_UNICODE);
   exit;
 });
@@ -33,7 +34,7 @@ set_exception_handler(function(Throwable $e) {
 });*/
 
 // Обработка фатальных ошибок
-register_shutdown_function(function() {
+register_shutdown_function(function () {
   $error = error_get_last();
 
   if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
@@ -67,7 +68,7 @@ $uri = getCleanUri();
 
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 
-$dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
+$dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
   $r->addRoute('GET', '/', function () {
 
     return ['message' => 'Api is working!'];
@@ -76,13 +77,60 @@ $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
   $r->addRoute('GET', '/users', function () {
 
     //DealerUserTable::setPrefix('pro_');
+    $users = [];
 
-    $user = DealerUserTable::getList([
-      'prefix' => 'pro_',
-      'select' => ['ID', 'name'],
-        'limit' => 1,
-      ]
+    $e1 = DealerUserTable::getEntityClassByPrefix('oooa3a_');
+    $e2 = DealerUserTable::getEntityClassByPrefix('deg_');
+
+
+    $user = $e1::getList([
+
+      'select' => ['*'],
+      'limit' => 1,
+      'filter' =>
+        [
+        //  '=login' => '9299290025'
+        ]
+    ],
     )->fetch();
+
+    $users[] = $user;
+
+    $user = $e2::getList([
+
+      'select' => ['*'],
+      'limit' => 1,
+      'filter' =>
+        [
+          '=login' => 'Admin9031044800'
+        ]
+    ],
+    )->fetch();
+
+    $users[] = $user;
+
+
+    return ['message' => $users];
+  });
+
+  $r->addRoute('GET', '/dealers', function () {
+
+    $dealers = DealerTable::getList([
+        'select' => ['ID', 'cms_param', 'name'],
+        'limit' => 10,
+      ]
+    )->fetchAll();
+
+
+    return ['message' => $dealers];
+  });
+
+  $r->addRoute('GET', '/user_login', function () {
+    $login = '9110511414';
+
+    $authService = new \OrderApi\Services\Users\DealerUserAuthService();
+
+    $user = $authService->getUserByLogin($login);
 
 
     return ['message' => $user];

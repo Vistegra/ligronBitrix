@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OrderApi\DB\Models;
+
+use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields;
+use Bitrix\Main\SystemException;
+use RuntimeException;
+
+class DealerUserTable_ extends DataManager
+{
+  private static string $prefix = '';
+
+  public static function getConnectionName(): string
+  {
+    return 'calc';
+  }
+
+  public static function setPrefix(string $prefix): void
+  {
+    if ($prefix === '') {
+      throw new \InvalidArgumentException('Префикс не может быть пустым');
+    }
+    self::$prefix = $prefix;
+  }
+
+  public static function getTableName(): string
+  {
+    if (self::$prefix === '') {
+      throw new RuntimeException('Префикс не установлен перед использованием.');
+    }
+
+    return self::$prefix . 'users';
+  }
+
+  /**
+   * @throws SystemException
+   */
+  public static function getMap(): array
+  {
+    return [
+      new Fields\IntegerField('ID', ['primary' => true]),
+      new Fields\StringField('login', ['required' => true]),
+      new Fields\StringField('password', ['required' => true]),
+      new Fields\StringField('name'),
+      new Fields\IntegerField('activity', ['default_value' => 1]),
+    ];
+  }
+
+  public static function getList($parameters = []): \Bitrix\Main\ORM\Query\Result
+  {
+
+    if ($parameters['prefix']) {
+      self::$prefix = $parameters['prefix'];
+      self::setPrefix($parameters['prefix']);
+      unset($parameters['prefix']);
+    }
+
+    if (self::$prefix === '') {
+      throw new RuntimeException('Префикс не установлен перед использованием.');
+    }
+
+    return parent::getList($parameters);
+  }
+
+
+  public static function resetPrefix(): void
+  {
+    self::$prefix = '';
+  }
+}
