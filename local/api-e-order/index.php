@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 
+use OrderApi\Controllers;
 use OrderApi\DB\Models\DealerTable;
 use OrderApi\DB\Models\DealerUserTable;
 
@@ -74,67 +75,9 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     return ['message' => 'Api is working!'];
   });
 
-  $r->addRoute('GET', '/users', function () {
+  $r->addRoute('GET', '/auth/login', [Controllers\AuthController::class, 'login']);
+  $r->addRoute('GET', '/auth/logout', [Controllers\AuthController::class, 'logout']);
 
-    //DealerUserTable::setPrefix('pro_');
-    $users = [];
-
-    $e1 = DealerUserTable::getEntityClassByPrefix('oooa3a_');
-    $e2 = DealerUserTable::getEntityClassByPrefix('deg_');
-
-
-    $user = $e1::getList([
-
-      'select' => ['*'],
-      'limit' => 1,
-      'filter' =>
-        [
-        //  '=login' => '9299290025'
-        ]
-    ],
-    )->fetch();
-
-    $users[] = $user;
-
-    $user = $e2::getList([
-
-      'select' => ['*'],
-      'limit' => 1,
-      'filter' =>
-        [
-          '=login' => 'Admin9031044800'
-        ]
-    ],
-    )->fetch();
-
-    $users[] = $user;
-
-
-    return ['message' => $users];
-  });
-
-  $r->addRoute('GET', '/dealers', function () {
-
-    $dealers = DealerTable::getList([
-        'select' => ['ID', 'cms_param', 'name'],
-        'limit' => 10,
-      ]
-    )->fetchAll();
-
-
-    return ['message' => $dealers];
-  });
-
-  $r->addRoute('GET', '/user_login', function () {
-    $login = '9110511414';
-
-    $authService = new \OrderApi\Services\Users\DealerUserAuthService();
-
-    $user = $authService->getUserByLogin($login);
-
-
-    return ['message' => $user];
-  });
 });
 
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
@@ -143,8 +86,17 @@ switch ($routeInfo[0]) {
   case FastRoute\Dispatcher::FOUND:
     $handler = $routeInfo[1];
     $vars = $routeInfo[2];
-    $result = $handler($vars);
-    echo json_encode($result, JSON_UNESCAPED_UNICODE);
+
+    if (is_array($handler) && count($handler) === 2) {
+      // Обработка вызова контроллера [Class, method]
+      [$className, $methodName] = $handler;
+      $controller = new $className();
+      $controller->$methodName();
+    } else {
+      // Обработка callable функций
+      $result = $handler($vars);
+      echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    }
     break;
 
   case FastRoute\Dispatcher::NOT_FOUND:

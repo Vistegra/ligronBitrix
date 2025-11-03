@@ -28,30 +28,93 @@ class DealerTable extends DataManager
   public static function getMap(): array
   {
     return [
-      new Fields\IntegerField('ID', ['primary' => true, 'autocomplete' => true]),
+      new Fields\IntegerField('ID', [
+        'primary' => true,
+        'autocomplete' => true,
+        'unsigned' => true,
+      ]),
+
       new Fields\StringField('cms_param', [
+        'size' => 255,
         'default_value' => '{}',
+        'character_set' => 'utf8',
         'save_data_modification' => function () {
           return [
             function ($value) {
-              return is_array($value) ? json_encode($value) : $value;
+              return is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
             }
           ];
         },
         'fetch_data_modification' => function () {
           return [
             function ($value) {
-              return json_decode($value, true) ?: [];
+              $decoded = json_decode($value, true);
+              return is_array($decoded) ? $decoded : [];
             }
           ];
         }
       ]),
-      new Fields\StringField('name'),
-      new Fields\StringField('contacts', ['default_value' => '{}']),
-      new Fields\DatetimeField('register_date', ['default_value' => new DateTime()]),
-      new Fields\DatetimeField('last_edit_date', ['default_value' => new DateTime()]),
-      new Fields\IntegerField('activity', ['default_value' => 1]),
-      new Fields\TextField('settings'),
+
+      new Fields\StringField('name', [
+        'nullable' => true,
+        'size' => 255,
+        'character_set' => 'utf8',
+      ]),
+
+      new Fields\StringField('contacts', [
+        'default_value' => '{}',
+        'size' => 255,
+        'character_set' => 'utf8',
+      ]),
+
+      new Fields\DatetimeField('register_date', [
+        'default_value' => function () {
+          return new DateTime();
+        },
+      ]),
+
+      new Fields\DatetimeField('last_edit_date', [
+        'default_value' => function () {
+          return new DateTime();
+        },
+      ]),
+
+      new Fields\IntegerField('activity', [
+        'default_value' => 1,
+        'size' => 1,
+      ]),
+
+      new Fields\TextField('settings', [
+        'data_type' => 'text',
+        'save_data_modification' => function () {
+          return [
+            function ($value) {
+              if ($value === null || $value === '') {
+                $value = [];
+              }
+              if (is_array($value)) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+              }
+              return gzcompress($value, 9);
+            }
+          ];
+        },
+        'fetch_data_modification' => function () {
+          return [
+            function ($value) {
+              if ($value === null || $value === '') {
+                return [];
+              }
+              $uncompressed = @gzuncompress($value);
+              if ($uncompressed === false) {
+                return $value;
+              }
+              return json_decode($uncompressed);
+            }
+          ];
+        }
+      ]),
+
     ];
   }
 

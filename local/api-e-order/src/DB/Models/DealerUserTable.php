@@ -35,54 +35,54 @@ abstract class DealerUserTable extends DataManager
         'unsigned' => true
       ]),
 
-      new Fields\IntegerField('PERMISSION_ID', [
+      new Fields\IntegerField('permission_id', [
         'required' => true,
         'unsigned' => true
       ]),
 
-      new Fields\StringField('LOGIN', [
+      new Fields\StringField('login', [
         'required' => true,
         'size' => 100,
         'character_set' => 'utf8'
       ]),
 
-      new Fields\StringField('PASSWORD', [
+      new Fields\StringField('password', [
         'required' => true,
         'size' => 60,
         'character_set' => 'utf8'
       ]),
 
-      new Fields\StringField('NAME', [
+      new Fields\StringField('name', [
         'nullable' => true,
         'size' => 255,
         'character_set' => 'utf8'
       ]),
 
-      new Fields\StringField('CONTACTS', [
+      new Fields\StringField('contacts', [
         'nullable' => true,
         'size' => 255,
         'character_set' => 'utf8'
       ]),
 
-      new Fields\DatetimeField('REGISTER_DATE', [
+      new Fields\DatetimeField('register_date', [
         'default_value' => function() {
           return new \Bitrix\Main\Type\DateTime();
         }
       ]),
 
-      new Fields\IntegerField('ACTIVITY', [
+      new Fields\IntegerField('activity', [
         'default_value' => 1,
         'size' => 1
       ]),
 
-      new Fields\StringField('CUSTOMIZATION', [
+      new Fields\StringField('customization', [
         'nullable' => true,
         'size' => 1000,
         'default_value' => '{}',
         'character_set' => 'utf8'
       ]),
 
-      new Fields\StringField('HASH', [
+      new Fields\StringField('hash', [
         'nullable' => true,
         'size' => 60,
         'character_set' => 'utf8'
@@ -107,7 +107,6 @@ abstract class DealerUserTable extends DataManager
 
     // Если класс уже создан — возвращаем
     if (class_exists($fullClassName)) {
-      var_dump('$fullClassName');
       return $fullClassName;
     }
 
@@ -123,9 +122,6 @@ abstract class DealerUserTable extends DataManager
     }";
 
     eval($classCode);
-
-    // Инициализируем сущность
-    //  $fullClassName::getEntity();
 
     return $fullClassName;
   }
