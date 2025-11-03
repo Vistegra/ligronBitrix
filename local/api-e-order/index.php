@@ -10,6 +10,30 @@ use OrderApi\DB\Models\DealerUserTable;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
+// CORS настройки
+$allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost',
+  'https://ligron.ru'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowedOrigins)) {
+  header("Access-Control-Allow-Origin: " . $origin);
+} else {
+  header("Access-Control-Allow-Origin: http://localhost");
+}
+
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+  http_response_code(200);
+  exit();
+}
+
 header('Content-Type: application/json; charset=utf-8');
 
 // Включить вывод ошибок для разработки
@@ -75,7 +99,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     return ['message' => 'Api is working!'];
   });
 
-  $r->addRoute('GET', '/auth/login', [Controllers\AuthController::class, 'login']);
+  $r->addRoute('POST', '/auth/login', [Controllers\AuthController::class, 'login']);
   $r->addRoute('GET', '/auth/logout', [Controllers\AuthController::class, 'logout']);
 
 });

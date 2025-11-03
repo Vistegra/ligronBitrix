@@ -13,9 +13,9 @@ class AuthService
   public const string COOKIE_NAME = 'auth_token';
   private const string COOKIE_PATH = '/local/api-e-order/';  // ТОЧНО как в .htaccess
   private const string COOKIE_DOMAIN = '';
-  private const bool COOKIE_SECURE = true;
+  private const bool COOKIE_SECURE = false; //ToDo Для Localhost
   private const bool COOKIE_HTTPONLY = true;
-  private const string COOKIE_SAMESITE = 'None';
+  private const string COOKIE_SAMESITE = 'Lax'; //none //ToDo
 
   /**
    * Универсальный логин
