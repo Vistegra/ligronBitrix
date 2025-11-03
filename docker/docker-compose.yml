@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  php-app:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME}-php
+    ports:
+      - "8080:80"
+    volumes:
+      - ./public:/var/www/html/public
+      - ./server/nginx.conf:/etc/nginx/sites-available/default
+      - ./server/entrypoint.sh:/entrypoint.sh
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+    depends_on:
+      - sql-server
+    working_dir: /var/www/html
+    command: ["/bin/bash", "/entrypoint.sh"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: ${COMPOSE_PROJECT_NAME}-mssql
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD}"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    volumes:
+      - sql-data:/var/opt/mssql
+    networks:
+      - app-network
+
+  adminer:
+    image: adminer:latest
+    container_name: ${COMPOSE_PROJECT_NAME}-adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=193.43.248.24:1433
+      - ADMINER_DEFAULT_DRIVER=server
+    depends_on:
+      - sql-server
+    networks:
+      - app-network
+
+volumes:
+  sql-data:
+
+networks:
+  app-network:
+    driver: bridge
