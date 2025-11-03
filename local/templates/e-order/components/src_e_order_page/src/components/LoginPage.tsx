@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [providerType, setProviderType] = useState<"dealer" | "ligron">("dealer");
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -38,28 +40,27 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch("https://ligron.ru/local/api-e-order/auth/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-       credentials: "include", // отправлять куки
-        body: JSON.stringify({
+      const response = await axios.post(
+        "https://ligron.ru/local/api-e-order/auth/login/",
+        {
           login: data.login,
           password: data.password,
           providerType,
-        }),
-      });
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true, // важно для отправки кук
+        }
+      );
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Ошибка авторизации");
-      }
-
-      //ToDo успех
+      // Успешный ответ
+      console.log("Успешный вход:", response.data);
+      // ToDo: переход на следующую страницу
     } catch (err: any) {
-      setError(err.message);
+      const message = err.response?.data?.message || err.message || "Ошибка авторизации";
+      setError(message);
       reset({ password: "" });
     } finally {
       setIsLoading(false);
@@ -84,6 +85,7 @@ export default function LoginPage() {
 
             <TabsContent value={providerType} className="space-y-4 mt-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Логин */}
                 <div className="space-y-2">
                   <Label htmlFor="login">Логин</Label>
                   <Input
@@ -97,26 +99,49 @@ export default function LoginPage() {
                   )}
                 </div>
 
+                {/* Пароль с глазом */}
                 <div className="space-y-2">
                   <Label htmlFor="password">Пароль</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Введите пароль"
-                    {...register("password")}
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Введите пароль"
+                      {...register("password")}
+                      disabled={isLoading}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? "Скрыть пароль" : "Показать пароль"}
+                      </span>
+                    </Button>
+                  </div>
                   {errors.password && (
                     <p className="text-sm text-destructive">{errors.password.message}</p>
                   )}
                 </div>
 
+                {/* Ошибка */}
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
+                {/* Кнопка входа */}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
