@@ -7,8 +7,7 @@ namespace OrderApi\Services\Auth;
 use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
-use OrderApi\DB\Models\DealerTable;
-use OrderApi\DB\Models\DealerUserTable;
+use OrderApi\DB\Repositories\DealerUserRepository;
 
 class DealerUserAuthService implements AuthServiceInterface
 {
@@ -18,7 +17,8 @@ class DealerUserAuthService implements AuthServiceInterface
   {
     if (!$login || !$password) return null;
 
-    $user = $this->findUserByLogin($login);
+    $user = DealerUserRepository::findUserByLogin($login);
+
     if (!$user || !password_verify($password, $user['password'])) {
       return null;
     }
@@ -62,41 +62,9 @@ class DealerUserAuthService implements AuthServiceInterface
     return JWT::encode($payload, ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
   }
 
-  private function findUserByLogin(string $login): ?array
-  {
-    $dealers = DealerTable::getList([
-      'select' => ['ID', 'cms_param'],
-      'filter' => ['=activity' => 1],
-    ]);
-
-    while ($dealer = $dealers->fetch()) {
-      $prefix = $dealer['cms_param']['prefix'] ?? null;
-      if (!$prefix || !is_string($prefix)) continue;
-
-      try {
-        $dataClass = DealerUserTable::getEntityClassByPrefix($prefix);
-        $user = $dataClass::getList([
-          'select' => ['ID', 'login', 'password', 'name', 'activity'],
-          'filter' => ['=login' => $login, '=activity' => 1],
-          'limit'  => 1,
-        ])->fetch();
-
-        if ($user) {
-          $user['dealer_id']     = $dealer['ID'];
-          $user['dealer_prefix'] = $prefix;
-          return $user;
-        }
-      } catch (\Throwable) {
-        continue;
-      }
-    }
-
-    return null;
-  }
-
   public static function normalizeUser(array $user): array
   {
-    $contacts = json_decode($user['contacts'], true);
+    $contacts = @json_decode($user['contacts'], true) ?? [];
 
     return [
       'id' => (int)$user['ID'],

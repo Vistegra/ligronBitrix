@@ -88,36 +88,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-/*  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.post("/auth/login/", {
-        login: data.login,
-        password: data.password,
-        providerType,
-      });
-
-      const { token, user } = response.data.data;
-
-      // Сохраняем в localStorage
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("auth_user", JSON.stringify(user));
-
-      console.log("Успешный вход:", { user });
-
-    } catch (err: any) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Неверный логин или пароль";
-      setError(message);
-      reset({ password: "" });
-    } finally {
-      setIsLoading(false);
-    }
-  };*/
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">

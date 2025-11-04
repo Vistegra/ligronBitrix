@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import {ROLE_NAMES} from "@/constants/constants.ts";
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -17,18 +18,21 @@ export default function Layout() {
           <Link to="/orders" className="text-2xl font-bold text-blue-600">
             Ligron
           </Link>
-          <div className="flex items-center gap-4">
+          {
+            user && <div className="flex items-center gap-4">
             <span className="text-sm">
-              {user?.name} ({user?.role === "office_manager" ? "Офис" : "Менеджер"})
+              {user.name} ({ROLE_NAMES[user.role]})
             </span>
-            <button onClick={handleLogout} className="btn btn-sm btn-error">
-              Выйти
-            </button>
+              <button onClick={handleLogout} className="btn btn-sm btn-error">
+                  Выйти
+              </button>
           </div>
+          }
+
         </div>
       </header>
       <main className="max-w-7xl mx-auto p-6">
-        <Outlet />
+        <Outlet/>
       </main>
     </div>
   );

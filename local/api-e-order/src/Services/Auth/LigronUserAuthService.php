@@ -7,7 +7,7 @@ namespace OrderApi\Services\Auth;
 use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
-use OrderApi\DB\Models\WebUserTable;
+use OrderApi\DB\Repositories\WebUserRepository;
 
 class LigronUserAuthService implements AuthServiceInterface
 {
@@ -19,7 +19,7 @@ class LigronUserAuthService implements AuthServiceInterface
       return null;
     }
 
-    $user = $this->findUserByLogin($login);
+    $user = WebUserRepository::findUserByLogin($login);
 
     if (!$user || $user['password'] !== $password) {
       return null;
@@ -67,33 +67,6 @@ class LigronUserAuthService implements AuthServiceInterface
     return JWT::encode($payload, ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
   }
 
-  private function findUserByLogin(string $login): ?array
-  {
-    try {
-      $result = WebUserTable::getList([
-        'select' => [
-          'id',
-          'login' =>'username',
-          'password',
-          'name',
-          'email',
-          'phone',
-          'active',
-          'manager',
-        ],
-        'filter' => [
-          '=username' => $login,
-          '=active'   => 1,
-        ],
-        'limit' => 1,
-      ]);
-
-      return $result->fetch() ?: null;
-    } catch (\Throwable $e) {
-      error_log('Ligron auth error: ' . $e->getMessage());
-      return null;
-    }
-  }
 
   public static function normalizeUser(array $user): array
   {
