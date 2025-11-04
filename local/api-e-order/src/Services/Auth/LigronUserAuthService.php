@@ -25,14 +25,14 @@ class LigronUserAuthService implements AuthServiceInterface
       return null;
     }
 
-    $role = $user['manager'] ? 'manager' : 'office_manager';
 
-    $token = $this->generateJwt($user, $role);
+    $token = $this->generateJwt($user);
 
-    unset($user['password']);
+   // Нормализуем данные пользователя
+    $normalizedUser = self::normalizeUser($user);
 
     return [
-      'user'       => $user + ['role' => $role],
+      'user'       => $normalizedUser,
       'token'      => $token,
       'expires_in' => ApiConfig::JWT_EXPIRE,
       'token_type' => 'Bearer',
@@ -46,9 +46,10 @@ class LigronUserAuthService implements AuthServiceInterface
       && in_array($payload['role'] ?? '', ['manager', 'office_manager'], true);
   }
 
-  private function generateJwt(array $user, string $role): string
+  private function generateJwt(array $user): string
   {
     $now = new DateTimeImmutable();
+    $role = $user['manager'] ? 'manager' : 'office_manager';
 
     $payload = [
       'iss'      => ApiConfig::API_NAME,
@@ -60,7 +61,7 @@ class LigronUserAuthService implements AuthServiceInterface
       'email'    => $user['email'] ?? '',
       'phone'    => $user['phone'] ?? '',
       'provider' => self::PROVIDER,
-      'role'     => $role, // manager или office_manager
+      'role'     => $role,
     ];
 
     return JWT::encode($payload, ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
@@ -92,5 +93,20 @@ class LigronUserAuthService implements AuthServiceInterface
       error_log('Ligron auth error: ' . $e->getMessage());
       return null;
     }
+  }
+
+  public static function normalizeUser(array $user): array
+  {
+    $role = $user['manager'] ? 'manager' : 'office_manager';
+
+    return [
+      'id' => (int)$user['id'],
+      'login' => $user['login'],
+      'name' => $user['name'] ?? '',
+      'email' => $user['email'] ?? '',
+      'phone' => $user['phone'] ?? '',
+      'role' => $role,
+      'provider' => self::PROVIDER,
+    ];
   }
 }

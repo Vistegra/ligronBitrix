@@ -1,0 +1,1 @@
+export const API_BASE = "https://ligron.ru/local/api-e-order";

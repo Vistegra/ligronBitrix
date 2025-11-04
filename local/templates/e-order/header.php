@@ -62,11 +62,11 @@ $title = $APPLICATION->GetTitle(false, false);
 
 <!-- region base-container-->
 <div class="base-container">
-    <header class="header content-container">
+<!--    <header class="header content-container">
         <a href="/" class="logo">
             <img src="https://via.placeholder.com/180x50.png?text=LIGRON" alt="Ligron Logo">
         </a>
-    </header>
+    </header>-->
     <!-- region workarea-->
     <div class="workarea">
 

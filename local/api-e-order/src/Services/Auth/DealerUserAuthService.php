@@ -24,10 +24,12 @@ class DealerUserAuthService implements AuthServiceInterface
     }
 
     $token = $this->generateJwt($user);
-    unset($user['password']);
+
+    // Нормализуем данные пользователя
+    $normalizedUser = self::normalizeUser($user);
 
     return [
-      'user'          => $user,
+      'user'          => $normalizedUser,
       'token'         => $token,
       'expires_in'    => ApiConfig::JWT_EXPIRE,
       'token_type'    => 'Bearer',
@@ -90,5 +92,22 @@ class DealerUserAuthService implements AuthServiceInterface
     }
 
     return null;
+  }
+
+  public static function normalizeUser(array $user): array
+  {
+    $contacts = json_decode($user['contacts'], true);
+
+    return [
+      'id' => (int)$user['ID'],
+      'login' => $user['login'],
+      'name' => $user['name'] ?? '',
+      'email' => $contacts['email'] ?? '',
+      'phone' => $contacts['phone'] ?? '',
+      'dealer_id' => (int)$user['dealer_id'],
+      'dealer_prefix' => $user['dealer_prefix'],
+      'provider' => self::PROVIDER,
+      'role' => 'dealer'
+    ];
   }
 }

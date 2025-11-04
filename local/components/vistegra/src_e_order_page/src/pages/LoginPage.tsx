@@ -19,6 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
+import {useNavigate} from "react-router-dom";
+import {useAuthStore} from "@/store/authStore.ts";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -59,7 +61,34 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+
   const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await api.post("/auth/login/", {
+        login: data.login,
+        password: data.password,
+        providerType,
+      });
+
+      const resData = res.data?.data;
+      console.log('resData', resData)
+      login({ user: resData.user, token: resData.token });
+      navigate("/orders");
+    } catch (err: any) {
+      const resData = err.response?.data?.data;
+
+      setError(resData?.message || "Ошибка входа");
+      reset({ password: "" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+/*  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
 
@@ -88,7 +117,7 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  };*/
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
