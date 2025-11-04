@@ -4,7 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +26,23 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+// Настройка axios один раз — с перехватчиком
+const api = axios.create({
+  baseURL: "https://ligron.ru/local/api-e-order",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Добавляем токен к каждому запросу
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -40,26 +64,25 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await axios.post(
-        "https://ligron.ru/local/api-e-order/auth/login/",
-        {
-          login: data.login,
-          password: data.password,
-          providerType,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true, // важно для отправки кук
-        }
-      );
+      const response = await api.post("/auth/login/", {
+        login: data.login,
+        password: data.password,
+        providerType,
+      });
 
-      // Успешный ответ
-      console.log("Успешный вход:", response.data);
-      // ToDo: переход на следующую страницу
+      const { token, user } = response.data.data;
+
+      // Сохраняем в localStorage
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("auth_user", JSON.stringify(user));
+
+      console.log("Успешный вход:", { user });
+
     } catch (err: any) {
-      const message = err.response?.data?.message || err.message || "Ошибка авторизации";
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Неверный логин или пароль";
       setError(message);
       reset({ password: "" });
     } finally {
@@ -77,7 +100,10 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={providerType} onValueChange={(v) => setProviderType(v as "dealer" | "ligron")}>
+          <Tabs
+            value={providerType}
+            onValueChange={(v) => setProviderType(v as "dealer" | "ligron")}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="dealer">Дилер</TabsTrigger>
               <TabsTrigger value="ligron">Менеджер Лигрона</TabsTrigger>
@@ -85,7 +111,6 @@ export default function LoginPage() {
 
             <TabsContent value={providerType} className="space-y-4 mt-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* Логин */}
                 <div className="space-y-2">
                   <Label htmlFor="login">Логин</Label>
                   <Input
@@ -99,7 +124,6 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Пароль с глазом */}
                 <div className="space-y-2">
                   <Label htmlFor="password">Пароль</Label>
                   <div className="relative">
@@ -115,18 +139,11 @@ export default function LoginPage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword((prev) => !prev)}
                       disabled={isLoading}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">
-                        {showPassword ? "Скрыть пароль" : "Показать пароль"}
-                      </span>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {errors.password && (
@@ -134,14 +151,12 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Ошибка */}
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
-                {/* Кнопка входа */}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
