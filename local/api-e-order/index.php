@@ -6,6 +6,9 @@ declare(strict_types=1);
 use OrderApi\Controllers;
 use OrderApi\DB\Models\DealerTable;
 use OrderApi\DB\Models\DealerUserTable;
+use OrderApi\DB\Models\WebDealerTable;
+use OrderApi\DB\Models\WebManagerDealerTable;
+use OrderApi\DB\Models\WebUserTable;
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
 require_once __DIR__ . '/vendor/autoload.php';
@@ -101,6 +104,13 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
 
   $r->addRoute('POST', '/auth/login', [Controllers\AuthController::class, 'login']);
   $r->addRoute('GET', '/auth/logout', [Controllers\AuthController::class, 'logout']);
+
+  $r->addRoute('GET', '/web_dealer', function () {
+
+    $dealers = WebUserTable::getList()->fetchAll();
+
+    return ['message' => $dealers];
+  });
 
 });
 
