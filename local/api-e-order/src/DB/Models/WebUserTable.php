@@ -36,6 +36,7 @@ class WebUserTable extends DataManager
       return [
         function ($value) {
           if (!is_string($value)) {
+
             return $value;
           }
           return trim(preg_replace('/[\r\n\t\x0B\0]+/', '', $value));

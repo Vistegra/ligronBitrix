@@ -15,7 +15,7 @@ use Bitrix\Main\Type\Date;
  * и кто его замещает (code_user_filling)
  * Соединение: webcalc
  */
-class FillingTable extends DataManager
+class WebFillingTable extends DataManager
 {
   /** @return string */
   public static function getConnectionName(): string

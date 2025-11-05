@@ -29,7 +29,7 @@ abstract class DealerUserTable extends DataManager
   public static function getMap(): array
   {
     return [
-      new Fields\IntegerField('ID', [
+      new Fields\IntegerField('id', [
         'primary' => true,
         'autocomplete' => true,
         'unsigned' => true

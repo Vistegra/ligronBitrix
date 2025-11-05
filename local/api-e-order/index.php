@@ -7,6 +7,7 @@ use OrderApi\Controllers;
 use OrderApi\DB\Models\DealerTable;
 use OrderApi\DB\Models\DealerUserTable;
 use OrderApi\DB\Models\WebDealerTable;
+use OrderApi\DB\Models\WebFillingTable;
 use OrderApi\DB\Models\WebManagerDealerTable;
 use OrderApi\DB\Models\WebUserTable;
 
@@ -107,9 +108,16 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
 
   $r->addRoute('GET', '/web_dealer', function () {
 
-    $dealers = WebUserTable::getList()->fetchAll();
 
-    return ['message' => $dealers];
+    $users = WebUserTable::getList()->fetchAll();
+
+    $dealers = WebDealerTable::getList()->fetchAll();
+
+    $binding = WebManagerDealerTable::getList()->fetchAll();
+
+    $filling = WebFillingTable::getList()->fetchAll();
+
+    return ['message' => [$dealers, $users, $binding, $filling]];
   });
 
 });
