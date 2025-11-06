@@ -18,9 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import axios from "axios";
-import {useNavigate} from "react-router-dom";
-import {useAuthStore} from "@/store/authStore.ts";
+import type {ProviderType} from "@/types/user";
+import {useAuth} from "@/hooks/useAuth.ts";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -29,28 +28,11 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-// Настройка axios один раз — с перехватчиком
-const api = axios.create({
-  baseURL: "https://ligron.ru/local/api-e-order",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Добавляем токен к каждому запросу
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [providerType, setProviderType] = useState<"dealer" | "ligron">("dealer");
+  const [providerType, setProviderType] = useState<ProviderType>('dealer');
   const [showPassword, setShowPassword] = useState(false);
+
+  const { login, isLoading, error, clearError } = useAuth();
 
   const {
     register,
@@ -61,34 +43,23 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const navigate = useNavigate();
-  const { login } = useAuthStore();
-
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    setError(null);
+    clearError();
 
-    try {
-      const res = await api.post("/auth/login/", {
-        login: data.login,
-        password: data.password,
-        providerType,
-      });
+    const result = await login({
+      ...data,
+      providerType
+    });
 
-      const resData = res.data?.data;
-      console.log('resData', resData)
-      login({ user: resData.user, token: resData.token });
-      navigate("/orders");
-    } catch (err: any) {
-      const resData = err.response?.data?.data;
-
-      setError(resData?.message || "Ошибка входа");
+    if (!result.success) {
       reset({ password: "" });
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const handleProviderChange = (provider: string) => {
+    setProviderType(provider as ProviderType );
+    clearError();
+  };
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -101,7 +72,7 @@ export default function LoginPage() {
         <CardContent>
           <Tabs
             value={providerType}
-            onValueChange={(v) => setProviderType(v as "dealer" | "ligron")}
+            onValueChange={handleProviderChange}
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="dealer">Дилер</TabsTrigger>

@@ -8,11 +8,12 @@ import Layout from "./components/Layout";
 import Protected from "./components/Protected";
 import './App.css'
 import './index.css'
+import {PAGE} from "@/api/constants.ts";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path={PAGE.LOGIN} element={<LoginPage />} />
       <Route
         element={
           <Protected>
@@ -20,8 +21,8 @@ export default function App() {
           </Protected>
         }
       >
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path={PAGE.ORDERS} element={<OrdersPage />} />
+        <Route path={PAGE.ORDER_ID} element={<OrderDetailPage />} />
         <Route path="/" element={<OrdersPage />} />
       </Route>
     </Routes>

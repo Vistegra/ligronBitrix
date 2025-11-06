@@ -1,50 +1,35 @@
 <?php
-
-declare(strict_types=1);
-
 namespace OrderApi\Controllers;
 
 use OrderApi\Services\Auth\AuthService;
-use OrderApi\Services\Auth\AuthServiceInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-class AuthController extends AbstractController
+final class AuthController extends AbstractController
 {
-  private AuthService $authService;
+  public function __construct(private readonly AuthService $auth) {}
 
-  public function __construct()
+  // POST /auth/login
+  public function login(ServerRequestInterface $request): ResponseInterface
   {
-    $this->authService = new AuthService();
-  }
-
-  public function login(): void
-  {
-    $input = $this->getRequestData();
+    $input = $request->getParsedBody() ?? [];
 
     $login = $input['login'] ?? '';
     $password = $input['password'] ?? '';
-    $providerType = $input['providerType'] ?? 'dealer';
+    $provider = $input['providerType'] ?? '';
 
-    if (empty($login) || empty($password)) {
-      $this->sendError('Логин и пароль обязательны', 400);
+    if (!$login || !$password) {
+      return $this->error('Логин и пароль обязательны',400);
     }
 
-    if (!in_array($providerType, ['dealer', 'ligron'])) {
-      $this->sendError('Укажите тип пользователя', 400);
+    if (!$provider) {
+      return $this->error('Не передан тип пользователя', 400);
     }
 
-    $result = $this->authService->login($login, $password, $providerType);
-
-    if (!$result) {
-      $this->sendError('Неверный логин или пароль', 401);
-    }
-
-    $this->sendResponse('Успешный вход', $result);
-  }
-
-  public function logout(): void
-  {
-    $this->authService->logout();
-    $this->sendResponse('Выход выполнен успешно');
+    $result = $this->auth->login($login, $password, $provider);
+    return $result
+      ? $this->success('Успешный вход', $result)
+      : $this->error('Неверный логин или пароль', 401);
   }
 
 }

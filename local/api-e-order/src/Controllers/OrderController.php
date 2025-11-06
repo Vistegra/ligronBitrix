@@ -4,182 +4,212 @@ declare(strict_types=1);
 
 namespace OrderApi\Controllers;
 
-use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\Services\Order\OrderService;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Slim\Psr7\Response;
 
-class OrderController extends AbstractController
+final class OrderController extends AbstractController
 {
-  private OrderService $service;
-
-  public function __construct()
-  {
-    try {
-      $this->service = OrderService::fromHeader();
-    } catch (\Exception $e) {
-      $this->sendError($e->getMessage(), $e->getCode() ?: 401);
-    }
-  }
+  public function __construct(
+    private readonly OrderService $orderService
+  ) {}
 
   // GET /orders
-  public function list(): void
+  public function list(ServerRequestInterface $request): ResponseInterface
   {
-    $data = $this->getRequestData();
+    $data = $request->getQueryParams();
     $filter = $data['filter'] ?? [];
     $limit = (int)($data['limit'] ?? 20);
     $offset = (int)($data['offset'] ?? 0);
 
     try {
-      $orders = $this->service->listOrders($filter, $limit, $offset);
-      $this->sendResponse('Orders list', $orders);
+      $orders = $this->orderService->listOrders($filter, $limit, $offset);
+      return $this->json(['status' => 'success', 'message' => 'Orders list', 'data' => $orders]);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // GET /orders/{id}
-  public function get(int $id): void
+  public function get(int $id): ResponseInterface
   {
     try {
-      $order = $this->service->getOrder($id);
-      if (!$order) {
-        $this->sendError('Order not found', 404);
-      }
-      $this->sendResponse('Order details', $order);
+      $order = $this->orderService->getOrder($id);
+      return $order
+        ? $this->success('Order details', $order)
+        : $this->error('Order not found', 404);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // POST /orders
-  public function create(): void
+  public function create(ServerRequestInterface $request): ResponseInterface
   {
-    $data = $this->getRequestData();
+    $data = $request->getParsedBody() ?? [];
 
     if (empty($data['name'])) {
-      $this->sendError('Name is required', 400);
+      return $this->error('Name is required', 400);
     }
 
     try {
-      $id = $this->service->createOrder($data);
-      if (!$id) {
-        $this->sendError('Failed to create order', 500);
+      $orderId = $this->orderService->createOrder($data);
+      if (!$orderId) {
+        return $this->error('Failed to create order', 500);
       }
-      $order = $this->service->getOrder($id);
-      $this->sendResponse('Order created', $order, 201);
+
+      $order = $this->orderService->getOrder($orderId);
+      return $this->success('Order created', $order, 201);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // PUT /orders/{id}
-  public function update(int $id): void
+  public function update(int $id, ServerRequestInterface $request): ResponseInterface
   {
-    $data = $this->getRequestData();
+    $data = $request->getParsedBody() ?? [];
 
     try {
-      if (!$this->service->updateOrder($id, $data)) {
-        $this->sendError('Failed to update order', 500);
+      if (!$this->orderService->updateOrder($id, $data)) {
+        return $this->error('Failed to update order', 500);
       }
-      $order = $this->service->getOrder($id);
-      $this->sendResponse('Order updated', $order);
+
+      $order = $this->orderService->getOrder($id);
+      return $this->success('Order updated', $order);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // DELETE /orders/{id}
-  public function delete(int $id): void
+  public function delete(int $id): ResponseInterface
   {
     try {
-      if (!$this->service->deleteOrder($id)) {
-        $this->sendError('Failed to delete order', 500);
+      if (!$this->orderService->deleteOrder($id)) {
+        return $this->error('Failed to delete order', 500);
       }
-      $this->sendResponse('Order deleted');
+      return $this->success('Order deleted',[],204);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // POST /orders/{id}/status
-  public function changeStatus(int $id): void
+  public function changeStatus(int $id, ServerRequestInterface $request): ResponseInterface
   {
-    $data = $this->getRequestData();
-    $newStatusCode = $data['status'] ?? '';
+    $data = $request->getParsedBody() ?? [];
+    $status = $data['status'] ?? '';
     $comment = $data['comment'] ?? null;
 
-    if (empty($newStatusCode)) {
-      $this->sendError('Status is required', 400);
+    if (!$status) {
+      return $this->error('Status is required', 400);
     }
 
     try {
-      if (!$this->service->changeStatus($id, $newStatusCode, $comment)) {
-        $this->sendError('Failed to change status', 500);
+      if (!$this->orderService->changeStatus($id, $status, $comment)) {
+        return $this->error('Failed to change status', 500);
       }
-      $order = $this->service->getOrder($id);
-      $this->sendResponse('Status changed', $order);
+
+      $order = $this->orderService->getOrder($id);
+      return $this->success('Status changed', $order);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // POST /orders/{id}/files
-  public function uploadFile(int $id): void
+  public function uploadFiles(int $id, ServerRequestInterface $request): ResponseInterface
   {
-    if (empty($_FILES['file'])) {
-      $this->sendError('No file uploaded', 400);
+    $files = $request->getUploadedFiles();
+    $uploadedFiles = $files['file'] ?? [];
+
+    // Поддержка: file (один) или file[] (массив)
+    if (empty($uploadedFiles)) {
+      return $this->error('No files uploaded', 400);
     }
 
-    $file = $_FILES['file'];
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-      $this->sendError('File upload error', 400);
+    // Приводим к массиву (если один файл — делаем массив)
+    if (!is_array($uploadedFiles)) {
+      $uploadedFiles = [$uploadedFiles];
     }
 
-    // Assume upload directory and logic
-    $uploadDir = '/path/to/uploads/' . $id . '/';
-    if (!is_dir($uploadDir)) {
-      mkdir($uploadDir, 0777, true);
-    }
-    $path = $uploadDir . basename($file['name']);
-    if (!move_uploaded_file($file['tmp_name'], $path)) {
-      $this->sendError('Failed to save file', 500);
-    }
+    $uploadedIds = [];
+    $errors = [];
 
-    try {
-      $fileId = $this->service->addFile($id, $file['name'], $path, $file['size'], $file['type']);
-      if (!$fileId) {
-        $this->sendError('Failed to add file record', 500);
+    foreach ($uploadedFiles as $file) {
+      if ($file->getError() !== UPLOAD_ERR_OK) {
+        $errors[] = [
+          'name' => $file->getClientFilename(),
+          'error' => 'Upload error: ' . $file->getError()
+        ];
+        continue;
       }
-      $this->sendResponse('File uploaded', ['file_id' => $fileId], 201);
-    } catch (\Exception $e) {
-      $this->handleException($e);
+
+      try {
+        $fileId = $this->orderService->uploadFile($id, $file);
+        if ($fileId) {
+          $uploadedIds[] = $fileId;
+        } else {
+          $errors[] = [
+            'name' => $file->getClientFilename(),
+            'error' => 'Failed to save'
+          ];
+        }
+      } catch (\Exception $e) {
+        $errors[] = [
+          'name' => $file->getClientFilename(),
+          'error' => $e->getMessage()
+        ];
+      }
     }
+
+    // Успех: все файлы загружены
+    if (empty($errors)) {
+      return $this->success('Files uploaded', ['file_ids' => $uploadedIds], 201);
+    }
+
+    // Частичный успех
+    if (!empty($uploadedIds)) {
+      return $this->json([
+        'status' => 'partial',
+        'message' => 'Some files uploaded, some failed',
+        'data' => ['uploaded' => $uploadedIds],
+        'errors' => $errors
+      ], 207); // 207 Multi-Status
+    }
+
+    // Все провалились
+    return $this->json([
+      'status' => 'error',
+      'message' => 'All files failed to upload',
+      'errors' => $errors
+    ], 400);
   }
 
   // DELETE /orders/{id}/files/{fileId}
-  public function deleteFile(int $id, int $fileId): void
+  public function deleteFile(int $id, int $fileId): ResponseInterface
   {
     try {
-      $file = OrderFileRepository::getById($fileId);
-      if ($file && $file['order_id'] == $id && file_exists($file['path'])) {
-        unlink($file['path']);
+      if (!$this->orderService->deleteFile($fileId)) {
+        return $this->error('Failed to delete file',500);
       }
-      if (!$this->service->deleteFile($fileId)) {
-        $this->sendError('Failed to delete file', 500);
-      }
-      $this->sendResponse('File deleted');
+      return $this->success('File deleted', [], 204);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
 
   // GET /statuses
-  public function getStatuses(): void
+  public function getStatuses(): ResponseInterface
   {
     try {
-      $statuses = $this->service->getStatuses();
-      $this->sendResponse('Order statuses', $statuses);
+      $statuses = $this->orderService->getStatuses();
+      return $this->success('Order statuses', $statuses);
     } catch (\Exception $e) {
-      $this->handleException($e);
+      return $this->handleError($e);
     }
   }
+
 }

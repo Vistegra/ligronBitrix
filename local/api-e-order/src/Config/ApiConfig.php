@@ -6,7 +6,7 @@ namespace OrderApi\Config;
 
 final class ApiConfig
 {
-   public const string JWT_SECRET = 'ghSiBVUEWx5FZcK6BzFHDTrbdQjexAck';
+  public const string JWT_SECRET = 'ghSiBVUEWx5FZcK6BzFHDTrbdQjexAck';
   public const string JWT_ALGO = 'HS256';
   public const int JWT_EXPIRE = 3600; // 1 час
 

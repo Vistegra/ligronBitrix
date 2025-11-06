@@ -21,11 +21,11 @@ class AuthService
     // Ничего не делаем — клиент сам очистит localStorage
   }
 
-  private function getAuthProvider(string $providerType): ?AuthServiceInterface
+  private function getAuthProvider(string $providerType): ?AuthProviderInterface
   {
     return match ($providerType) {
-      DealerUserAuthService::PROVIDER => new DealerUserAuthService(),
-      LigronUserAuthService::PROVIDER  => new LigronUserAuthService(),
+      DealerUserAuthProvider::PROVIDER => new DealerUserAuthProvider(),
+      LigronUserAuthProvider::PROVIDER  => new LigronUserAuthProvider(),
       default => null,
     };
   }
@@ -48,8 +48,8 @@ class AuthService
 
       $provider = $payload['provider'] ?? null;
       $service  = match ($provider) {
-        DealerUserAuthService::PROVIDER => DealerUserAuthService::class,
-        LigronUserAuthService::PROVIDER  => LigronUserAuthService::class,
+        DealerUserAuthProvider::PROVIDER => DealerUserAuthProvider::class,
+        LigronUserAuthProvider::PROVIDER  => LigronUserAuthProvider::class,
         default => null,
       };
 

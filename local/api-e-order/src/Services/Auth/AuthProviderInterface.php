@@ -2,7 +2,7 @@
 
 namespace OrderApi\Services\Auth;
 
-interface AuthServiceInterface
+interface AuthProviderInterface
 {
   public const string PROVIDER = '';
   public function login(string $login, string $password): ?array;

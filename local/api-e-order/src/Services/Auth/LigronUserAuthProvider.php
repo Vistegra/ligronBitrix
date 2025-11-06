@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace OrderApi\Services\Auth;
 
+use Bitrix\Sale\Provider;
 use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
+use OrderApi\Constants\ProviderType;
 use OrderApi\DB\Repositories\WebUserRepository;
 
-class LigronUserAuthService implements AuthServiceInterface
+class LigronUserAuthProvider implements AuthProviderInterface
 {
-  public const string PROVIDER = 'ligron';
+  public const string PROVIDER = ProviderType::LIGRON;
 
   public function login(string $login, string $password): ?array
   {

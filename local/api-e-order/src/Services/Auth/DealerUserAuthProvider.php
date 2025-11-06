@@ -7,11 +7,14 @@ namespace OrderApi\Services\Auth;
 use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
+
+use OrderApi\Constants\ProviderType;
+use OrderApi\Constants\UserRole;
 use OrderApi\DB\Repositories\DealerUserRepository;
 
-class DealerUserAuthService implements AuthServiceInterface
+class DealerUserAuthProvider implements AuthProviderInterface
 {
-  public const string PROVIDER = 'dealer';
+  public const string PROVIDER = ProviderType::DEALER;
 
   public function login(string $login, string $password): ?array
   {
@@ -75,7 +78,7 @@ class DealerUserAuthService implements AuthServiceInterface
       'dealer_id' => (int)$user['dealer_id'],
       'dealer_prefix' => $user['dealer_prefix'],
       'provider' => self::PROVIDER,
-      'role' => 'dealer'
+      'role' => UserRole::DEALER
     ];
   }
 }

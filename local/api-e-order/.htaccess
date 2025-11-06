@@ -1,12 +1,14 @@
 RewriteEngine On
 RewriteBase /local/api-e-order/
 
-# Добавляем слеш
-RewriteCond %{REQUEST_URI} !/$
-RewriteCond %{REQUEST_URI} !\.
-RewriteRule ^(.*)$ %{REQUEST_URI}/ [R=301,L]
+DirectorySlash Off
 
-# Все запросы → index.php
+# Все запросы → index.php (если не файл и не папка)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
+
+Header always set Access-Control-Allow-Origin "http://localhost:5173"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+Header always set Access-Control-Allow-Credentials "true"

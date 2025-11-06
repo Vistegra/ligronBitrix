@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OrderApi\Services\Order;
 
+use OrderApi\Constants\ProviderType;
+use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\OrderTable;
 use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\DB\Repositories\OrderRepository;
@@ -19,28 +21,19 @@ class OrderService
     $this->user = $user;
   }
 
-  public static function fromHeader(): self
-  {
-    $payload = AuthService::validateFromHeader();
-    if (!$payload) {
-      throw new \Exception('Unauthorized', 401);
-    }
-    return new self($payload);
-  }
-
   private function isDealer(): bool
   {
-    return $this->user['provider'] === 'dealer';
+    return $this->user['provider'] === ProviderType::DEALER;
   }
 
   private function isManager(): bool
   {
-    return $this->user['provider'] === 'ligron' && $this->user['role'] === 'manager';
+    return $this->user['provider'] === ProviderType::LIGRON && $this->user['role'] === UserRole::MANAGER;
   }
 
   private function isOfficeManager(): bool
   {
-    return $this->user['provider'] === 'ligron' && $this->user['role'] === 'office_manager';
+    return $this->user['provider'] === ProviderType::LIGRON && $this->user['role'] === UserRole::OFFICE_MANAGER;
   }
 
   public function createOrder(array $data): ?int
@@ -147,6 +140,41 @@ class OrderService
     }
 
     return OrderFileRepository::delete($fileId);
+  }
+
+  /**
+   * @throws \Exception
+   */
+  public function uploadFile(int $orderId, \Psr\Http\Message\UploadedFileInterface $file): ?int
+  {
+    $order = $this->getOrder($orderId);
+    if (!$order) {
+      return null;
+    }
+
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/orders/{$orderId}/";
+    if (!is_dir($uploadDir)) {
+      mkdir($uploadDir, 0755, true);
+    }
+
+    $filename = $file->getClientFilename();
+    $path = $uploadDir . $filename;
+
+    try {
+      $file->moveTo($path);
+    } catch (\Exception $e) {
+      throw new \Exception('Failed to save file', 500);
+    }
+
+    return OrderFileRepository::add(
+      orderId: $orderId,
+      name: $filename,
+      path: $path,
+      size: $file->getSize(),
+      mime: $file->getClientMediaType(),
+      uploadedBy: $this->isDealer() ? 1 : 2,
+      uploadedById: $this->user['sub']
+    );
   }
 
   public function getStatuses(): array
