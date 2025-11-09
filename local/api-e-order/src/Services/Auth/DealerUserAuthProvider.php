@@ -7,10 +7,10 @@ namespace OrderApi\Services\Auth;
 use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
-
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
 use OrderApi\DB\Repositories\DealerUserRepository;
+use OrderApi\DTO\Auth\{UserDTO, JwtPayload};
 
 class DealerUserAuthProvider implements AuthProviderInterface
 {
@@ -26,59 +26,54 @@ class DealerUserAuthProvider implements AuthProviderInterface
       return null;
     }
 
-    $token = $this->generateJwt($user);
-
-    // Нормализуем данные пользователя
-    $normalizedUser = self::normalizeUser($user);
+    $userDTO = self::normalizeUser($user);
+    $token = $this->generateJwt($userDTO);
 
     return [
-      'user'          => $normalizedUser,
-      'token'         => $token,
-      'expires_in'    => ApiConfig::JWT_EXPIRE,
-      'token_type'    => 'Bearer',
-      'provider'      => self::PROVIDER,
+      'user' => $userDTO->toArray(),
+      'token' => $token,
+      'expires_in' => ApiConfig::JWT_EXPIRE,
+      'token_type' => 'Bearer',
+      'provider' => self::PROVIDER,
     ];
   }
 
   public static function validatePayload(array $payload): bool
   {
-    return ($payload['provider'] ?? '') === self::PROVIDER
-      && !empty($payload['dealer_id'])
-      && !empty($payload['dealer_prefix']);
+    $userData = $payload['user'] ?? [];
+    return ($userData['provider'] ?? '') === self::PROVIDER
+      && !empty($userData['dealer_id'])
+      && !empty($userData['dealer_prefix']);
   }
 
-  private function generateJwt(array $user): string
+  private function generateJwt(UserDTO $user): string
   {
     $now = new DateTimeImmutable();
-    $payload = [
-      'iss' => ApiConfig::API_NAME,
-      'iat' => $now->getTimestamp(),
-      'exp' => $now->modify('+' . ApiConfig::JWT_EXPIRE . ' seconds')->getTimestamp(),
-      'sub' => $user['ID'],
-      'dealer_id'     => $user['dealer_id'],
-      'dealer_prefix' => $user['dealer_prefix'],
-      'login'         => $user['login'],
-      'name'          => $user['name'] ?? '',
-      'provider'      => self::PROVIDER,      
-    ];
 
-    return JWT::encode($payload, ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
+    $payload = new JwtPayload(
+      iss: ApiConfig::API_NAME,
+      iat: $now->getTimestamp(),
+      exp: $now->modify('+' . ApiConfig::JWT_EXPIRE . ' seconds')->getTimestamp(),
+      user: $user
+    );
+
+    return JWT::encode($payload->toArray(), ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
   }
 
-  public static function normalizeUser(array $user): array
+  public static function normalizeUser(array $user): UserDTO
   {
     $contacts = @json_decode($user['contacts'], true) ?? [];
 
-    return [
-      'id' => (int)$user['ID'],
-      'login' => $user['login'],
-      'name' => $user['name'] ?? '',
-      'email' => $contacts['email'] ?? '',
-      'phone' => $contacts['phone'] ?? '',
-      'dealer_id' => (int)$user['dealer_id'],
-      'dealer_prefix' => $user['dealer_prefix'],
-      'provider' => self::PROVIDER,
-      'role' => UserRole::DEALER
-    ];
+    return new UserDTO(
+      id: (int)$user['ID'],
+      login: $user['login'],
+      name: $user['name'] ?? '',
+      provider: self::PROVIDER,
+      role: UserRole::DEALER,
+      email: $contacts['email'] ?? '',
+      phone: $contacts['phone'] ?? '',
+      dealer_id: (int)$user['dealer_id'],
+      dealer_prefix: $user['dealer_prefix']
+    );
   }
 }

@@ -17,6 +17,7 @@ final class GlobalErrorMiddleware implements MiddlewareInterface
       return $handler->handle($request);
     } catch (\Throwable $e) {
       $logPath = $request->getAttribute('logPath');
+
       if ($logPath) {
         $log = new Logger('api');
         $log->pushHandler(new StreamHandler($logPath));
@@ -24,6 +25,7 @@ final class GlobalErrorMiddleware implements MiddlewareInterface
       }
 
       $response = new Response(500);
+
       $response->getBody()->write(json_encode([
         'status' => 'error',
         'message' => $e->getMessage(),

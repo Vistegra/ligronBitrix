@@ -60,7 +60,7 @@ class OrderFileTable extends DataManager
         'size' => 100,
       ]),
 
-      // === Кто загрузил ===
+      // Кто загрузил
       new Fields\StringField('uploaded_by', [
         'required' => true,
         'size' => 10,

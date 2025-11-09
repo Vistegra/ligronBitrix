@@ -7,6 +7,7 @@ namespace OrderApi\Services\Auth;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use OrderApi\Config\ApiConfig;
+use OrderApi\DTO\Auth\{UserDTO, JwtPayload};
 
 class AuthService
 {
@@ -18,48 +19,57 @@ class AuthService
 
   public function logout(): void
   {
-    // Ничего не делаем — клиент сам очистит localStorage
+    // Клиент сам очистит localStorage
   }
 
   private function getAuthProvider(string $providerType): ?AuthProviderInterface
   {
     return match ($providerType) {
       DealerUserAuthProvider::PROVIDER => new DealerUserAuthProvider(),
-      LigronUserAuthProvider::PROVIDER  => new LigronUserAuthProvider(),
+      LigronUserAuthProvider::PROVIDER => new LigronUserAuthProvider(),
       default => null,
     };
   }
 
   /**
-   * Универсальная валидация по заголовку Authorization
+   * Валидация JWT токена
    */
-  public static function validateFromHeader(): ?array
+  public static function validateToken(string $token): ?JwtPayload
   {
-    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-    if (!preg_match('/Bearer\s(\S+)/', $header, $matches)) {
-      return null;
-    }
-
-    $token = $matches[1];
-
     try {
       $decoded = JWT::decode($token, new Key(ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO));
-      $payload = (array)$decoded;
+      $payloadArray = (array)$decoded;
 
-      $provider = $payload['provider'] ?? null;
-      $service  = match ($provider) {
+      // Проверяем структуру payload
+      if (!isset($payloadArray['user']) || !is_array($payloadArray['user'])) {
+        return null;
+      }
+
+      $userData = $payloadArray['user'];
+      $provider = $userData['provider'] ?? null;
+
+      $service = match ($provider) {
         DealerUserAuthProvider::PROVIDER => DealerUserAuthProvider::class,
-        LigronUserAuthProvider::PROVIDER  => LigronUserAuthProvider::class,
+        LigronUserAuthProvider::PROVIDER => LigronUserAuthProvider::class,
         default => null,
       };
 
-      if ($service && $service::validatePayload($payload)) {
-        return $payload;
+      if ($service && $service::validatePayload($payloadArray)) {
+        return JwtPayload::fromArray($payloadArray);
       }
 
       return null;
     } catch (\Throwable $e) {
       return null;
     }
+  }
+
+  /**
+   * Получить UserDTO из JWT payload
+   */
+  public static function getUserFromToken(string $token): ?UserDTO
+  {
+    $payload = self::validateToken($token);
+    return $payload?->user;
   }
 }
