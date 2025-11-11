@@ -21,9 +21,6 @@ final class AuthMiddleware implements MiddlewareInterface
   {
     $user = $this->getUserFromRequest($request);
 
-    global $logger;
-    $logger->warning('AuthMiddleware user', $user?->toArray() ?? []);
-
     if (!$user) {
       return $this->createUnauthorizedResponse();
     }

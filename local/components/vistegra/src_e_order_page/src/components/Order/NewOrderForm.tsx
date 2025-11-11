@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Trash2, UploadIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import {
   Form,
@@ -29,7 +30,7 @@ import { Dropzone } from "@/components/ui/shadcn-io/dropzone";
 
 import api from "@/api/client";
 
-// === Схема формы ===
+// Валидация
 const formSchema = z.object({
   name: z.string().min(1, "Название заказа обязательно"),
   comment: z.string().optional(),
@@ -41,6 +42,7 @@ export default function NewOrderForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitType, setSubmitType] = useState<"draft" | "new" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -61,6 +63,7 @@ export default function NewOrderForm() {
   const onSubmit = async (data: FormData) => {
     if (!submitType) return;
     setIsSubmitting(true);
+    setError(null); // Очищаем ошибку перед отправкой
 
     const formData = new FormData();
     formData.append("name", data.name);
@@ -69,11 +72,10 @@ export default function NewOrderForm() {
 
     try {
       const endpoint = "/orders";
-      const response = await api.post(endpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await api.post(endpoint, formData);
 
       const result = response.data?.data;
+
       if (!result?.order) {
         throw new Error(result?.message || "Не удалось создать заказ");
       }
@@ -107,6 +109,7 @@ export default function NewOrderForm() {
         error.response?.data?.message ||
         error.message ||
         "Неизвестная ошибка";
+      setError(msg); // Устанавливаем ошибку
       // toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -117,10 +120,7 @@ export default function NewOrderForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Новый заказ</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Заполните необходимые поля для создания заказа
-        </p>
+        <CardTitle>Создать новый заказ</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -138,6 +138,7 @@ export default function NewOrderForm() {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="comment"
@@ -198,6 +199,12 @@ export default function NewOrderForm() {
                 </div>
               )}
             </div>
+
+            {error && ( // Отображение ошибки с сервера
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="flex justify-end space-x-4">
               <Button

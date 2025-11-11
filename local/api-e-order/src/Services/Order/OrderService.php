@@ -34,8 +34,6 @@ final class OrderService
    */
   public function createOrder(array $data, array $uploadedFiles = []): OrderCreateResult
   {
-    global $logger;
-    $logger->warning('$this->user', (array)$this->user);
     $data['created_by_id'] = $this->user->id;
 
     // Определяем тип создателя и заполняем связи
@@ -55,8 +53,6 @@ final class OrderService
         orderError: 'Не указана роль пользователя'
       );
     }
-
-    $logger->info('$data', $data);
 
     // Создаём заказ
     try {
@@ -106,8 +102,6 @@ final class OrderService
         $order['dealer_prefix'] !== $this->user->dealer_prefix ||
         $order['dealer_user_id'] !== $this->user->id
       ) {
-        global $logger;
-        $logger->warning('Acce', [$order, $this->user->toArray()]);
         throw new \Exception('Access denied', 403);
       }
     }

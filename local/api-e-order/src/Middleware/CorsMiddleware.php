@@ -22,11 +22,16 @@ final class CorsMiddleware implements MiddlewareInterface
 
     $response = $handler->handle($request);
 
-    // Обработка OPTIONS preflight запроса
-    /*if ($request->getMethod() === 'OPTIONS') {
+    if ($request->getMethod() === 'OPTIONS') {
       $response = new Response(200);
-    } else {
-      $response = $handler->handle($request);
+    }
+   /* if ($request->getMethod() === 'OPTIONS') {
+      return (new Response(200))
+        ->withHeader('Access-Control-Allow-Origin', $allowed)
+        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->withHeader('Access-Control-Allow-Headers', 'X-Auth-Token, Content-Type, Authorization')
+        ->withHeader('Access-Control-Allow-Credentials', 'true')
+        ->withHeader('Access-Control-Max-Age', '86400');
     }*/
 
     $response = $response

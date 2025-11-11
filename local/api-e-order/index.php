@@ -68,14 +68,11 @@ use OrderApi\Middleware\{GlobalErrorMiddleware,
 use OrderApi\Controllers\{AuthController, OrderController};
 
 // DI
-
 $container = new Container();
-
 
 /*$container->set(UserDTO::class, function () {
   return null;
 });*/
-
 
 $container->set('logs', $logPath);
 
@@ -88,16 +85,14 @@ $app->setBasePath('/local/api-e-order');
 // убираем слеш — до всех маршрутов
 $app->add(TrailingSlashMiddleware::class);
 
-
-$app->add(CorsMiddleware::class);
-
-$app->options('/{routes:.+}', function ($request, $response) {
+/*$app->options('/{routes:.+}', function ($request, $response) {
   return $response;
-});
+});*/
 
 $app->add(GlobalErrorMiddleware::class);
-
+$app->add(CorsMiddleware::class);
 $app->add(JsonResponseMiddleware::class);
+
 $app->addBodyParsingMiddleware();
 
 $app->add(function ($request, $handler) use ($logPath) {

@@ -24,6 +24,7 @@ final class OrderController extends AbstractController
   public function create(ServerRequestInterface $request): ResponseInterface
   {
     $data = $request->getParsedBody() ?? [];
+
     $uploadedFiles = $request->getUploadedFiles()['file'] ?? [];
 
     if ($uploadedFiles && !is_array($uploadedFiles)) {

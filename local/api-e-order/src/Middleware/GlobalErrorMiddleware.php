@@ -8,6 +8,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Psr7\Response;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Slim\Exception\HttpMethodNotAllowedException;
+use Slim\Exception\HttpNotFoundException;
 
 final class GlobalErrorMiddleware implements MiddlewareInterface
 {
@@ -15,7 +17,37 @@ final class GlobalErrorMiddleware implements MiddlewareInterface
   {
     try {
       return $handler->handle($request);
-    } catch (\Throwable $e) {
+    }
+
+    //ToDo InvalidArgumentException,
+    //ToDo RuntimeException
+
+    catch (HttpMethodNotAllowedException $e) {
+      $response = new Response(405);
+
+      $response->getBody()->write(json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'type' => $e::class,
+      ], JSON_UNESCAPED_UNICODE));
+
+      return $response;
+    }
+
+    catch (HttpNotFoundException $e) {
+      $response = new Response(404);
+
+      $response->getBody()->write(json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'type' => $e::class,
+      ], JSON_UNESCAPED_UNICODE));
+
+      return $response;
+    }
+
+    //Необработанный тип ошибки
+    catch (\Throwable $e) {
       $logPath = $request->getAttribute('logPath');
 
       if ($logPath) {

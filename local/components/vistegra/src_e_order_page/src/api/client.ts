@@ -3,8 +3,8 @@ import { API_BASE } from "./constants";
 import {useAuthStore} from "@/store/authStore.ts";
 
 const api = axios.create({
-  baseURL: API_BASE,
-  headers: { "Content-Type": "application/json" },
+  baseURL: API_BASE/*,
+  headers: { "Content-Type": "application/json" },*/
 });
 
 api.interceptors.request.use((config) => {
@@ -13,17 +13,18 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers['X-Auth-Token'] = token;
   }
+
   return config;
 });
-/*api.interceptors.response.use(
+api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.clear();
+      useAuthStore.getState().logout();
       window.location.href = "/login";
     }
     return Promise.reject(err);
   }
-);*/
+);
 
 export default api;
