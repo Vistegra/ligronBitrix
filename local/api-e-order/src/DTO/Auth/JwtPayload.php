@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OrderApi\DTO\Auth;
 
-readonly class JwtPayload
+final readonly class JwtPayload
 {
   public function __construct(
     public string $iss,
@@ -32,4 +32,14 @@ readonly class JwtPayload
       user: UserDTO::fromArray($data['user'])
     );
   }
+  public static function fromStdClass(\stdClass $obj): self
+  {
+    return new self(
+      iss: $obj->iss,
+      iat: (int)$obj->iat,
+      exp: (int)$obj->exp,
+      user: UserDTO::fromStdClass($obj->user)
+    );
+  }
+
 }

@@ -1,34 +1,83 @@
 <?php
-
 declare(strict_types=1);
 
 namespace OrderApi\Controllers;
 
+use OrderApi\DB\Repositories\OrderRepository;
+use OrderApi\DTO\Order\FileUploadResult;
+use OrderApi\DTO\Order\OrderCreateResult;
 use OrderApi\Services\Order\OrderService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
-
+use OrderApi\DTO\Auth\UserDTO;
+/**
+ * Контроллер для работы с заказами
+ */
 final class OrderController extends AbstractController
 {
   public function __construct(
     private readonly OrderService $orderService
   ) {}
 
-  // GET /orders
-  public function list(ServerRequestInterface $request): ResponseInterface
+  // POST /orders
+  public function create(ServerRequestInterface $request): ResponseInterface
   {
-    $data = $request->getQueryParams();
-    $filter = $data['filter'] ?? [];
-    $limit = (int)($data['limit'] ?? 20);
-    $offset = (int)($data['offset'] ?? 0);
+    $data = $request->getParsedBody() ?? [];
+    $uploadedFiles = $request->getUploadedFiles()['file'] ?? [];
 
-    try {
-      $orders = $this->orderService->listOrders($filter, $limit, $offset);
-      return $this->json(['status' => 'success', 'message' => 'Orders list', 'data' => $orders]);
-    } catch (\Exception $e) {
-      return $this->handleError($e);
+    if ($uploadedFiles && !is_array($uploadedFiles)) {
+      $uploadedFiles = [$uploadedFiles];
     }
+
+    /** @var UserDTO $user */
+    $user = $request->getAttribute('user');
+    if (!$user) {
+      return $this->error('Unauthorized', 401);
+    }
+
+    // Создаём заказ с файлами
+    $result = $this->orderService->createOrder($data, $uploadedFiles);
+
+    if (!$result->success) {
+      return $this->error($result->orderError ?? 'Ошибка создания заказа', 400);
+    }
+
+    // Получаем заказ для ответа
+    $order = $this->orderService->getOrder($result->orderId);
+
+    if (!$order) {
+      return $this->error('Заказ создан, но не найден при чтении', 500);
+    }
+
+    // Формируем ответ
+    $responseData = [
+      'order' => $order,
+    ];
+
+    if (!empty($result->fileResults)) {
+      $responseData['files'] = array_map(
+        fn(FileUploadResult $r) => $r->toArray(),
+        $result->fileResults
+      );
+    }
+
+    // Определяем HTTP-статус
+    $statusCode = 201;
+    $message = 'Заказ создан';
+
+    if ($result->hasFileErrors()) {
+      $statusCode = $result->allFilesFailed() ? 400 : 207;
+      $message = $result->allFilesFailed()
+        ? 'Заказ создан, но файлы не загружены'
+        : 'Заказ создан, часть файлов не загружена';
+    }
+
+    return $this->json([
+      'status'  => $statusCode === 201 ? 'success' : ($statusCode === 207 ? 'partial' : 'error'),
+      'message' => $message,
+      'data'    => $responseData,
+    ], $statusCode);
   }
 
   // GET /orders/{id}
@@ -39,28 +88,6 @@ final class OrderController extends AbstractController
       return $order
         ? $this->success('Order details', $order)
         : $this->error('Order not found', 404);
-    } catch (\Exception $e) {
-      return $this->handleError($e);
-    }
-  }
-
-  // POST /orders
-  public function create(ServerRequestInterface $request): ResponseInterface
-  {
-    $data = $request->getParsedBody() ?? [];
-
-    if (empty($data['name'])) {
-      return $this->error('Name is required', 400);
-    }
-
-    try {
-      $orderId = $this->orderService->createOrder($data);
-      if (!$orderId) {
-        return $this->error('Failed to create order', 500);
-      }
-
-      $order = $this->orderService->getOrder($orderId);
-      return $this->success('Order created', $order, 201);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
@@ -90,7 +117,7 @@ final class OrderController extends AbstractController
       if (!$this->orderService->deleteOrder($id)) {
         return $this->error('Failed to delete order', 500);
       }
-      return $this->success('Order deleted',[],204);
+      return $this->success('Order deleted', [], 204);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
@@ -122,70 +149,45 @@ final class OrderController extends AbstractController
   // POST /orders/{id}/files
   public function uploadFiles(int $id, ServerRequestInterface $request): ResponseInterface
   {
-    $files = $request->getUploadedFiles();
-    $uploadedFiles = $files['file'] ?? [];
+    $files = $request->getUploadedFiles()['file'] ?? [];
 
-    // Поддержка: file (один) или file[] (массив)
-    if (empty($uploadedFiles)) {
+    if (!is_array($files)) {
+      $files = [$files];
+    }
+
+    if (empty($files)) {
       return $this->error('No files uploaded', 400);
     }
 
-    // Приводим к массиву (если один файл — делаем массив)
-    if (!is_array($uploadedFiles)) {
-      $uploadedFiles = [$uploadedFiles];
+    $order = $this->orderService->getOrder($id);
+    if (!$order) {
+      return $this->error('Order not found', 404);
     }
 
-    $uploadedIds = [];
-    $errors = [];
+    $results = $this->orderService->uploadFilesToOrder($order, $files);
 
-    foreach ($uploadedFiles as $file) {
-      if ($file->getError() !== UPLOAD_ERR_OK) {
-        $errors[] = [
-          'name' => $file->getClientFilename(),
-          'error' => 'Upload error: ' . $file->getError()
-        ];
-        continue;
-      }
+    $successful = array_filter($results, fn($r) => $r->isSuccess());
+    $failed = array_filter($results, fn($r) => !$r->isSuccess());
 
-      try {
-        $fileId = $this->orderService->uploadFile($id, $file);
-        if ($fileId) {
-          $uploadedIds[] = $fileId;
-        } else {
-          $errors[] = [
-            'name' => $file->getClientFilename(),
-            'error' => 'Failed to save'
-          ];
-        }
-      } catch (\Exception $e) {
-        $errors[] = [
-          'name' => $file->getClientFilename(),
-          'error' => $e->getMessage()
-        ];
-      }
+    if (empty($failed)) {
+      return $this->success('Files uploaded', [
+        'files' => array_map(fn($r) => $r->toArray(), $results)
+      ], 201);
     }
 
-    // Успех: все файлы загружены
-    if (empty($errors)) {
-      return $this->success('Files uploaded', ['file_ids' => $uploadedIds], 201);
-    }
-
-    // Частичный успех
-    if (!empty($uploadedIds)) {
+    if (empty($successful)) {
       return $this->json([
-        'status' => 'partial',
-        'message' => 'Some files uploaded, some failed',
-        'data' => ['uploaded' => $uploadedIds],
-        'errors' => $errors
-      ], 207); // 207 Multi-Status
+        'status' => 'error',
+        'message' => 'All files failed to upload',
+        'files' => array_map(fn($r) => $r->toArray(), $results)
+      ], 400);
     }
 
-    // Все провалились
     return $this->json([
-      'status' => 'error',
-      'message' => 'All files failed to upload',
-      'errors' => $errors
-    ], 400);
+      'status' => 'partial',
+      'message' => 'Some files uploaded, some failed',
+      'files' => array_map(fn($r) => $r->toArray(), $results)
+    ], 207);
   }
 
   // DELETE /orders/{id}/files/{fileId}
@@ -193,9 +195,38 @@ final class OrderController extends AbstractController
   {
     try {
       if (!$this->orderService->deleteFile($fileId)) {
-        return $this->error('Failed to delete file',500);
+        return $this->error('Failed to delete file', 500);
       }
       return $this->success('File deleted', [], 204);
+    } catch (\Exception $e) {
+      return $this->handleError($e);
+    }
+  }
+
+  // GET /orders
+  public function getAll(ServerRequestInterface $request): ResponseInterface
+  {
+    $data = $request->getQueryParams();
+    $filter = $data['filter'] ?? [];
+    $limit = (int)($data['limit'] ?? 20);
+    $offset = (int)($data['offset'] ?? 0);
+
+    try {
+      $orders = $this->orderService->getOrders($filter, $limit, $offset);
+      return $this->json([
+        'status' => 'success',
+        'message' => 'Orders list',
+        'data' =>
+           [
+             'order' => $orders,
+             'pagination' => [
+               'limit' => $limit,
+               'offset' => $offset,
+               'total' => OrderRepository::getTotalCount($filter)
+             ]
+           ]
+
+      ]);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
@@ -211,5 +242,4 @@ final class OrderController extends AbstractController
       return $this->handleError($e);
     }
   }
-
 }

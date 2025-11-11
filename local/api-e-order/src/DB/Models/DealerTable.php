@@ -9,6 +9,7 @@ use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
 use \Bitrix\Main\Type\DateTime;
 use RuntimeException;
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 class DealerTable extends DataManager
 {
@@ -32,27 +33,15 @@ class DealerTable extends DataManager
         'primary' => true,
         'autocomplete' => true,
         'unsigned' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\StringField('cms_param', [
         'size' => 255,
         'default_value' => '{}',
         'character_set' => 'utf8',
-        'save_data_modification' => function () {
-          return [
-            function ($value) {
-              return is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
-            }
-          ];
-        },
-        'fetch_data_modification' => function () {
-          return [
-            function ($value) {
-              $decoded = json_decode($value, true);
-              return is_array($decoded) ? $decoded : [];
-            }
-          ];
-        }
+        'save_data_modification' => F::toJsonEncode(),
+        'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
       new Fields\StringField('name', [
@@ -65,18 +54,17 @@ class DealerTable extends DataManager
         'default_value' => '{}',
         'size' => 255,
         'character_set' => 'utf8',
+        //ToDO
+     /*   'save_data_modification' => F::toJsonEncode(),
+        'fetch_data_modification' => F::toJsonDecode(),*/
       ]),
 
       new Fields\DatetimeField('register_date', [
-        'default_value' => function () {
-          return new DateTime();
-        },
+        'default_value' => F::now(),
       ]),
 
       new Fields\DatetimeField('last_edit_date', [
-        'default_value' => function () {
-          return new DateTime();
-        },
+        'default_value' => F::now(),
       ]),
 
       new Fields\IntegerField('activity', [
@@ -86,33 +74,8 @@ class DealerTable extends DataManager
 
       new Fields\TextField('settings', [
         'data_type' => 'text',
-        'save_data_modification' => function () {
-          return [
-            function ($value) {
-              if ($value === null || $value === '') {
-                $value = [];
-              }
-              if (is_array($value)) {
-                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
-              }
-              return gzcompress($value, 9);
-            }
-          ];
-        },
-        'fetch_data_modification' => function () {
-          return [
-            function ($value) {
-              if ($value === null || $value === '') {
-                return [];
-              }
-              $uncompressed = @gzuncompress($value);
-              if ($uncompressed === false) {
-                return $value;
-              }
-              return json_decode($uncompressed);
-            }
-          ];
-        }
+        'save_data_modification' => F::compressJson(),
+        'fetch_data_modification' => F::decompressJson(),
       ]),
 
     ];

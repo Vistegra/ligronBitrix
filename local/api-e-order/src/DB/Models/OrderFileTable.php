@@ -8,6 +8,7 @@ use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 class OrderFileTable extends DataManager
 {
@@ -28,6 +29,7 @@ class OrderFileTable extends DataManager
       new Fields\IntegerField('id', [
         'primary' => true,
         'autocomplete' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       // Связь с заказом
@@ -38,8 +40,8 @@ class OrderFileTable extends DataManager
       ),
       new Fields\IntegerField('order_id', [
         'required' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
-
 
       new Fields\StringField('name', [
         'required' => true,
@@ -53,6 +55,7 @@ class OrderFileTable extends DataManager
 
       new Fields\IntegerField('size', [
         'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\StringField('mime', [
@@ -61,20 +64,19 @@ class OrderFileTable extends DataManager
       ]),
 
       // Кто загрузил
-      new Fields\StringField('uploaded_by', [
+      new Fields\IntegerField('uploaded_by', [
         'required' => true,
-        'size' => 10,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\IntegerField('uploaded_by_id', [
         'required' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       //
       new Fields\DatetimeField('created_at', [
-        'default_value' => function () {
-          return new \Bitrix\Main\Type\DateTime();
-        },
+        'default_value' => F::now(),
       ]),
 
     ];

@@ -8,6 +8,7 @@ use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Type\Date;
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 /**
  * Таблица [filling] в SQL Server (база WebCalcNew)
@@ -35,29 +36,19 @@ class WebFillingTable extends DataManager
    */
   public static function getMap(): array
   {
-    // Очистка nchar-полей от пробелов и мусора
-    $clean = function () {
-      return [
-        function ($value) {
-          if (!is_string($value)) {
-            return $value;
-          }
-          return trim(preg_replace('/[\r\n\t\x0B\0]+/', '', $value));
-        }
-      ];
-    };
 
     return [
       new Fields\IntegerField('id', [
         'primary'      => true,
         'autocomplete' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       // Кто уходит в отпуск / больничный
       new Fields\StringField('code_user', [
         'size'     => 10,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       // С какой даты
@@ -74,7 +65,7 @@ class WebFillingTable extends DataManager
       new Fields\StringField('code_user_filling', [
         'size'     => 10,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
     ];
   }

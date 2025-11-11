@@ -1,11 +1,10 @@
-// src/components/NewOrderForm.tsx
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {Loader2, Trash2, UploadIcon} from "lucide-react";
+import { Loader2, Trash2, UploadIcon } from "lucide-react";
 
 import {
   Form,
@@ -26,10 +25,11 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-import {Dropzone} from "@/components/ui/shadcn-io/dropzone"; // Установите через npx shadcn@latest add https://www.shadcn.io/registry/dropzone.json
+import { Dropzone } from "@/components/ui/shadcn-io/dropzone";
 
 import api from "@/api/client";
 
+// === Схема формы ===
 const formSchema = z.object({
   name: z.string().min(1, "Название заказа обязательно"),
   comment: z.string().optional(),
@@ -62,40 +62,52 @@ export default function NewOrderForm() {
     if (!submitType) return;
     setIsSubmitting(true);
 
+    const formData = new FormData();
+    formData.append("name", data.name);
+    if (data.comment) formData.append("comment", data.comment);
+    files.forEach((file) => formData.append("file[]", file));
+
     try {
-      // Создаём заказ
-      const orderResponse = await api.post("/orders", {
-        name: data.name,
-        comment: data.comment,
+      const endpoint = "/orders";
+      const response = await api.post(endpoint, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const orderId = orderResponse.data?.data?.id;
-      if (!orderId) throw new Error("Failed to create order");
-
-      // Если файлы есть, загружаем
-      if (files.length > 0) {
-        const formData = new FormData();
-        files.forEach((file) => {
-          formData.append("file[]", file);
-        });
-
-        await api.post(`/orders/${orderId}/files`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+      const result = response.data?.data;
+      if (!result?.order) {
+        throw new Error(result?.message || "Не удалось создать заказ");
       }
 
-      // Устанавливаем статус в зависимости от типа
+      const orderId = result.order.id;
+      const fileResults = result.files || [];
+
+      // Успешно загруженные файлы
+      const uploadedFileIds = fileResults
+        .filter((f: any) => f.file_id)
+        .map((f: any) => f.file_id);
+
+      // Ошибки по файлам
+      const fileErrors = fileResults
+        .filter((f: any) => f.error)
+        .map((f: any) => `${f.original_name}: ${f.error}`)
+        .join("; ");
+
+      // Устанавливаем статус
       const statusCode = submitType === "draft" ? "draft" : "new";
       await api.post(`/orders/${orderId}/status`, { status: statusCode });
 
-      // Успех: редирект или уведомление
-      console.log("Order created with ID:", orderId);
+      // Успех
+      console.log("Заказ создан:", orderId, "Файлы:", uploadedFileIds, fileErrors || "без ошибок");
       form.reset();
       setFiles([]);
-      // Можно добавить toast или navigate
-    } catch (error) {
-      console.error("Error creating order:", error);
-      // Обработать ошибку, показать alert
+      // toast.success("Заказ создан!");
+    } catch (error: any) {
+      console.error("Ошибка:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Неизвестная ошибка";
+      // toast.error(msg);
     } finally {
       setIsSubmitting(false);
       setSubmitType(null);
@@ -143,8 +155,8 @@ export default function NewOrderForm() {
                 </FormItem>
               )}
             />
-            <div className="space-y-4">
 
+            <div className="space-y-4">
               <Dropzone
                 maxSize={20 * 1024 * 1024}
                 multiple
@@ -153,7 +165,7 @@ export default function NewOrderForm() {
               >
                 <div className="flex flex-col items-center space-y-2 text-center">
                   <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <UploadIcon size={16}/>
+                    <UploadIcon size={16} />
                   </div>
                   <p className="font-medium">Перетащите файлы или кликните для выбора</p>
                   <p className="w-full text-wrap text-muted-foreground text-xs">
@@ -186,6 +198,7 @@ export default function NewOrderForm() {
                 </div>
               )}
             </div>
+
             <div className="flex justify-end space-x-4">
               <Button
                 type="submit"

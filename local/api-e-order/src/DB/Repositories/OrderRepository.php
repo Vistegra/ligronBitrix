@@ -18,8 +18,8 @@ final class OrderRepository
         'status_code' => 'status.code',
         'status_name' => 'status.name',
         'status_color' => 'status.color',
-        'parent_number' => 'parent.number',
-        'parent_id' => 'parent.id',
+        'parent_order_number' => 'parent.number',
+        'parent_order_id' => 'parent.id',
       ],
       'order' => ['id' => 'desc'],
       'limit' => self::DEFAULT_LIMIT,
@@ -39,17 +39,17 @@ final class OrderRepository
 
   /**
    * Создать заказ
-   * @throws \Exception
    */
-  public static function create(array $data): ?int
+  public static function create(array $data): ?array
   {
     if (empty($data['name'])) {
-      throw new \InvalidArgumentException('name обязательно');
+      throw new \InvalidArgumentException('Не указано имя заказа');
     }
 
     $result = OrderTable::add($data);
     if (!$result->isSuccess()) {
-      return null;
+      $errors = $result->getErrorMessages();
+      throw new \RuntimeException('Ошибка создания заказа: ' . implode(', ', $errors));
     }
 
     $orderId = $result->getId();
@@ -57,7 +57,7 @@ final class OrderRepository
 
     OrderEvent::onCreated($orderId, $order);
 
-    return $orderId;
+    return $order;
   }
 
   /**

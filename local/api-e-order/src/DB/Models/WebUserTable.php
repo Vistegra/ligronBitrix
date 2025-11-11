@@ -7,6 +7,7 @@ namespace OrderApi\DB\Models;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 /**
  * Таблица user в SQL Server (база WebCalcNew)
@@ -31,24 +32,13 @@ class WebUserTable extends DataManager
    */
   public static function getMap(): array
   {
-    // Универсальная очистка строк (убирает \r\n\t\0)
-    $clean = function () {
-      return [
-        function ($value) {
-          if (!is_string($value)) {
-
-            return $value;
-          }
-          return trim(preg_replace('/[\r\n\t\x0B\0]+/', '', $value));
-        }
-      ];
-    };
 
     return [
       new Fields\IntegerField('id', [
         'primary'      => true,
         'autocomplete' => true,
         'unsigned'     => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\BooleanField('active', [
@@ -59,14 +49,14 @@ class WebUserTable extends DataManager
       new Fields\StringField('code_user', [
         'size'     => 10,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       // ФИО
       new Fields\StringField('name', [
         'size'     => 50,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       // manager: 1 = менеджер, 0 = менеджер
@@ -79,26 +69,26 @@ class WebUserTable extends DataManager
       new Fields\StringField('username', [
         'size'     => 50,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       // Пароль (хранится в открытом виде)
       new Fields\StringField('password', [
         'size'     => 50,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       new Fields\StringField('email', [
         'size'     => 50,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
 
       new Fields\StringField('phone', [
         'size'     => 15,
         'nullable' => true,
-        'fetch_data_modification' => $clean,
+        'fetch_data_modification' => F::cleanString(),
       ]),
     ];
   }

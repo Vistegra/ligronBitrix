@@ -38,7 +38,8 @@ class AuthService
   {
     try {
       $decoded = JWT::decode($token, new Key(ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO));
-      $payloadArray = (array)$decoded;
+      $payload = JwtPayload::fromStdClass($decoded);
+      $payloadArray = $payload->toArray();
 
       // Проверяем структуру payload
       if (!isset($payloadArray['user']) || !is_array($payloadArray['user'])) {

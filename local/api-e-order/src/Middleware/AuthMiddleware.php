@@ -2,10 +2,9 @@
 
 namespace OrderApi\Middleware;
 
-
+use DI\Container;
 use OrderApi\DTO\Auth\UserDTO;
 use OrderApi\Services\Auth\AuthService;
-
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -14,27 +13,32 @@ use Slim\Psr7\Response;
 
 final class AuthMiddleware implements MiddlewareInterface
 {
+  public function __construct(
+    private readonly Container $container
+  ) {}
 
   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
   {
     $user = $this->getUserFromRequest($request);
 
+    global $logger;
+    $logger->warning('AuthMiddleware user', $user?->toArray() ?? []);
+
     if (!$user) {
       return $this->createUnauthorizedResponse();
     }
+    // Подключаем пользователя в DI
+    $this->container->set(UserDTO::class, $user);
 
+    // Подключаем пользователя в Request
     return $handler->handle($request->withAttribute('user', $user));
   }
 
   private function getUserFromRequest(ServerRequestInterface $request): ?UserDTO
   {
-    $authHeader = $request->getHeaderLine('Authorization');
+    // Используем X-Auth-Token
+    $token = $request->getHeaderLine('X-Auth-Token');
 
-    if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-      return null;
-    }
-
-    $token = $matches[1];
     return AuthService::getUserFromToken($token);
   }
 
@@ -43,7 +47,7 @@ final class AuthMiddleware implements MiddlewareInterface
     $response = new Response(401);
     $response->getBody()->write(json_encode([
       'status' => 'error',
-      'message' => 'Unauthorized'
+      'message' => 'Unauthorized: Missing or invalid token'
     ], JSON_UNESCAPED_UNICODE));
 
     return $response->withHeader('Content-Type', 'application/json');

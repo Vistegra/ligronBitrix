@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_BASE } from "./constants";
+import {useAuthStore} from "@/store/authStore.ts";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -7,12 +8,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = useAuthStore.getState().token;
+
+  if (token) {
+    config.headers['X-Auth-Token'] = token;
+  }
   return config;
 });
-
-api.interceptors.response.use(
+/*api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
@@ -21,6 +24,6 @@ api.interceptors.response.use(
     }
     return Promise.reject(err);
   }
-);
+);*/
 
 export default api;

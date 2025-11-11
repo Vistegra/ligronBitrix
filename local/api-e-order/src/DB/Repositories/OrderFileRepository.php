@@ -20,7 +20,8 @@ final class OrderFileRepository
     ?string $mime = null,
     int $uploadedBy = 1,
     int $uploadedById = 0
-  ): ?int {
+  ): ?int
+  {
     $result = OrderFileTable::add([
       'order_id' => $orderId,
       'name' => $name,

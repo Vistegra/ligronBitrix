@@ -1,59 +1,99 @@
 <?php
-
 declare(strict_types=1);
 
 namespace OrderApi\Services\Order;
 
+use Bitrix\Bizproc\Api\Response\Error;
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\OrderTable;
 use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\DB\Repositories\OrderRepository;
 use OrderApi\DB\Repositories\OrderStatusRepository;
-use OrderApi\Services\Auth\AuthService;
+use OrderApi\DTO\Auth\UserDTO;
+use OrderApi\DTO\Order\FileUploadResult;
+use OrderApi\DTO\Order\OrderCreateResult;
+use Psr\Http\Message\UploadedFileInterface;
 
-class OrderService
+/**
+ * Сервис для работы с заказами
+ */
+final class OrderService
 {
-  private array $user;
+  public function __construct(
+    private readonly UserDTO $user
+  ) {}
 
-  public function __construct(array $user)
+  /**
+   * Создать заказ с возможной загрузкой файлов
+   *
+   * @param array $data Поля заказа (name, comment, etc.)
+   * @param array $uploadedFiles Массив UploadedFileInterface (может быть пустым)
+   *
+   * @return OrderCreateResult Результат создания заказа и загрузки файлов
+   */
+  public function createOrder(array $data, array $uploadedFiles = []): OrderCreateResult
   {
-    $this->user = $user;
-  }
+    global $logger;
+    $logger->warning('$this->user', (array)$this->user);
+    $data['created_by_id'] = $this->user->id;
 
-  private function isDealer(): bool
-  {
-    return $this->user['provider'] === ProviderType::DEALER;
-  }
-
-  private function isManager(): bool
-  {
-    return $this->user['provider'] === ProviderType::LIGRON && $this->user['role'] === UserRole::MANAGER;
-  }
-
-  private function isOfficeManager(): bool
-  {
-    return $this->user['provider'] === ProviderType::LIGRON && $this->user['role'] === UserRole::OFFICE_MANAGER;
-  }
-
-  public function createOrder(array $data): ?int
-  {
-    $data['created_by_id'] = $this->user['sub'] ?? $this->user['id'];
-
-    if ($this->isDealer()) {
+    // Определяем тип создателя и заполняем связи
+    if ($this->user->isDealer()) {
       $data['created_by'] = OrderTable::CREATED_BY_DEALER;
-      $data['dealer_prefix'] = $this->user['dealer_prefix'];
-      $data['dealer_user_id'] = $this->user['sub'];
-    } elseif ($this->isManager() || $this->isOfficeManager()) {
+      $data['dealer_prefix'] = $this->user->dealer_prefix;
+      $data['dealer_user_id'] = $this->user->id;
+    } elseif ($this->user->isManager() || $this->user->isOfficeManager()) { //ToDo кто может создавать заказ за пользователя дилера?
+      throw new \Error('Функционал не реализован'); //ToDo
       $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
-      $data['manager_id'] = $this->user['sub'];
+      $data['manager_id'] = $this->user->id;
+      $data['dealer_prefix'] = null; //ToDo get subordinate dealer
+      $data['dealer_user_id'] = null; //ToDo get subordinate dealer user
     } else {
-      throw new \Exception('Invalid user role');
+      return new OrderCreateResult(
+        success: false,
+        orderError: 'Не указана роль пользователя'
+      );
     }
 
-    return OrderRepository::create($data);
+    $logger->info('$data', $data);
+
+    // Создаём заказ
+    try {
+      $order = OrderRepository::create($data);
+
+    } catch (\Throwable $e) {
+      return new OrderCreateResult(
+        success: false,
+        orderError: 'Ошибка создания заказа в базе данных: ' . $e->getMessage()
+      );
+    }
+
+   /* if (!$orderId) {
+      return new OrderCreateResult(
+        success: false,
+        orderError: 'Ошибка создания заказа в базе данных'
+      );
+    }*/
+
+    // Обрабатываем файлы (если есть)
+    $fileResults = [];
+    if (!empty($uploadedFiles)) {
+      $fileResults = $this->uploadFilesToOrder($order, $uploadedFiles);
+    }
+
+    return new OrderCreateResult(
+      success: true,
+      orderId: (int)$order['id'],
+      fileResults: $fileResults
+    );
   }
 
+  /**
+   * Получить заказ по ID с проверкой доступа
+   *
+   * @throws \Exception если доступ запрещён
+   */
   public function getOrder(int $id): ?array
   {
     $order = OrderRepository::getById($id);
@@ -61,72 +101,97 @@ class OrderService
       return null;
     }
 
-    if ($this->isDealer() && ($order['dealer_prefix'] !== $this->user['dealer_prefix'] || $order['dealer_user_id'] !== $this->user['sub'])) {
-      throw new \Exception('Access denied', 403);
-    } elseif ($this->isManager() || $this->isOfficeManager()) {
-      // Менеджеры могут просматривать все или, при необходимости, фильтровать
-    } else {
-      throw new \Exception('Access denied', 403);
+    if ($this->user->isDealer()) {
+      if (
+        $order['dealer_prefix'] !== $this->user->dealer_prefix ||
+        $order['dealer_user_id'] !== $this->user->id
+      ) {
+        global $logger;
+        $logger->warning('Acce', [$order, $this->user->toArray()]);
+        throw new \Exception('Access denied', 403);
+      }
     }
+    // Менеджеры видят все заказы
 
     return $order;
   }
 
+  /**
+   * Обновить заказ
+   */
   public function updateOrder(int $id, array $data): bool
   {
-    $order = $this->getOrder($id); // Проверяет доступ
-    if (!$order) {
-      return false;
-    }
-
+    $this->getOrder($id); // проверка доступа
     return OrderRepository::update($id, $data);
   }
 
+  /**
+   * Удалить заказ
+   */
   public function deleteOrder(int $id): bool
   {
-    $order = $this->getOrder($id); // Проверяет доступ
-    if (!$order) {
-      return false;
-    }
-
+    //ToDo permission
+    $this->getOrder($id);
     return OrderRepository::delete($id);
   }
 
+  /**
+   * Сменить статус заказа
+   */
   public function changeStatus(int $id, string $newStatusCode, ?string $comment = null): bool
   {
-    $order = $this->getOrder($id); // Проверяет доступ
-    if (!$order) {
-      return false;
-    }
-
-    // При необходимости проводятся дополнительные проверки ролей, например, только менеджеры могут переходить на определенные статусы
+    //ToDo permission
+    $this->getOrder($id);
     return OrderRepository::changeStatus($id, $newStatusCode, $comment);
   }
 
-  public function listOrders(array $filter = [], int $limit = 20, int $offset = 0): array
+  /**
+   * Список заказов пользователя
+   */
+  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0): array
   {
-    if ($this->isDealer()) {
-      return OrderRepository::getByDealer($this->user['dealer_prefix'], $this->user['sub'], $limit, $offset);
-    } elseif ($this->isManager() || $this->isOfficeManager()) {
-      return OrderRepository::getByManager($this->user['sub'], $limit, $offset);
-    } else {
-      throw new \Exception('Access denied', 403);
-    }
-  }
-
-  public function addFile(int $orderId, string $name, string $path, ?int $size = null, ?string $mime = null): ?int
-  {
-    $order = $this->getOrder($orderId); // Проверяет доступ
-    if (!$order) {
-      return null;
+    if ($this->user->isDealer()) {
+      return OrderRepository::getByDealer(
+        $this->user->dealer_prefix,
+        $this->user->id,
+        $limit,
+        $offset
+      );
     }
 
-    $uploadedBy = $this->isDealer() ? 1 : 2;
-    $uploadedById = $this->user['sub'];
+    if ($this->user->isLigronStaff()) {
+      return OrderRepository::getByManager($this->user->id, $limit, $offset);
+    }
 
-    return OrderFileRepository::add($orderId, $name, $path, $size, $mime, (int)$uploadedBy, $uploadedById);
+    throw new \Exception('Access denied', 403);
   }
 
+  /**
+   * Добавить файл к заказу (отдельный вызов)
+   */
+  public function addFile(
+    int $orderId,
+    string $name,
+    string $path,
+    ?int $size = null,
+    ?string $mime = null
+  ): ?int {
+    $this->getOrder($orderId);
+    $uploadedBy = $this->user->isDealer() ? 1 : 2;
+    return OrderFileRepository::add(
+      $orderId,
+      $name,
+      $path,
+      $size,
+      $mime,
+      $uploadedBy,
+      $this->user->id
+    );
+  }
+
+  /**
+   * Удалить файл
+   */
   public function deleteFile(int $fileId): bool
   {
     $file = OrderFileRepository::getById($fileId);
@@ -134,37 +199,37 @@ class OrderService
       return false;
     }
 
-    $order = $this->getOrder($file['order_id']); // Проверяет доступ
-    if (!$order) {
-      return false;
-    }
-
+    $this->getOrder($file['order_id']);
     return OrderFileRepository::delete($fileId);
   }
 
   /**
-   * @throws \Exception
+   * Загрузить один файл (вызывается из uploadFilesToOrder)
+   *
+   * @throws \Exception при ошибке
    */
-  public function uploadFile(int $orderId, \Psr\Http\Message\UploadedFileInterface $file): ?int
+  private function uploadFileToOrder(array $order, UploadedFileInterface $file): ?int
   {
-    $order = $this->getOrder($orderId);
-    if (!$order) {
-      return null;
+    $dealerUserId = $order['dealer_user_id'] ?? 'unknown';
+    $dealerPrefix = $order['dealer_prefix'] ?? 'shared';
+    $orderId = $order['id'];
+
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/upload/e-order/files/{$dealerPrefix}/{$dealerUserId}/{$orderId}/";
+
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+      throw new \Exception("Не удалось создать директорию: {$uploadDir}");
     }
 
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/orders/{$orderId}/";
-    if (!is_dir($uploadDir)) {
-      mkdir($uploadDir, 0755, true);
-    }
-
-    $filename = $file->getClientFilename();
+    $filename = $this->sanitizeFilename($file->getClientFilename(), $uploadDir);
     $path = $uploadDir . $filename;
 
     try {
       $file->moveTo($path);
-    } catch (\Exception $e) {
-      throw new \Exception('Failed to save file', 500);
+    } catch (\Throwable $e) {
+      throw new \Exception("Не удалось переместить файл: " . $e->getMessage());
     }
+
+    $uploadedBy = $this->user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
 
     return OrderFileRepository::add(
       orderId: $orderId,
@@ -172,11 +237,81 @@ class OrderService
       path: $path,
       size: $file->getSize(),
       mime: $file->getClientMediaType(),
-      uploadedBy: $this->isDealer() ? 1 : 2,
-      uploadedById: $this->user['sub']
+      uploadedBy: $uploadedBy,
+      uploadedById: $this->user->id
     );
   }
 
+
+  /**
+   * Обработать все загруженные файлы
+   *
+   * @param array $order
+   * @param UploadedFileInterface[] $files
+   * @return array
+   */
+  public function uploadFilesToOrder(array $order, array $files): array
+  {
+    $results = [];
+
+    foreach ($files as $index => $file) {
+      $originalName = $file->getClientFilename() ?: 'unknown_file_' . $index;
+
+      // PHP-ошибки загрузки
+      if ($file->getError() !== UPLOAD_ERR_OK) {
+        $results[] = new FileUploadResult(
+          fileId: null,
+          originalName: $originalName,
+          error: 'Ошибка загрузки файла ' . $originalName . ', код ошибки: ' . $file->getError()
+        );
+        continue;
+      }
+
+      // Попытка загрузки
+      try {
+        $fileId = $this->uploadFileToOrder($order, $file);
+        $results[] = new FileUploadResult(
+          fileId: $fileId,
+          originalName: $originalName
+        );
+      } catch (\Throwable $e) {
+        $results[] = new FileUploadResult(
+          fileId: null,
+          originalName: $originalName,
+          error: "Ошибка загрузки файла: " . $e->getMessage()
+        );
+      }
+    }
+
+    return $results;
+  }
+
+
+  /**
+   * Санитайз имени файла + избежание коллизий
+   */
+  private function sanitizeFilename(string $original, string $dir): string
+  {
+    $original = basename($original);
+    $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $original);
+
+    $info = pathinfo($sanitized);
+    $base = $info['filename'];
+    $ext = isset($info['extension']) ? '.' . $info['extension'] : '';
+    $counter = 1;
+    $candidate = $sanitized;
+
+    while (file_exists($dir . $candidate)) {
+      $candidate = "{$base}_{$counter}{$ext}";
+      $counter++;
+    }
+
+    return $candidate;
+  }
+
+  /**
+   * Получить все статусы заказов
+   */
   public function getStatuses(): array
   {
     return OrderStatusRepository::getAll();

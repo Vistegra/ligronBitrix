@@ -7,6 +7,7 @@ namespace OrderApi\DB\Models;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 abstract class DealerUserTable extends DataManager
 {
@@ -32,13 +33,14 @@ abstract class DealerUserTable extends DataManager
       new Fields\IntegerField('ID', [
         'primary' => true,
         'autocomplete' => true,
-        'unsigned' => true
+        'unsigned' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
-      new Fields\IntegerField('permission_id', [
+     /* new Fields\IntegerField('permission_id', [
         'required' => true,
         'unsigned' => true
-      ]),
+      ]),*/
 
       new Fields\StringField('login', [
         'required' => true,
@@ -46,6 +48,7 @@ abstract class DealerUserTable extends DataManager
         'character_set' => 'utf8'
       ]),
 
+      // Пароль (хешированный)
       new Fields\StringField('password', [
         'required' => true,
         'size' => 60,
@@ -65,9 +68,7 @@ abstract class DealerUserTable extends DataManager
       ]),
 
       new Fields\DatetimeField('register_date', [
-        'default_value' => function() {
-          return new \Bitrix\Main\Type\DateTime();
-        }
+        'default_value' => F::now(),
       ]),
 
       new Fields\IntegerField('activity', [
@@ -75,18 +76,18 @@ abstract class DealerUserTable extends DataManager
         'size' => 1
       ]),
 
-      new Fields\StringField('customization', [
+      /*new Fields\StringField('customization', [
         'nullable' => true,
         'size' => 1000,
         'default_value' => '{}',
         'character_set' => 'utf8'
-      ]),
+      ]),*/
 
-      new Fields\StringField('hash', [
+      /*new Fields\StringField('hash', [
         'nullable' => true,
         'size' => 60,
         'character_set' => 'utf8'
-      ]),
+      ]),*/
     ];
   }
 

@@ -9,6 +9,9 @@ require __DIR__ . '/vendor/autoload.php';
 $logPath = __DIR__ . '/storage/logs/api.log';
 @mkdir(dirname($logPath), 0755, true);
 
+$logger = new \Monolog\Logger('api');
+$logger->pushHandler(new \Monolog\Handler\StreamHandler($logPath));
+
 // 1. Исключения
 set_exception_handler(function (Throwable $e) use ($logPath) {
   $log = new \Monolog\Logger('api');
@@ -50,8 +53,10 @@ register_shutdown_function(function () use ($logPath) {
   }
 });
 
+use OrderApi\DTO\Auth\UserDTO;
 use DI\Container;
 use OrderApi\Config\ApiConfig;
+use OrderApi\Services\Order\OrderService;
 use Slim\Factory\AppFactory;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -60,10 +65,18 @@ use OrderApi\Middleware\{GlobalErrorMiddleware,
   JsonResponseMiddleware,
   AuthMiddleware,
   TrailingSlashMiddleware};
-use OrderApi\Controllers\{AuthController};
+use OrderApi\Controllers\{AuthController, OrderController};
 
 // DI
+
 $container = new Container();
+
+
+/*$container->set(UserDTO::class, function () {
+  return null;
+});*/
+
+
 $container->set('logs', $logPath);
 
 AppFactory::setContainer($container);
@@ -93,7 +106,6 @@ $app->add(function ($request, $handler) use ($logPath) {
 
 
 $app->post('/auth/login', AuthController::class . ':login');
-$app->get('/auth/logout', AuthController::class . ':logout');
 
 $app->get('', function ($request, $response) {
   $payload = json_encode(['status' => 'success', 'message' => 'Api is working!'], JSON_UNESCAPED_UNICODE);
@@ -103,13 +115,20 @@ $app->get('', function ($request, $response) {
 
 
 $app->group('', function (RouteCollectorProxy $group) {
-  $group->get('/orders', function ($request, $response) {
-    $payload = json_encode(['status' => 'success', 'message' => 'orders!'], JSON_UNESCAPED_UNICODE);
-    $response->getBody()->write($payload);
-    return $response;
-  });
+
+  $group->post('/orders', OrderController::class . ':create');                    // Создать заказ + файлы
+  $group->get('/orders', OrderController::class . ':getAll');                     // Список заказов
+  $group->get('/orders/{id}', OrderController::class . ':get');                   // Получить заказ
+  $group->put('/orders/{id}', OrderController::class . ':update');                // Обновить заказ
+  $group->delete('/orders/{id}', OrderController::class . ':delete');             // Удалить заказ
+
+  $group->post('/orders/{id}/status', OrderController::class . ':changeStatus');  // Сменить статус
+
+  $group->post('/orders/{id}/files', OrderController::class . ':uploadFiles');    // Загрузить файлы к заказу
+  $group->delete('/orders/{id}/files/{fileId}', OrderController::class . ':deleteFile'); // Удалить файл
+
 })->add(AuthMiddleware::class);
 
-
+//$app->get('/orders/statuses', OrderController::class . ':getStatuses');
 
 $app->run();

@@ -88,23 +88,23 @@ CREATE TABLE vs_e_order (
 -- ==============================================================
 
 -- 3.1 После добавления дочернего заказа
-CREATE TRIGGER trg_vs_e_order_after_insert
-    AFTER INSERT ON vs_e_order
-    FOR EACH ROW
-    UPDATE vs_e_order
-    SET CHILDREN_COUNT = CHILDREN_COUNT + 1
-    WHERE ID = NEW.PARENT_ID
-      AND NEW.PARENT_ID IS NOT NULL
+-- CREATE TRIGGER trg_vs_e_order_after_insert
+--     AFTER INSERT ON vs_e_order
+--     FOR EACH ROW
+--     UPDATE vs_e_order
+--     SET CHILDREN_COUNT = CHILDREN_COUNT + 1
+--     WHERE ID = NEW.PARENT_ID
+--       AND NEW.PARENT_ID IS NOT NULL
 
 -- 3.2 После удаления дочернего заказа
-CREATE TRIGGER trg_vs_e_order_after_delete
-    AFTER DELETE ON vs_e_order
-    FOR EACH ROW
-    UPDATE vs_e_order
-    SET CHILDREN_COUNT = CHILDREN_COUNT - 1
-    WHERE ID = OLD.PARENT_ID
-      AND OLD.PARENT_ID IS NOT NULL
-      AND CHILDREN_COUNT > 0
+-- CREATE TRIGGER trg_vs_e_order_after_delete
+--     AFTER DELETE ON vs_e_order
+--     FOR EACH ROW
+--     UPDATE vs_e_order
+--     SET CHILDREN_COUNT = CHILDREN_COUNT - 1
+--     WHERE ID = OLD.PARENT_ID
+--       AND OLD.PARENT_ID IS NOT NULL
+--       AND CHILDREN_COUNT > 0
 
 
 -- ==============================================================

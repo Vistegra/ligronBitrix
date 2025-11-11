@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace OrderApi\DTO\Auth;
 
-readonly class UserDTO
+use OrderApi\Constants\ProviderType;
+use OrderApi\Constants\UserRole;
+
+final readonly class UserDTO
 {
   public function __construct(
     public int     $id,
@@ -17,6 +20,26 @@ readonly class UserDTO
     public ?int    $dealer_id = null,
     public ?string $dealer_prefix = null
   ) {}
+
+  public function isDealer(): bool
+  {
+    return $this->provider === ProviderType::DEALER;
+  }
+
+  public function isManager(): bool
+  {
+    return $this->provider === ProviderType::LIGRON && $this->role === UserRole::MANAGER;
+  }
+
+  public function isOfficeManager(): bool
+  {
+    return $this->provider === ProviderType::LIGRON && $this->role === UserRole::OFFICE_MANAGER;
+  }
+
+  public function isLigronStaff(): bool
+  {
+    return $this->provider === ProviderType::LIGRON;
+  }
 
   public function toArray(): array
   {
@@ -47,4 +70,19 @@ readonly class UserDTO
       dealer_prefix: $data['dealer_prefix'] ?? null
     );
   }
+  public static function fromStdClass(\stdClass $obj): self
+  {
+    return new self(
+      id: (int)$obj->id,
+      login: $obj->login,
+      name: $obj->name,
+      provider: $obj->provider,
+      role: $obj->role,
+      email: $obj->email ?? null,
+      phone: $obj->phone ?? null,
+      dealer_id: isset($obj->dealer_id) ? (int)$obj->dealer_id : null,
+      dealer_prefix: $obj->dealer_prefix ?? null
+    );
+  }
+
 }

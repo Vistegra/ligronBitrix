@@ -9,7 +9,7 @@ use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Type\DateTime;
-
+use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 class OrderTable extends DataManager
 {
@@ -33,6 +33,7 @@ class OrderTable extends DataManager
       new Fields\IntegerField('id', [
         'primary' => true,
         'autocomplete' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\StringField('number', [
@@ -64,35 +65,35 @@ class OrderTable extends DataManager
       ),
       new Fields\IntegerField('parent_id', [
         'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
+      //Роль создателя
       new Fields\IntegerField('created_by', [
         'nullable' => true,
-        'validation' => function () {
-          return [
-            new \Bitrix\Main\ORM\Fields\Validators\RangeValidator(
-              1, 2, 'created_by должен быть 1 (dealer) или 2 (manager)'
-            )
-          ];
-        }
+        'fetch_data_modification' => F::toInt(),
       ]),
 
+      //ИД пользователя
       new Fields\IntegerField('created_by_id', [
         'required' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
-      // Привязки
       new Fields\StringField('dealer_prefix', [
         'size' => 10,
         'nullable' => true,
       ]),
+
       new Fields\IntegerField('dealer_user_id', [
         'nullable' => true,
-      ]),
-      new Fields\IntegerField('manager_id', [
-        'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
+      new Fields\IntegerField('manager_id', [
+        'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
+      ]),
 
       new Fields\IntegerField('fabrication', [
         'nullable' => true,
@@ -109,46 +110,24 @@ class OrderTable extends DataManager
 
       new Fields\IntegerField('children_count', [
         'default_value' => 0,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       // История статусов (JSON)
       new Fields\TextField('status_history', [
         'nullable' => true,
         'default_value' => '[]',
-        'save_data_modification' => function () {
-          return [
-            function ($value) {
-              if (is_array($value)) {
-                return json_encode($value, JSON_UNESCAPED_UNICODE);
-              }
-              return $value;
-            }
-          ];
-        },
-        'fetch_data_modification' => function () {
-          return [
-            function ($value) {
-              if ($value === null || $value === '') {
-                return [];
-              }
-              $decoded = json_decode($value, true);
-              return is_array($decoded) ? $decoded : [];
-            }
-          ];
-        }
+        'save_data_modification' => F::toJsonEncode(),
+        'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
       // Системные
       new Fields\DatetimeField('created_at', [
-        'default_value' => function () {
-          return new DateTime();
-        },
+        'default_value' => F::now(),
       ]),
 
       new Fields\DatetimeField('updated_at', [
-        'default_value' => function () {
-          return new DateTime();
-        },
+        'default_value' => F::now(),
       ]),
 
     ];
