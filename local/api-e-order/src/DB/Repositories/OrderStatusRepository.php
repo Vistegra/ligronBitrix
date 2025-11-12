@@ -61,4 +61,18 @@ final class OrderStatusRepository
     return $result->fetch() ?: null;
   }
 
+
+  public static function getDefaultStatus(): array
+  {
+    $result = OrderStatusTable::getList([
+      'select' => ['id', 'name', 'code', 'color'],
+      'limit' => 1,
+      'order' => ['sort' => 'asc'],
+      'cache' => ['ttl' => self::CACHE_TTL],
+    ]);
+
+    return $result->fetch() ?: [];
+  }
+
+
 }

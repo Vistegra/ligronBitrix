@@ -101,7 +101,7 @@ class OrderTable extends DataManager
       ]),
 
       new Fields\DateField('ready_date', [
-        'nullable' => true,
+        'nullable' => true, //ToDo add fetch format
       ]),
 
       new Fields\TextField('comment', [
@@ -124,10 +124,12 @@ class OrderTable extends DataManager
       // Системные
       new Fields\DatetimeField('created_at', [
         'default_value' => F::now(),
+        'fetch_data_modification' => F::toTimestamp(),
       ]),
 
       new Fields\DatetimeField('updated_at', [
         'default_value' => F::now(),
+        'fetch_data_modification' => F::toTimestamp(),
       ]),
 
     ];

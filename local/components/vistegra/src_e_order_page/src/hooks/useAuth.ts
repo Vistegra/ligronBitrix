@@ -3,7 +3,7 @@ import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/api/client.ts";
-import {PAGE} from "@/api/constants.ts";
+import {ENDPOINT, PAGE} from "@/api/constants.ts";
 import type {ProviderType} from "@/types/user";
 
 
@@ -13,7 +13,7 @@ interface LoginCredentials {
   providerType: ProviderType;
 }
 
-interface LoginResult {
+export interface LoginResult {
   success: boolean;
   error?: string;
 }
@@ -36,7 +36,7 @@ export function useAuth() {
     setError(null);
 
     try {
-      const response = await api.post("/auth/login/", credentials);
+      const response = await api.post(ENDPOINT.AUTH_LOGIN, credentials);
       const responseData = response.data?.data;
 
       if (!responseData?.user || !responseData?.token) {

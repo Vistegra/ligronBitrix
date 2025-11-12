@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2, Trash2, UploadIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {useEffect, useState} from "react";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {Loader2, Trash2, UploadIcon, AlertCircle} from "lucide-react";
 
 import {
   Form,
@@ -15,10 +14,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {
   Item,
   ItemActions,
@@ -26,9 +25,11 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-import { Dropzone } from "@/components/ui/shadcn-io/dropzone";
+import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
-import api from "@/api/client";
+import {useCreateOrder} from "@/hooks/useCreateOrder";
+import {toast} from "sonner";
 
 // Валидация
 const formSchema = z.object({
@@ -40,9 +41,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function NewOrderForm() {
   const [files, setFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitType, setSubmitType] = useState<"draft" | "new" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const {createOrder, isSubmitting, error, success, createdOrder, reset, clearError} = useCreateOrder();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -51,6 +50,16 @@ export default function NewOrderForm() {
       comment: "",
     },
   });
+
+  useEffect(() => {
+    if (success && createdOrder) {
+      form.reset();
+      setFiles([]);
+      // Автосброс состояния хука через 4 сек
+      const timer = setTimeout(() => reset(), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, createdOrder]);
 
   const onDrop = (acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -61,59 +70,31 @@ export default function NewOrderForm() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!submitType) return;
-    setIsSubmitting(true);
-    setError(null); // Очищаем ошибку перед отправкой
-
-    const formData = new FormData();
-    formData.append("name", data.name);
-    if (data.comment) formData.append("comment", data.comment);
-    files.forEach((file) => formData.append("file[]", file));
+    clearError();
 
     try {
-      const endpoint = "/orders";
-      const response = await api.post(endpoint, formData);
+      const result = await createOrder({
+        name: data.name,
+        comment: data.comment || undefined,
+        files: files.length > 0 ? files : undefined,
+      });
 
-      const result = response.data?.data;
+      // Успех или частичный успех
+      if (result.order) {
+        const fileErrors = result.files
+          ?.filter((f) => f.error)
+          .map((f) => `${f.original_name}: ${f.error}`)
+          .join("; ");
 
-      if (!result?.order) {
-        throw new Error(result?.message || "Не удалось создать заказ");
+        if (fileErrors) {
+           toast.warning(`Заказ создан, но есть ошибки с файлами: ${fileErrors}`);
+        } else {
+           toast.success("Заказ успешно создан!");
+        }
       }
-
-      const orderId = result.order.id;
-      const fileResults = result.files || [];
-
-      // Успешно загруженные файлы
-      const uploadedFileIds = fileResults
-        .filter((f: any) => f.file_id)
-        .map((f: any) => f.file_id);
-
-      // Ошибки по файлам
-      const fileErrors = fileResults
-        .filter((f: any) => f.error)
-        .map((f: any) => `${f.original_name}: ${f.error}`)
-        .join("; ");
-
-      // Устанавливаем статус
-      const statusCode = submitType === "draft" ? "draft" : "new";
-      await api.post(`/orders/${orderId}/status`, { status: statusCode });
-
-      // Успех
-      console.log("Заказ создан:", orderId, "Файлы:", uploadedFileIds, fileErrors || "без ошибок");
-      form.reset();
-      setFiles([]);
-      // toast.success("Заказ создан!");
-    } catch (error: any) {
-      console.error("Ошибка:", error);
-      const msg =
-        error.response?.data?.message ||
-        error.message ||
-        "Неизвестная ошибка";
-      setError(msg); // Устанавливаем ошибку
-      // toast.error(msg);
-    } finally {
-      setIsSubmitting(false);
-      setSubmitType(null);
+    } catch (err) {
+      // @ts-ignore
+      toast.error(err.message);
     }
   };
 
@@ -128,13 +109,13 @@ export default function NewOrderForm() {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Название заказа</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите название" {...field} />
+                    <Input placeholder="Введите название" {...field} disabled={isSubmitting}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -142,7 +123,7 @@ export default function NewOrderForm() {
             <FormField
               control={form.control}
               name="comment"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Описание заказа</FormLabel>
                   <FormControl>
@@ -150,9 +131,10 @@ export default function NewOrderForm() {
                       placeholder="Введите описание"
                       className="min-h-[150px]"
                       {...field}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -162,15 +144,16 @@ export default function NewOrderForm() {
                 maxSize={20 * 1024 * 1024}
                 multiple
                 onDrop={onDrop}
-                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer"
+                disabled={isSubmitting}
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
               >
-                <div className="flex flex-col items-center space-y-2 text-center">
+                <div className="flex flex-col items-center space-y-2">
                   <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <UploadIcon size={16} />
+                    <UploadIcon size={16}/>
                   </div>
                   <p className="font-medium">Перетащите файлы или кликните для выбора</p>
-                  <p className="w-full text-wrap text-muted-foreground text-xs">
-                    Поддерживаются любые типы файлов до 20Mb
+                  <p className="text-xs text-muted-foreground">
+                    До 20 МБ, любые типы файлов
                   </p>
                 </div>
               </Dropzone>
@@ -180,18 +163,20 @@ export default function NewOrderForm() {
                   {files.map((file, index) => (
                     <Item key={index} variant="outline" size="sm">
                       <ItemContent>
-                        <ItemTitle>{file.name}</ItemTitle>
+                        <ItemTitle className="text-sm">{file.name}</ItemTitle>
                         <ItemDescription className="text-xs">
-                          {Math.round(file.size / 1024)} KB
+                          {(file.size / 1024).toFixed(0)} КБ
                         </ItemDescription>
                       </ItemContent>
                       <ItemActions>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => removeFile(index)}
+                          disabled={isSubmitting}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4"/>
                         </Button>
                       </ItemActions>
                     </Item>
@@ -200,22 +185,53 @@ export default function NewOrderForm() {
               )}
             </div>
 
-            {error && ( // Отображение ошибки с сервера
+            {/* Глобальная ошибка */}
+            {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4"/>
+                <AlertTitle>Ошибка</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
+            {/* Ошибки по файлам при partial success */}
+            {success && createdOrder?.files && createdOrder.files.some(f => f.error) && (
+              <Alert variant="default" className="border-orange-500 bg-orange-50">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Частичный успех</AlertTitle>
+                <AlertDescription>
+                  Заказ создан, но не все файлы загружены:
+                  <ul className="mt-2 list-disc list-inside text-sm">
+                    {createdOrder.files
+                      .filter(f => f.error)
+                      .map((f, i) => (
+                        <li key={i}>
+                          <strong>{f.original_name}</strong>: {f.error}
+                        </li>
+                      ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Успешные файлы */}
+            {success && createdOrder?.files && createdOrder.files.some(f => f.file_id) && (
+              <Alert variant="default" className="border-green-500 bg-green-50">
+                <AlertTitle>Файлы загружены</AlertTitle>
+                <AlertDescription>
+                  Успешно загружено файлов: {createdOrder.files.filter(f => f.file_id).length}
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="flex justify-end space-x-4">
               <Button
                 type="submit"
                 variant="outline"
-                disabled={isSubmitting}
-                onClick={() => setSubmitType("draft")}
+                disabled={isSubmitting || success}
               >
-                {isSubmitting && submitType === "draft" ? (
+                {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                     Сохранение...
                   </>
                 ) : (
@@ -224,16 +240,15 @@ export default function NewOrderForm() {
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
-                onClick={() => setSubmitType("new")}
+                disabled={isSubmitting || success}
               >
-                {isSubmitting && submitType === "new" ? (
+                {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                     Сохранение...
                   </>
                 ) : (
-                  "Сохранить новый заказ"
+                  "Создать заказ"
                 )}
               </Button>
             </div>

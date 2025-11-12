@@ -104,4 +104,17 @@ final class ModelFieldHelper
   {
     return fn() => new DateTime();
   }
+
+  /** @return callable(): array<int, callable> */
+  public static function toTimestamp(): callable
+  {
+    return fn() => [
+      function ($value) {
+        if ($value instanceof DateTime) {
+          return $value->getTimestamp(); // секунды
+        }
+        return $value;
+      }
+    ];
+  }
 }

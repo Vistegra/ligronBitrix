@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import {ROLE_NAMES} from "@/constants/constants.ts";
+import {PAGE} from "@/api/constants.ts";
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -8,7 +9,7 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate(PAGE.LOGIN);
   };
 
   return (

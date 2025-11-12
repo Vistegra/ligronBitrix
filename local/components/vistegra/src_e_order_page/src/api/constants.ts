@@ -5,3 +5,8 @@ export const PAGE = {
   ORDERS: '/orders',
   ORDER_ID: '/orders/:id'
 }
+
+export const ENDPOINT = {
+  ORDERS: '/orders',
+  AUTH_LOGIN: '/auth/login/'
+}

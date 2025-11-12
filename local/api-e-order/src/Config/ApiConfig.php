@@ -13,5 +13,7 @@ final class ApiConfig
   public const string API_VERSION = '1.0';
   public const string API_NAME = 'Order API';
 
+  public const string UPLOAD_FILES_DIR = '/upload/e-order/files/';
+
   private function __construct() {}
 }

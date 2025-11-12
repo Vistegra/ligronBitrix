@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace OrderApi\Services\Order;
 
 use Bitrix\Bizproc\Api\Response\Error;
+use Bitrix\Main\Type\DateTime;
+use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\OrderTable;
@@ -22,7 +24,9 @@ final class OrderService
 {
   public function __construct(
     private readonly UserDTO $user
-  ) {}
+  )
+  {
+  }
 
   /**
    * Создать заказ с возможной загрузкой файлов
@@ -54,6 +58,10 @@ final class OrderService
       );
     }
 
+    $statusData = $this->getDefaultStatusData();
+    $data['status_id'] = $statusData['status_id'];
+    $data['status_history'] = $statusData['status_history'];
+
     // Создаём заказ
     try {
       $order = OrderRepository::create($data);
@@ -64,13 +72,6 @@ final class OrderService
         orderError: 'Ошибка создания заказа в базе данных: ' . $e->getMessage()
       );
     }
-
-   /* if (!$orderId) {
-      return new OrderCreateResult(
-        success: false,
-        orderError: 'Ошибка создания заказа в базе данных'
-      );
-    }*/
 
     // Обрабатываем файлы (если есть)
     $fileResults = [];
@@ -83,6 +84,31 @@ final class OrderService
       orderId: (int)$order['id'],
       fileResults: $fileResults
     );
+  }
+
+  /**
+   * Возвращает данные статуса заказа по умолчанию
+   *
+   * @return array{
+   *     status_id: int,
+   *     status_history: array
+   * }
+   *
+   * @throws \RuntimeException Если не удалось получить статус по умолчанию
+   */
+  private function getDefaultStatusData(): array
+  {
+    $status = OrderStatusRepository::getDefaultStatus();
+
+    return [
+      'status_id' => $status['id'],
+      'status_history' => [
+        [
+          'status_id' => $status['id'],
+          'date' => (new DateTime())->toString(),
+        ]
+      ]
+    ];
   }
 
   /**
@@ -106,6 +132,7 @@ final class OrderService
       }
     }
     // Менеджеры видят все заказы
+    // ToDo permission
 
     return $order;
   }
@@ -164,14 +191,15 @@ final class OrderService
    * Добавить файл к заказу (отдельный вызов)
    */
   public function addFile(
-    int $orderId,
-    string $name,
-    string $path,
-    ?int $size = null,
+    int     $orderId,
+    string  $name,
+    string  $path,
+    ?int    $size = null,
     ?string $mime = null
-  ): ?int {
+  ): ?int
+  {
     $this->getOrder($orderId);
-    $uploadedBy = $this->user->isDealer() ? 1 : 2;
+    $uploadedBy = $this->user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
     return OrderFileRepository::add(
       $orderId,
       $name,
@@ -208,7 +236,8 @@ final class OrderService
     $dealerPrefix = $order['dealer_prefix'] ?? 'shared';
     $orderId = $order['id'];
 
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/upload/e-order/files/{$dealerPrefix}/{$dealerUserId}/{$orderId}/";
+    $relativeUploadDir = ApiConfig::UPLOAD_FILES_DIR . "$dealerPrefix/$dealerUserId/$orderId/";
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . $relativeUploadDir;
 
     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
       throw new \Exception("Не удалось создать директорию: {$uploadDir}");
@@ -228,7 +257,7 @@ final class OrderService
     return OrderFileRepository::add(
       orderId: $orderId,
       name: $filename,
-      path: $path,
+      path: $relativeUploadDir,
       size: $file->getSize(),
       mime: $file->getClientMediaType(),
       uploadedBy: $uploadedBy,

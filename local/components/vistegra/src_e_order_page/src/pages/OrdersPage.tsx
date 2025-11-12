@@ -1,10 +1,13 @@
 import NewOrderForm from "@/components/Order/NewOrderForm.tsx";
 import {SideModal} from "@/components/SideModal.tsx";
+import OrdersTable from "@/components/Order/OrdersTable.tsx";
 
 export default function OrdersPage() {
   return (
     <>
      Страница заказов
+
+     <OrdersTable />
 
      <NewOrderForm/>
 

@@ -70,9 +70,10 @@ use OrderApi\Controllers\{AuthController, OrderController};
 // DI
 $container = new Container();
 
-/*$container->set(UserDTO::class, function () {
+$container->set(UserDTO::class, function () {
   return null;
-});*/
+  //ToDo
+});
 
 $container->set('logs', $logPath);
 
@@ -121,9 +122,9 @@ $app->group('', function (RouteCollectorProxy $group) {
 
   $group->post('/orders/{id}/files', OrderController::class . ':uploadFiles');    // Загрузить файлы к заказу
   $group->delete('/orders/{id}/files/{fileId}', OrderController::class . ':deleteFile'); // Удалить файл
-
+  $group->get('/statuses', OrderController::class . ':getStatuses');
 })->add(AuthMiddleware::class);
 
-//$app->get('/orders/statuses', OrderController::class . ':getStatuses');
+
 
 $app->run();

@@ -1,0 +1,225 @@
+"use client";
+
+import { useState } from "react";
+import {format, fromUnixTime} from "date-fns";
+
+import { ru } from "date-fns/locale";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Package, PackageOpen, Layers } from "lucide-react";
+
+import { useOrders } from "@/hooks/useOrders";
+
+type OrderType = "individual" | "standard" | "complex";
+
+const getOrderType = (order: any): OrderType => {
+  if (order.parent_id !== null) return "individual";
+  if (order.children_count > 0) return "complex";
+  return "standard";
+};
+
+const getOrderTypeLabel = (type: OrderType) => {
+  switch (type) {
+    case "individual": return "Индивидуальный";
+    case "standard": return "Стандартный";
+    case "complex": return "Комплексный";
+  }
+};
+
+const getOrderTypeIcon = (type: OrderType) => {
+  switch (type) {
+    case "individual": return <Package className="h-4 w-4" />;
+    case "standard": return <PackageOpen className="h-4 w-4" />;
+    case "complex": return <Layers className="h-4 w-4" />;
+  }
+};
+
+export default function OrdersTable() {
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const {
+    orders,
+    loading,
+    error,
+    pagination,
+    fetchOrders,
+    refetch,
+  } = useOrders({ limit: 10 });
+
+  const handlePageChange = (offset: number) => {
+    fetchOrders(offset, statusFilter ? { status: statusFilter } : {});
+  };
+
+  const handleStatusFilter = (value: string | undefined) => {
+    const filterValue = value ?? ""; // "" — значит "все"
+    setStatusFilter(filterValue);
+    fetchOrders(0, filterValue ? { status: filterValue } : {});
+  };
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
+
+  return (
+    <div className="space-y-6">
+      {/* Фильтр по статусу */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Заказы</h2>
+        <Select value={statusFilter} onValueChange={handleStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Фильтр по статусу" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={undefined}>Все статусы</SelectItem>
+            <SelectItem value="1">На рассмотрении</SelectItem>
+            {/* Добавьте другие статусы по мере необходимости */}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Таблица */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">№</TableHead>
+              <TableHead>Наименование заказа</TableHead>
+              <TableHead>Тип заказа</TableHead>
+              <TableHead>Изготовление</TableHead>
+              <TableHead>Готовность</TableHead>
+              <TableHead>Дата создания</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                </TableRow>
+              ))
+            ) : orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Заказы не найдены
+                </TableCell>
+              </TableRow>
+            ) : (
+              orders.map((order, index) => {
+                const orderType = getOrderType(order);
+                const createdAt =  order.created_at ? format(fromUnixTime(order.created_at), "dd.MM.yyyy HH:mm", { locale: ru }) : '-';
+
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">
+                      {pagination.offset + index + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{order.name}</div>
+                        {order.number && (
+                          <div className="text-sm text-muted-foreground">№ {order.number}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getOrderTypeIcon(orderType)}
+                        <span>{getOrderTypeLabel(orderType)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {order.fabrication ? `${order.fabrication} дн.` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {order.ready_date ? format(new Date(order.ready_date), "dd.MM.yyyy") : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {createdAt}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Пагинация */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(Math.max(0, pagination.offset - pagination.limit))}
+                className={pagination.offset === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const page = Math.floor(pagination.offset / pagination.limit) + i;
+              if (page >= totalPages) return null;
+              return (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(page * pagination.limit)}
+                    isActive={page * pagination.limit === pagination.offset}
+                    className="cursor-pointer"
+                  >
+                    {page + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(pagination.offset + pagination.limit)}
+                className={
+                  pagination.offset + pagination.limit >= pagination.total
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+    </div>
+  );
+}
