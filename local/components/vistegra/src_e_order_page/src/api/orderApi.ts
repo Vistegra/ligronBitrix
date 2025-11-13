@@ -21,7 +21,7 @@ export interface OrderStatus {
 }
 
 export interface StatusHistoryItem {
-  status: OrderStatus;
+  id: number;
   date: string; // формат "DD.MM.YYYY HH:mm:ss" //ToDo подумать timestamp
 }
 
@@ -101,6 +101,12 @@ export const orderApi = {
     const response = await api.get(ENDPOINT.ORDERS, { params });
     return response.data;
   },
+
+  async getStatuses(): Promise<ApiResponse<OrderStatus[]>> {
+      const response = await api.get(ENDPOINT.STATUSES);
+      return response.data;
+  },
+
 
   // async getOrder(id: number): Promise<ApiResponse<{ order: Order }>> {
   //   const response = await api.get(`${ENDPOINT.ORDERS}/${id}`);

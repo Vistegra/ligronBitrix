@@ -104,7 +104,7 @@ final class OrderService
       'status_id' => $status['id'],
       'status_history' => [
         [
-          'status_id' => $status['id'],
+          'id' => $status['id'],
           'date' => (new DateTime())->toString(),
         ]
       ]

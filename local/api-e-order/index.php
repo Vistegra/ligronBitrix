@@ -111,7 +111,7 @@ $app->get('', function ($request, $response) {
 
 
 $app->group('', function (RouteCollectorProxy $group) {
-
+  $group->get('/statuses', OrderController::class . ':getStatuses');
   $group->post('/orders', OrderController::class . ':create');                    // Создать заказ + файлы
   $group->get('/orders', OrderController::class . ':getAll');                     // Список заказов
   $group->get('/orders/{id}', OrderController::class . ':get');                   // Получить заказ
@@ -122,7 +122,8 @@ $app->group('', function (RouteCollectorProxy $group) {
 
   $group->post('/orders/{id}/files', OrderController::class . ':uploadFiles');    // Загрузить файлы к заказу
   $group->delete('/orders/{id}/files/{fileId}', OrderController::class . ':deleteFile'); // Удалить файл
-  $group->get('/statuses', OrderController::class . ':getStatuses');
+
+
 })->add(AuthMiddleware::class);
 
 

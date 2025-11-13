@@ -38,18 +38,13 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Package, PackageOpen, Layers, ChevronDown } from "lucide-react";
+import {AlertCircle, ChevronDown, Columns2Icon} from "lucide-react";
 
 import { useOrders } from "@/hooks/useOrders";
-import api from "@/api/client";
+
+import {useOrderStatuses} from "@/hooks/useOrderStatuses.ts";
 
 type OrderType = "individual" | "standard" | "complex";
-type Status = {
-  id: number;
-  name: string;
-  code: string;
-  color: string;
-};
 
 const PAGE_SIZES = [10, 20, 30, 40, 50] as const;
 type PageSize = (typeof PAGE_SIZES)[number];
@@ -70,8 +65,6 @@ const getOrderTypeLabel = (type: OrderType) => {
 
 export default function OrdersTable() {
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [statuses, setStatuses] = useState<Status[]>([]);
-  const [statusesLoading, setStatusesLoading] = useState(true);
   const [pageSize, setPageSize] = useState<PageSize>(10);
   const [visibleColumns, setVisibleColumns] = useState({
     status: true,
@@ -90,23 +83,8 @@ export default function OrdersTable() {
     fetchOrders,
   } = useOrders({ limit: pageSize });
 
-  // Загружаем статусы один раз
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      setStatusesLoading(true);
-      try {
-        const response = await api.get("/statuses");
-        if (response.data.status === "success") {
-          setStatuses(response.data.data);
-        }
-      } catch (err) {
-        console.error("Ошибка загрузки статусов:", err);
-      } finally {
-        setStatusesLoading(false);
-      }
-    };
-    fetchStatuses();
-  }, []);
+  const { loading: statusesLoading, statuses } = useOrderStatuses();
+
 
   const handlePageChange = (offset: number) => {
     fetchOrders(offset, statusFilter ? { status: statusFilter } : {});
@@ -145,7 +123,8 @@ export default function OrdersTable() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1">
-                Колонки <ChevronDown className="h-4 w-4" />
+                <Columns2Icon className="h-4 w-4"/>
+                Все колонки <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -175,7 +154,7 @@ export default function OrdersTable() {
       {/* Таблица */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted [&_th]:text-foreground">
             <TableRow>
               <TableHead className="w-12">№</TableHead>
 
@@ -258,7 +237,6 @@ export default function OrdersTable() {
                         <Badge
                           variant="secondary"
                           className="gap-2"
-                          style={{ borderColor:  "#ccc" }}
                         >
                           <div
                             className="h-2 w-2 rounded-full"
@@ -305,6 +283,7 @@ export default function OrdersTable() {
                     {visibleColumns.created_at && (
                       <TableCell>{createdAt}</TableCell>
                     )}
+
                   </TableRow>
                 );
               })
@@ -320,13 +299,13 @@ export default function OrdersTable() {
             Показано {pagination.offset + 1}–{Math.min(pagination.offset + pageSize, pagination.total)} из {pagination.total}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">На странице:</span>
+          <div className="flex items-center gap-2 font-medium">
+            <span className="text-sm text-foreground whitespace-nowrap">Строк на странице:</span>
             <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-20">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="top">
                 {PAGE_SIZES.map((size) => (
                   <SelectItem key={size} value={size.toString()}>
                     {size}

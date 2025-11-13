@@ -8,5 +8,6 @@ export const PAGE = {
 
 export const ENDPOINT = {
   ORDERS: '/orders',
-  AUTH_LOGIN: '/auth/login/'
+  AUTH_LOGIN: '/auth/login',
+  STATUSES: '/statuses'
 }
