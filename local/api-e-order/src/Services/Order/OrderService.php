@@ -167,24 +167,27 @@ final class OrderService
   }
 
   /**
-   * Список заказов пользователя
+   * Получить заказы с пагинацией и фильтром
    */
   public function getOrders(array $filter = [], int $limit = 20, int $offset = 0): array
   {
+    // Добавляем условия доступа
     if ($this->user->isDealer()) {
-      return OrderRepository::getByDealer(
-        $this->user->dealer_prefix,
-        $this->user->id,
-        $limit,
-        $offset
-      );
+      $filter = array_merge($filter, [
+        '=dealer_prefix' => $this->user->dealer_prefix,
+        '=dealer_user_id' => $this->user->id,
+      ]);
+    } elseif ($this->user->isLigronStaff()) {
+      $filter['=manager_id'] = $this->user->id;
+    } else {
+      throw new \Exception('Access denied', 403);
     }
 
-    if ($this->user->isLigronStaff()) {
-      return OrderRepository::getByManager($this->user->id, $limit, $offset);
-    }
-
-    throw new \Exception('Access denied', 403);
+    return OrderRepository::queryList([
+      'filter' => $filter,
+      'limit' => $limit,
+      'offset' => $offset,
+    ]);
   }
 
   /**

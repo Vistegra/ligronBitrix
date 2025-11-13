@@ -29,7 +29,7 @@ final class OrderRepository
   /**
    * Универсальная выборка с пагинацией
    */
-  private static function queryList(array $params = []): array
+  public static function queryList(array $params = []): array
   {
     $params = array_merge(self::defaultQueryParams, $params);
 

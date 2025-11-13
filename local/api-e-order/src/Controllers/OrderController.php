@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace OrderApi\Controllers;
 
+use OrderApi\DB\Helpers\FilterParser;
 use OrderApi\DB\Repositories\OrderRepository;
 use OrderApi\DTO\Order\FileUploadResult;
 use OrderApi\DTO\Order\OrderCreateResult;
@@ -209,9 +210,11 @@ final class OrderController extends AbstractController
   public function getAll(ServerRequestInterface $request): ResponseInterface
   {
     $data = $request->getQueryParams();
-    $filter = $data['filter'] ?? [];
+    $filterString = $data['filter'] ?? '';
     $limit = (int)($data['limit'] ?? 20);
     $offset = (int)($data['offset'] ?? 0);
+
+    $filter = FilterParser::parse($filterString);
 
     try {
       $orders = $this->orderService->getOrders($filter, $limit, $offset);
@@ -219,14 +222,14 @@ final class OrderController extends AbstractController
         'status' => 'success',
         'message' => 'Orders list',
         'data' =>
-           [
-             'order' => $orders,
-             'pagination' => [
-               'limit' => $limit,
-               'offset' => $offset,
-               'total' => OrderRepository::getTotalCount($filter)
-             ]
-           ]
+          [
+            'order' => $orders,
+            'pagination' => [
+              'limit' => $limit,
+              'offset' => $offset,
+              'total' => OrderRepository::getTotalCount($filter)
+            ]
+          ]
 
       ]);
     } catch (\Exception $e) {
