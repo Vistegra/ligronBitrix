@@ -1,6 +1,6 @@
 // src/hooks/useOrders.ts
 import { useState, useEffect, useCallback } from "react";
-import { orderApi, type OrdersListResponse, type Order } from "@/api/orderApi";
+import { orderApi, type Order } from "@/api/orderApi";
 
 interface UseOrdersOptions {
   limit?: number;
@@ -30,7 +30,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersReturn {
   const [limit, setLimit] = useState(initialLimit);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  const [filter, setFilter] = useState(""); // Исправлено: начальное значение ""
+  const [filter, setFilter] = useState("");
 
   const fetchOrders = useCallback(
       async (newOffset = 0, newFilter = filter) => {
