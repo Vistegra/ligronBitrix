@@ -31,7 +31,6 @@ export interface Pagination {
   total: number;
 }
 
-
 export interface ColumnConfig {
   key: keyof VisibleColumns;
   label: string;

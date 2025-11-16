@@ -1,6 +1,11 @@
-// src/hooks/useOrders.ts
-import { useState, useEffect, useCallback } from "react";
-import { orderApi, type Order } from "@/api/orderApi";
+import {useState, useCallback, useEffect} from "react";
+import {orderApi, type Order} from "@/api/orderApi";
+
+interface FetchOrdersParams {
+  limit: number;
+  offset: number;
+  filter?: string;
+}
 
 interface UseOrdersOptions {
   limit?: number;
@@ -33,58 +38,59 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersReturn {
   const [filter, setFilter] = useState("");
 
   const fetchOrders = useCallback(
-      async (newOffset = 0, newFilter = filter) => {
-        setLoading(true);
-        setError(null);
+    async (newOffset = 0, newFilter = filter) => {
+      setLoading(true);
+      setError(null);
 
-        try {
-          const params: any = {
-            limit,
-            offset: newOffset,
-          };
+      try {
+        const params: FetchOrdersParams = {
+          limit,
+          offset: newOffset,
+        };
 
-          if (newFilter) {
-            params.filter = newFilter;
-          }
-
-          const response = await orderApi.getOrders(params);
-
-          if (response.status !== "success") {
-            throw new Error(response.message || "Ошибка загрузки заказов");
-          }
-
-          setOrders(response.data.order);
-          setTotal(response.data.pagination.total);
-          setOffset(newOffset);
-          setFilter(newFilter);
-        } catch (err: any) {
-          const msg = err.response?.data?.message || err.message || "Неизвестная ошибка";
-          setError(msg);
-        } finally {
-          setLoading(false);
+        if (newFilter) {
+          params.filter = newFilter;
         }
-      },
-      [limit, filter]
+
+        const response = await orderApi.getOrders(params);
+
+        if (response.status !== "success") {
+          throw new Error(response.message || "Ошибка загрузки заказов");
+        }
+
+        setOrders(response.data.order);
+        setTotal(response.data.pagination.total);
+        setOffset(newOffset);
+        setFilter(newFilter);
+      } catch (err: any) {
+        const msg = err.response?.data?.message || err.message || "Неизвестная ошибка";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [limit, filter]
   );
 
   useEffect(() => {
     fetchOrders(0, filter);
-  }, [limit]);
+  }, [fetchOrders, filter]);
 
   const setLimitAndReset = (newLimit: number) => {
     setLimit(newLimit);
+    fetchOrders(0, filter);
   };
 
   const setFilterAndReset = (newFilter: string) => {
     setFilter(newFilter);
-    fetchOrders(0, newFilter);
+   // fetchOrders(0, newFilter);
   };
 
   return {
     orders,
     loading,
     error,
-    pagination: { limit, offset, total },
+    pagination: {limit, offset, total},
     filter,
     fetchOrders,
     setLimit: setLimitAndReset,

@@ -9,21 +9,24 @@ use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\OrderTable;
+use OrderApi\DB\Repositories\FileDiskRepository;
 use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\DB\Repositories\OrderRepository;
 use OrderApi\DB\Repositories\OrderStatusRepository;
 use OrderApi\DTO\Auth\UserDTO;
 use OrderApi\DTO\Order\FileUploadResult;
 use OrderApi\DTO\Order\OrderCreateResult;
+use OrderApi\Permissions\OrderPermission;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * Сервис для работы с заказами
  */
-final class OrderService
+final readonly class OrderService
 {
   public function __construct(
-    private readonly UserDTO $user
+    private UserDTO         $user,
+    private OrderPermission $permission,
   )
   {
   }
@@ -123,14 +126,7 @@ final class OrderService
       return null;
     }
 
-    if ($this->user->isDealer()) {
-      if (
-        $order['dealer_prefix'] !== $this->user->dealer_prefix ||
-        $order['dealer_user_id'] !== $this->user->id
-      ) {
-        throw new \Exception('Access denied', 403);
-      }
-    }
+    $this->permission->canView($order);
     // Менеджеры видят все заказы
     // ToDo permission
 
@@ -139,22 +135,39 @@ final class OrderService
 
   /**
    * Обновить заказ
+   * @throws \Exception
    */
   public function updateOrder(int $id, array $data): bool
   {
-    $this->getOrder($id); // проверка доступа
+    // проверка доступа
+    $order = $this->getOrder($id);
+
+    $this->permission->canUpdate($order, $data);
+
     return OrderRepository::update($id, $data);
   }
 
   /**
    * Удалить заказ
+   * @throws \Exception
    */
   public function deleteOrder(int $id): bool
   {
-    //ToDo permission
-    $this->getOrder($id);
+    $order = $this->getOrder($id);
+
+    //настройка доступа в получении заказа
+    if ($order['CHILDREN_COUNT'] > 0) {
+      //ToDo возможно не нужно, будет триггер
+      throw new \RuntimeException('Нельзя удалить заказ с дочерними');
+    }
+
+    // Строки в бд по файлам удаляются спомощью тригеров
+    // удаляем файлы только физически
+    FileDiskRepository::deleteFiles($order['files']);
+
     return OrderRepository::delete($id);
   }
+
 
   /**
    * Сменить статус заказа
@@ -178,7 +191,7 @@ final class OrderService
         '=dealer_user_id' => $this->user->id,
       ]);
     } elseif ($this->user->isLigronStaff()) {
-      $filter['=manager_id'] = $this->user->id;
+      $filter['=manager_id'] = $this->user->id; //ToDo подумать, так не обязательно привязанный менджер
     } else {
       throw new \Exception('Access denied', 403);
     }
@@ -216,16 +229,42 @@ final class OrderService
 
   /**
    * Удалить файл
+   * @throws \Exception
    */
-  public function deleteFile(int $fileId): bool
+  public function deleteFile(int $orderId, int $fileId): bool
   {
-    $file = OrderFileRepository::getById($fileId);
+    // Проверка доступа и получение заказа с файлами
+    $order = $this->getOrder($orderId);
+
+    // Находим файл в массиве файлов заказа
+    $file = $this->getFileFromOrder($order, $fileId);
     if (!$file) {
-      return false;
+      throw new \Exception('Файл не найден в заказе', 404);
     }
 
-    $this->getOrder($file['order_id']);
+    // Удаляем физический файл с диска
+    FileDiskRepository::deleteFile($file['path'], $file['name']);
+
+    // Удаляем запись о файле из БД
     return OrderFileRepository::delete($fileId);
+  }
+
+  /**
+   * Находит файл в массиве файлов заказа по ID файла
+   */
+  private function getFileFromOrder(array $order, int $fileId): ?array
+  {
+    if (empty($order['files']) || !is_array($order['files'])) {
+      return null;
+    }
+
+    foreach ($order['files'] as $file) {
+      if (isset($file['id']) && $file['id'] == $fileId) {
+        return $file;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -235,8 +274,13 @@ final class OrderService
    */
   private function uploadFileToOrder(array $order, UploadedFileInterface $file): ?int
   {
-    $dealerUserId = $order['dealer_user_id'] ?? 'unknown';
-    $dealerPrefix = $order['dealer_prefix'] ?? 'shared';
+    $dealerUserId = $order['dealer_user_id'];
+    $dealerPrefix = $order['dealer_prefix'];
+
+    if (!$dealerUserId || !$dealerPrefix) {
+      throw new \RuntimeException('В заказе нет данных дилера id и prefix');
+    }
+
     $orderId = $order['id'];
 
     $relativeUploadDir = ApiConfig::UPLOAD_FILES_DIR . "$dealerPrefix/$dealerUserId/$orderId/";

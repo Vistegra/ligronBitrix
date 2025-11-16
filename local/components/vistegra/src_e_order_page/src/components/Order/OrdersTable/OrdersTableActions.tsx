@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Eye } from "lucide-react";
+import {PAGE} from "@/api/constants.ts";
 
 interface OrdersTableActionsProps {
   orderId: number;
@@ -18,7 +19,7 @@ export function OrdersTableActions({ orderId }: OrdersTableActionsProps) {
   const navigate = useNavigate();
 
   const handleOpen = () => {
-    navigate(`/orders/${orderId}`);
+    navigate(`${PAGE.ORDERS}/${orderId}`);
   };
 
   return (

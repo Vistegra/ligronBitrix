@@ -1,7 +1,7 @@
 "use client";
 
 import {Button} from "@/components/ui/button";
-import {useCallback, useState} from "react";
+import {useState} from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {ChevronsUpDownIcon} from "lucide-react";
-import {debounce} from "@/helpers/debounce.ts";
+
+import {useDebounce} from "@/hooks/useDebounce.ts";
 
 interface Status {
   id: number;
@@ -32,10 +33,10 @@ export function OrdersTableStatusFilters({
 
   const [selectedStatusIds, setSelectedStatusIds] = useState<number[]>([])
 
-  const debouncedOnStatusToggle = useCallback(
-    debounce((ids: number[]) => onStatusToggle(ids), 800),
-    [onStatusToggle]
-  );
+
+  const debouncedToggle = useDebounce((ids: number[]) => {
+    onStatusToggle(ids);
+  }, 800);
 
   const handleStatusToggle = (statusId: number) => {
     setSelectedStatusIds((prev) => {
@@ -43,8 +44,7 @@ export function OrdersTableStatusFilters({
         ? prev.filter(id => id !== statusId)
         : [...prev, statusId];
 
-      debouncedOnStatusToggle(newSelectedIds);
-
+      debouncedToggle(newSelectedIds);
       return newSelectedIds;
     })
   }

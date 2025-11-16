@@ -32,4 +32,10 @@ final class AuthController extends AbstractController
       : $this->error('Неверный логин или пароль', 401);
   }
 
+  public function check(ServerRequestInterface $request): ResponseInterface
+  {
+    // вызывать с AuthMiddleware
+    return $this->success('Токен проверен', [], 204);
+  }
+
 }

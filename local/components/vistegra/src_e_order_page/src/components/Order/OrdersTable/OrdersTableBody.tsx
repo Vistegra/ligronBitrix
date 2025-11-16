@@ -9,6 +9,7 @@ import {OrdersTableActions} from "./OrdersTableActions.tsx";
 
 import type {Pagination, VisibleColumns} from "./types";
 import {COLUMNS_CONFIG} from "./types";
+import StatusBadge from "@/components/Order/StatusBage.tsx";
 const getOrderType = (order: Order) => {
   if (order.parent_id !== null) return "individual";
   if (order.children_count && order.children_count > 0) return "complex";
@@ -32,10 +33,7 @@ interface OrdersTableBodyProps {
 
 const columnRenderers: Record<keyof VisibleColumns, (order: Order) => React.ReactNode> = {
   status: (order) => (
-    <Badge variant="secondary" className="gap-2">
-      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: order.status_color || "#ccc" }} />
-      {order.status_name || "—"}
-    </Badge>
+    <StatusBadge name={order.status_name} color={order.status_color}/>
   ),
   name: (order) => (
     <div>
@@ -51,7 +49,7 @@ const columnRenderers: Record<keyof VisibleColumns, (order: Order) => React.Reac
   fabrication: (order) => order.fabrication ? `${order.fabrication} дн.` : "—",
   ready_date: (order) => order.ready_date ? format(new Date(order.ready_date), "dd.MM.yyyy") : "—",
   created_at: (order) => order.created_at
-    ? format(fromUnixTime(order.created_at / 1000), "dd.MM.yyyy", { locale: ru })
+    ? format(fromUnixTime(order.created_at), "dd.MM.yyyy HH:mm", { locale: ru })
     : "—",
 };
 

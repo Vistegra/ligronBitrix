@@ -25,6 +25,15 @@ export interface StatusHistoryItem {
   date: string; // формат "DD.MM.YYYY HH:mm:ss" //ToDo подумать timestamp
 }
 
+export interface OrderFile {
+  id: number;
+  name: string;
+  size?: number;
+  mime?: string;
+  path?: string;
+  created_at?: number;
+}
+
 export type Order = {
   id: number;
   number: string | null;
@@ -48,7 +57,7 @@ export type Order = {
   status_color: string | null;
   parent_order_number: string | null;
   parent_order_id: number | null;
-  files: any | null;
+  files: OrderFile[] | null;
 };
 
 export type CreateOrderResponse = {
@@ -72,6 +81,7 @@ export type ApiResponse<T> = {
 };
 
 export const orderApi = {
+  //Создание заказа
   async createOrder(data: CreateOrderData): Promise<ApiResponse<CreateOrderResponse>> {
     const formData = new FormData();
     formData.append("name", data.name);
@@ -93,47 +103,73 @@ export const orderApi = {
     return response.data;
   },
 
+  // Получение заказов
   async getOrders(params?: {
-    filter?: any;
+    filter?: string;
     limit?: number;
     offset?: number;
   }): Promise<ApiResponse<OrdersListResponse>> {
+
     const response = await api.get(ENDPOINT.ORDERS, { params });
+
     return response.data;
   },
 
+  // Получить заказ
+  async getOrder(id: number): Promise<ApiResponse<{ order: Order }>> {
+
+    const { data } = await api.get(`${ENDPOINT.ORDERS}/${id}`);
+
+    return data;
+  },
+
+  // Обновление заказа
+  async updateOrder(
+    id: number,
+    data: Partial<Pick<CreateOrderData, "name" | "comment">>
+  ): Promise<ApiResponse<{ order: Order }>> {
+
+    const { data: resp } = await api.put(`${ENDPOINT.ORDERS}/${id}`, data);
+
+    return resp;
+  },
+
+  // Удалить заказ
+  async deleteOrder(id: number): Promise<ApiResponse<null>> {
+    const response = await api.delete<ApiResponse<null>>(`${ENDPOINT.ORDERS}/${id}`);
+
+    if (response.data.status !== "success") {
+      throw new Error(response.data.message || "Ошибка удаления заказа");
+    }
+
+    return response.data;
+  },
+
+  //Обновить файлы
+  async uploadFiles(
+    orderId: number,
+    files: File[]
+  ): Promise<ApiResponse<{ files: FileUploadResult[] }>> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("file[]", file));
+
+    const { data } = await api.post(
+      `${ENDPOINT.ORDERS}/${orderId}/files`,
+      formData
+    );
+    return data;
+  },
+
+  // Удлаить файл
+  async deleteFile(orderId: number, fileId: number): Promise<void> {
+    await api.delete(`${ENDPOINT.ORDERS}/${orderId}/files/${fileId}`);
+  },
+
+  //Получение статусов
   async getStatuses(): Promise<ApiResponse<OrderStatus[]>> {
       const response = await api.get(ENDPOINT.STATUSES);
       return response.data;
   },
 
 
-  // async getOrder(id: number): Promise<ApiResponse<{ order: Order }>> {
-  //   const response = await api.get(`${ENDPOINT.ORDERS}/${id}`);
-  //   return response.data;
-  // },
-  //
-  // async updateOrder(id: number, data: Partial<CreateOrderData>): Promise<ApiResponse<{ order: Order }>> {
-  //   const response = await api.put(`${ENDPOINT.ORDERS}/${id}`, data);
-  //   return response.data;
-  // },
-  //
-  // async deleteOrder(id: number): Promise<void> {
-  //   await api.delete(`${ENDPOINT.ORDERS}/${id}`);
-  // },
-  //
-  // async uploadFiles(orderId: number, files: File[]): Promise<ApiResponse<{ files: FileUploadResult[] }>> {
-  //   const formData = new FormData();
-  //   files.forEach((file) => formData.append("file[]", file));
-  //
-  //   const response = await api.post(`${ENDPOINT.ORDERS}/${orderId}/files`, formData);
-  //   return response.data;
-  // },
-  //
-
-  //
-  // async getStatuses(): Promise<ApiResponse<any[]>> {
-  //   const response = await api.get(`${ENDPOINT.ORDERS}/statuses`);
-  //   return response.data;
-  // }
 };

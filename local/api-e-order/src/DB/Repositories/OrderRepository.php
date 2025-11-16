@@ -75,16 +75,6 @@ final class OrderRepository
    */
   public static function delete(int $id): bool
   {
-    $order = self::getById($id);
-    if (!$order) {
-      return false;
-    }
-
-    if ($order['CHILDREN_COUNT'] > 0) {
-      //ToDo возможно не нужно, будет триггер
-      throw new \RuntimeException('Нельзя удалить заказ с дочерними');
-    }
-
     $result = OrderTable::delete($id);
     return $result->isSuccess();
   }

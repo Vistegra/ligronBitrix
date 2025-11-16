@@ -58,6 +58,7 @@ use DI\Container;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Services\Order\OrderService;
 use Slim\Factory\AppFactory;
+use Slim\Handlers\Strategies\RequestResponseArgs;
 use Slim\Routing\RouteCollectorProxy;
 
 use OrderApi\Middleware\{GlobalErrorMiddleware,
@@ -82,7 +83,8 @@ AppFactory::setContainer($container);
 
 $app = AppFactory::create();
 $app->setBasePath('/local/api-e-order');
-
+// Включаем аргументы ввыде массива
+//$app->getRouteCollector()->setDefaultInvocationStrategy(new RequestResponseArgs());
 // убираем слеш — до всех маршрутов
 $app->add(TrailingSlashMiddleware::class);
 
@@ -102,6 +104,7 @@ $app->add(function ($request, $handler) use ($logPath) {
 
 
 $app->post('/auth/login', AuthController::class . ':login');
+$app->get('/auth/check', AuthController::class . ':check')->add(AuthMiddleware::class);
 
 $app->get('', function ($request, $response) {
   $payload = json_encode(['status' => 'success', 'message' => 'Api is working!'], JSON_UNESCAPED_UNICODE);

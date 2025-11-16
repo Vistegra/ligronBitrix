@@ -83,43 +83,47 @@ final class OrderController extends AbstractController
   }
 
   // GET /orders/{id}
-  public function get(int $id): ResponseInterface
+  public function get(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
     try {
-      $order = $this->orderService->getOrder($id);
+      $orderId = (int)$args['id'];
+      $order = $this->orderService->getOrder($orderId);
+
       return $order
-        ? $this->success('Order details', $order)
-        : $this->error('Order not found', 404);
+        ? $this->success('Детали заказа', ['order' => $order])
+        : $this->error('Заказ не найден', 404);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
   }
 
   // PUT /orders/{id}
-  public function update(int $id, ServerRequestInterface $request): ResponseInterface
+  public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
+    $orderId = (int)$args['id'];
     $data = $request->getParsedBody() ?? [];
 
     try {
-      if (!$this->orderService->updateOrder($id, $data)) {
-        return $this->error('Failed to update order', 500);
+      if (!$this->orderService->updateOrder($orderId, $data)) {
+        return $this->error('Не удалось обновить заказ', 500);
       }
 
-      $order = $this->orderService->getOrder($id);
-      return $this->success('Order updated', $order);
+      $order = $this->orderService->getOrder($orderId);
+      return $this->success('Заказ обновлен', ['order' => $order]);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
   }
 
   // DELETE /orders/{id}
-  public function delete(int $id): ResponseInterface
+  public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
     try {
-      if (!$this->orderService->deleteOrder($id)) {
+      $orderId = (int)$args['id'];
+      if (!$this->orderService->deleteOrder($orderId)) {
         return $this->error('Failed to delete order', 500);
       }
-      return $this->success('Order deleted', [], 204);
+      return $this->success('Order deleted');
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
@@ -149,9 +153,12 @@ final class OrderController extends AbstractController
   }
 
   // POST /orders/{id}/files
-  public function uploadFiles(int $id, ServerRequestInterface $request): ResponseInterface
+
+  /**
+   * @throws \Exception
+   */
+  public function uploadFiles(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
-    //ToDo
     $files = $request->getUploadedFiles()['file'] ?? [];
 
     if (!is_array($files)) {
@@ -162,7 +169,9 @@ final class OrderController extends AbstractController
       return $this->error('No files uploaded', 400);
     }
 
-    $order = $this->orderService->getOrder($id);
+    $orderId = (int)$args['id'];
+
+    $order = $this->orderService->getOrder($orderId);
     if (!$order) {
       return $this->error('Order not found', 404);
     }
@@ -194,13 +203,15 @@ final class OrderController extends AbstractController
   }
 
   // DELETE /orders/{id}/files/{fileId}
-  public function deleteFile(int $id, int $fileId): ResponseInterface
+  public function deleteFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
+    $orderId = (int)$args['id'];
+    $fileId = (int)$args['fileId'];
     try {
-      if (!$this->orderService->deleteFile($fileId)) {
-        return $this->error('Failed to delete file', 500);
+      if (!$this->orderService->deleteFile($orderId, $fileId)) {
+        return $this->error('Не удалось удалить файл', 500);
       }
-      return $this->success('File deleted', [], 204);
+      return $this->success('Файл удален', [], 204);
     } catch (\Exception $e) {
       return $this->handleError($e);
     }

@@ -1,22 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { Table, TableBody } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import {useState} from "react";
+import {Table, TableBody} from "@/components/ui/table";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {AlertCircle} from "lucide-react";
 
-import { useOrders } from "@/hooks/useOrders";
-import { useOrderStatuses } from "@/hooks/useOrderStatuses";
+import {useOrders} from "@/hooks/useOrders";
+import {useOrderStatuses} from "@/hooks/useOrderStatuses";
 
-import { OrdersTableBody } from "./OrdersTableBody";
-import { OrdersTableSkeleton } from "./OrdersTableSkeleton";
-import { OrdersTableEmpty } from "./OrdersTableEmpty";
-import { OrdersPagination } from "./OrdersPagination";
-import type { VisibleColumns, PageSize } from "./types";
+import {OrdersTableBody} from "./OrdersTableBody";
+import {OrdersTableSkeleton} from "./OrdersTableSkeleton";
+import {OrdersTableEmpty} from "./OrdersTableEmpty";
+import {OrdersPagination} from "./OrdersPagination";
 
 import {OrdersTablePanel} from "./OrderTablePanel.tsx";
 import {OrdersTableHeader} from "./OrdersTableHeader.tsx";
 
+import type {PageSize, VisibleColumns} from "./types";
 export default function OrdersTable() {
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
     status: true,
@@ -26,7 +26,6 @@ export default function OrdersTable() {
     ready_date: true,
     created_at: true,
   });
-
 
   const {
     orders, loading, error, pagination, filter,

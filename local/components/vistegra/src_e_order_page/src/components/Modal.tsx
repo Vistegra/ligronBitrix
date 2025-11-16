@@ -14,14 +14,15 @@ interface ModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function Modal({ trigger, children, open, onOpenChange }: ModalProps) {
+export function Modal({trigger, children, open, onOpenChange}: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0">
-        <div className="p-6">
+      <DialogContent
+        className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-50 [&>button]:bg-white [&>button]:rounded-full [&>button]:shadow-lg [&>button]:border">
+        <div className="bg-white rounded-lg">
           {children}
         </div>
       </DialogContent>
