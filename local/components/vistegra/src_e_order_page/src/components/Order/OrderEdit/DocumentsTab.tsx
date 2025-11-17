@@ -1,11 +1,13 @@
 import {Button} from "@/components/ui/button";
 import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
 import {Item, ItemActions, ItemContent, ItemTitle, ItemDescription} from "@/components/ui/item";
-import {Trash2, UploadIcon, Loader2, Download} from "lucide-react"; // Добавлен Download
+import {Trash2, UploadIcon, Loader2, Download} from "lucide-react";
 import {toast} from "sonner";
-import type {FileRejection} from "react-dropzone";
+
 import {ConfirmPopover} from "@/components/ui/popups/ConfirmPopover.tsx";
 import type {OrderFile} from "@/api/orderApi.ts";
+import {URL_BASE} from "@/api/constants.ts";
+import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
 
 
 const MAX_FILES = 10;
@@ -22,53 +24,16 @@ type Props = {
 
 export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
 
-  console.log('files', files)
+  const { onDropRejected, onDropError } = useFileDropzone();
+
   const handleDrop = async (accepted: File[]) => {
     if (accepted.length === 0) return;
     try {
       await onUpload(accepted);
-      toast.success("Файлы загружены");
+      toast.success("Файлы добавлены в заказ");
     } catch {
       toast.error("Ошибка загрузки файлов");
     }
-  };
-
-  const handleDropRejected = (rejectedFiles: FileRejection[]) => {
-    if (rejectedFiles.length === 0) return;
-
-    const firstRejection = rejectedFiles[0];
-    const firstError = firstRejection.errors[0];
-
-    let message = "";
-
-    switch (firstError.code) {
-      case "file-too-large":
-        message = `Файл "${firstRejection.file.name}" слишком большой. Максимум: ${MAX_SIZE_MB} МБ`;
-        break;
-      case "file-too-small":
-        message = `Файл "${firstRejection.file.name}" слишком маленький`;
-        break;
-      case "too-many-files":
-        message = `Слишком много файлов. Максимум: ${MAX_FILES}`;
-        break;
-      case "file-invalid-type":
-        message = `Недопустимый тип файла "${firstRejection.file.name}"`;
-        break;
-      default:
-        message = `Ошибка загрузки файла "${firstRejection.file.name}": ${firstError.message}`;
-        break;
-    }
-
-    toast.error(message, {
-      duration: 6000,
-    });
-
-    console.warn("Dropzone rejected files:", rejectedFiles);
-  };
-
-  const handleDropError = (error: Error) => {
-    toast.error('Произошла ошибка при обработке файлов');
-    console.error(error);
   };
 
   const handleDelete = async (id: number) => {
@@ -81,14 +46,11 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
   };
 
   const handleDownload = async (file: OrderFile) => {
-    if (!file.url) {
-      toast.error("Ссылка для скачивания недоступна");
-      return;
-    }
+    const url = URL_BASE + file.path + file.name
 
     try {
       // Загружаем файл как Blob
-      const response = await fetch(file.url, {
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Accept': '*/*',
@@ -105,7 +67,7 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
       // Создаём временную ссылку для скачивания
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = file.name || 'download'; // Укажи имя файла
+      link.download = file.name || 'download';
       document.body.appendChild(link);
       link.click();
 
@@ -126,15 +88,9 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
         maxSize={MAX_SIZE_BYTES}
         multiple
         maxFiles={MAX_FILES}
-        onDropAccepted={(accepted) => {
-          handleDrop(accepted);
-        }}
-        onDropRejected={(rejected) => {
-          handleDropRejected(rejected);
-        }}
-        onError={(error) => {
-          handleDropError(error);
-        }}
+        onDropAccepted={handleDrop}
+        onDropRejected={onDropRejected}
+        onError={onDropError}
         disabled={uploading}
         className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
       >
@@ -171,18 +127,16 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
               </ItemContent>
               <ItemActions>
                 {/* Кнопка скачивания */}
-                {file.url && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDownload(file)}
-                    disabled={uploading}
-                    title="Скачать файл"
-                  >
-                    <Download className="h-4 w-4"/>
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDownload(file)}
+                  disabled={uploading}
+                  title="Скачать файл"
+                >
+                  <Download className="h-4 w-4"/>
+                </Button>
 
                 {/* Кнопка удаления */}
                 <ConfirmPopover
@@ -193,7 +147,7 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
                   onConfirm={() => handleDelete(file.id)}
                 >
                   <Button variant="ghost" size="icon" disabled={uploading}>
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4"/>
                   </Button>
                 </ConfirmPopover>
               </ItemActions>

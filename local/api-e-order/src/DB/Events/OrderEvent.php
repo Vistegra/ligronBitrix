@@ -24,13 +24,12 @@ final class OrderEvent
   /**
    * Событие: заказ создан
    */
-  public static function onCreated(int $orderId, array $orderData): void
+  public static function onCreated(array $orderData): void
   {
     $event = new Event(
       self::MODULE_ID,
       self::EVENT_ORDER_CREATED,
       [
-        'ORDER_ID' => $orderId,
         'ORDER'    => $orderData,
       ]
     );

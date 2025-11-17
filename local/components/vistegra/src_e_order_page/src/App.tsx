@@ -29,8 +29,10 @@ export default function App() {
             }
           >
             <Route path={PAGE.ORDERS} element={<OrdersPage/>}/>
-            <Route path={PAGE.ORDER_ID} element={<OrderDetailPage/>}/>
+            <Route path={PAGE.ORDER_DETAIL} element={<OrderDetailPage/>}/>
             <Route path="/" element={<OrdersPage/>}/>
+
+            <Route path="*" element={<div>404 — Страница не найдена</div>} />
           </Route>
         </Routes>
         <Toaster/>

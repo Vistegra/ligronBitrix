@@ -5,6 +5,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
 import {Loader2, Trash2, UploadIcon, AlertCircle} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Form,
@@ -17,7 +18,7 @@ import {
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {
   Item,
   ItemActions,
@@ -30,6 +31,14 @@ import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 import {useCreateOrder} from "@/hooks/useCreateOrder";
 import {toast} from "sonner";
+import {PAGE} from "@/api/constants.ts";
+import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
+
+const MAX_FILES = 10;
+const MAX_SIZE_MB = 20;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+const { onDropRejected, onDropError } = useFileDropzone();
 
 // Валидация
 const formSchema = z.object({
@@ -41,7 +50,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function NewOrderForm() {
   const [files, setFiles] = useState<File[]>([]);
-  const {createOrder, isSubmitting, error, success, createdOrder, reset, clearError} = useCreateOrder();
+  const {createOrder, isSubmitting, error, success, createdOrder,clearError} = useCreateOrder();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -50,13 +59,17 @@ export default function NewOrderForm() {
       comment: "",
     },
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (success && createdOrder) {
-      form.reset();
+    if (success && createdOrder?.order?.id) {
+      toast.success("Заказ создан! Открываем заказ...");
       setFiles([]);
-      // Автосброс состояния хука через 4 сек
-      const timer = setTimeout(() => reset(), 4000);
+
+      const timer = setTimeout(() => {
+        navigate(PAGE.orderDetail(createdOrder.order.id));
+      }, 1000);
+
       return () => clearTimeout(timer);
     }
   }, [success, createdOrder]);
@@ -73,37 +86,21 @@ export default function NewOrderForm() {
     clearError();
 
     try {
-      const result = await createOrder({
+      await createOrder({
         name: data.name,
         comment: data.comment || undefined,
         files: files.length > 0 ? files : undefined,
       });
 
-      // Успех или частичный успех
-      if (result.order) {
-        const fileErrors = result.files
-          ?.filter((f) => f.error)
-          .map((f) => `${f.original_name}: ${f.error}`)
-          .join("; ");
-
-        if (fileErrors) {
-           toast.warning(`Заказ создан, но есть ошибки с файлами: ${fileErrors}`);
-        } else {
-           toast.success("Заказ успешно создан!");
-        }
-      }
-    } catch (err) {
-      // @ts-ignore
-      toast.error(err.message);
+      toast.success("Заказ успешно создан!");
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка при создании заказа");
     }
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Создать новый заказ</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="w-full max-w-2xl mx-auto p-0 m-0 border-none shadow-none">
+      <CardContent className="p-0 m-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -141,9 +138,12 @@ export default function NewOrderForm() {
 
             <div className="space-y-4">
               <Dropzone
-                maxSize={20 * 1024 * 1024}
+                maxSize={MAX_SIZE_BYTES}
+                maxFiles={MAX_FILES}
                 multiple
-                onDrop={onDrop}
+                onDropAccepted={onDrop}
+                onDropRejected={onDropRejected}
+                onError={onDropError}
                 disabled={isSubmitting}
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
               >
@@ -194,35 +194,17 @@ export default function NewOrderForm() {
               </Alert>
             )}
 
-            {/* Ошибки по файлам при partial success */}
-            {success && createdOrder?.files && createdOrder.files.some(f => f.error) && (
-              <Alert variant="default" className="border-orange-500 bg-orange-50">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Частичный успех</AlertTitle>
+            {success && (
+              <Alert variant="default" className="border-green-500 bg-green-50">
+                <AlertTitle>Заказ успешно создан!</AlertTitle>
                 <AlertDescription>
-                  Заказ создан, но не все файлы загружены:
-                  <ul className="mt-2 list-disc list-inside text-sm">
-                    {createdOrder.files
-                      .filter(f => f.error)
-                      .map((f, i) => (
-                        <li key={i}>
-                          <strong>{f.original_name}</strong>: {f.error}
-                        </li>
-                      ))}
-                  </ul>
+                  {createdOrder?.files && createdOrder.files.length > 0
+                    ? `Загружено файлов: ${createdOrder.files.length}`
+                    : "Файлы не были прикреплены"}
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* Успешные файлы */}
-            {success && createdOrder?.files && createdOrder.files.some(f => f.file_id) && (
-              <Alert variant="default" className="border-green-500 bg-green-50">
-                <AlertTitle>Файлы загружены</AlertTitle>
-                <AlertDescription>
-                  Успешно загружено файлов: {createdOrder.files.filter(f => f.file_id).length}
-                </AlertDescription>
-              </Alert>
-            )}
             <div className="flex justify-end space-x-4">
               <Button
                 type="submit"

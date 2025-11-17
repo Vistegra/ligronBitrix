@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OrderApi\DB\Repositories;
 
+use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\Type\DateTime;
 use OrderApi\DB\Events\OrderEvent;
 use OrderApi\DB\Models\OrderTable;
@@ -52,10 +53,14 @@ final class OrderRepository
       throw new \RuntimeException('Ошибка создания заказа: ' . implode(', ', $errors));
     }
 
-    $orderId = $result->getId();
-    $order = self::getById($orderId);
+    $id = (int)$result->getId();
 
-    OrderEvent::onCreated($orderId, $order);
+    $order = self::getById($id);
+    if (!$order) {
+      throw new \RuntimeException('Заказ создан, но не найден при чтении');
+    }
+
+    OrderEvent::onCreated($order);
 
     return $order;
   }
@@ -95,14 +100,13 @@ final class OrderRepository
       return null;
     }
 
-    $order['files'] = OrderFileRepository::getByOrderId($order['id']);
-
     return $order;
   }
 
 
   /**
    * Полное количество (с фильтром)
+   * @throws ObjectPropertyException
    */
   public static function getTotalCount(array $filter = []): int
   {
@@ -117,6 +121,7 @@ final class OrderRepository
 
   /**
    * Сменить статус
+   * @throws \Exception
    */
   public static function changeStatus(int $orderId, string $newStatusCode, ?string $comment = null): bool
   {
@@ -157,24 +162,11 @@ final class OrderRepository
   /**
    * Дочерние заказы с пагинацией
    */
-  public static function getChildren(int $parentId, int $limit = 50, int $offset = 0): array
+  public static function getChildren(int $parentId, int $limit = 100, int $offset = 0): array
   {
     return self::queryList([
       'filter' => ['=parent_id' => $parentId],
       'order' => ['id' => 'asc'],
-      'limit' => $limit,
-      'offset' => $offset,
-    ]);
-  }
-
-  /**
-   * Корневые заказы с пагинацией
-   */
-  public static function getRootOrders(array $filter = [], int $limit = 50, int $offset = 0): array
-  {
-    $filter['=parent_id'] = null;
-    return self::queryList([
-      'filter' => $filter,
       'limit' => $limit,
       'offset' => $offset,
     ]);

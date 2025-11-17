@@ -25,61 +25,47 @@ final class OrderController extends AbstractController
   public function create(ServerRequestInterface $request): ResponseInterface
   {
     $data = $request->getParsedBody() ?? [];
-
     $uploadedFiles = $request->getUploadedFiles()['file'] ?? [];
 
     if ($uploadedFiles && !is_array($uploadedFiles)) {
       $uploadedFiles = [$uploadedFiles];
     }
 
-    /** @var UserDTO $user */
-    $user = $request->getAttribute('user');
-    if (!$user) {
-      return $this->error('Unauthorized', 401);
-    }
-
-    // Создаём заказ с файлами
     $result = $this->orderService->createOrder($data, $uploadedFiles);
 
     if (!$result->success) {
       return $this->error($result->orderError ?? 'Ошибка создания заказа', 400);
     }
 
-    // Получаем заказ для ответа
-    $order = $this->orderService->getOrder($result->orderId);
+    $order = $result->order;
 
-    if (!$order) {
-      return $this->error('Заказ создан, но не найден при чтении', 500);
-    }
-
-    // Формируем ответ
     $responseData = [
       'order' => $order,
+      'files' => array_values($result->getSuccessfulFiles()), // Только успешные
     ];
 
-    if (!empty($result->fileResults)) {
-      $responseData['files'] = array_map(
-        fn(FileUploadResult $r) => $r->toArray(),
-        $result->fileResults
-      );
-    }
-
-    // Определяем HTTP-статус
-    $statusCode = 201;
-    $message = 'Заказ создан';
-
-    if ($result->hasFileErrors()) {
-      $statusCode = $result->allFilesFailed() ? 400 : 207;
-      $message = $result->allFilesFailed()
-        ? 'Заказ создан, но файлы не загружены'
-        : 'Заказ создан, часть файлов не загружена';
+    // Определяем статус и сообщение
+    if ($result->allFilesFailed()) {
+      $status = 'error';
+      $message = 'Заказ создан, но файлы не загружены';
+      $code = 400;
+    } elseif ($result->hasFileErrors()) {
+      $failedNames = $result->getFailedOriginalNames();
+      $list = implode(', ', $failedNames);
+      $status = 'partial';
+      $message = "Заказ создан. Файлы загружены частично: {$list}";
+      $code = 207;
+    } else {
+      $status = 'success';
+      $message = 'Заказ создан';
+      $code = 201;
     }
 
     return $this->json([
-      'status'  => $statusCode === 201 ? 'success' : ($statusCode === 207 ? 'partial' : 'error'),
+      'status'  => $status,
       'message' => $message,
       'data'    => $responseData,
-    ], $statusCode);
+    ], $code);
   }
 
   // GET /orders/{id}
@@ -89,8 +75,16 @@ final class OrderController extends AbstractController
       $orderId = (int)$args['id'];
       $order = $this->orderService->getOrder($orderId);
 
+      $orderId = $order['id'];
+
+      if (!$orderId) {
+        return $this->error('Заказ не найден', 404);
+      }
+
+      $files = $this->orderService->getFilesByOrderId($orderId);
+
       return $order
-        ? $this->success('Детали заказа', ['order' => $order])
+        ? $this->success('Детали заказа', ['order' => $order, 'files' => $files])
         : $this->error('Заказ не найден', 404);
     } catch (\Exception $e) {
       return $this->handleError($e);
@@ -159,6 +153,7 @@ final class OrderController extends AbstractController
    */
   public function uploadFiles(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
+    $orderId = (int)$args['id'];
     $files = $request->getUploadedFiles()['file'] ?? [];
 
     if (!is_array($files)) {
@@ -166,39 +161,45 @@ final class OrderController extends AbstractController
     }
 
     if (empty($files)) {
-      return $this->error('No files uploaded', 400);
+      return $this->error('Файлы не переданы', 400);
     }
-
-    $orderId = (int)$args['id'];
 
     $order = $this->orderService->getOrder($orderId);
     if (!$order) {
-      return $this->error('Order not found', 404);
+      return $this->error('Заказ не найден', 404);
     }
 
     $results = $this->orderService->uploadFilesToOrder($order, $files);
 
-    $successful = array_filter($results, fn($r) => $r->isSuccess());
-    $failed = array_filter($results, fn($r) => !$r->isSuccess());
+    $successfulFiles = array_values(array_filter(
+      array_map(fn($r) => $r->isSuccess() ? $r->file : null, $results),
+      fn($f) => $f !== null
+    ));
 
-    if (empty($failed)) {
-      return $this->success('Files uploaded', [
-        'files' => array_map(fn($r) => $r->toArray(), $results)
+    $failedNames = array_values(array_filter(
+      array_map(fn($r) => !$r->isSuccess() ? $r->originalName : null, $results),
+      fn($n) => $n !== null
+    ));
+
+    if (empty($failedNames)) {
+      return $this->success('Все файлы загружены', [
+        'files' => $successfulFiles
       ], 201);
     }
 
-    if (empty($successful)) {
+    if (empty($successfulFiles)) {
       return $this->json([
         'status' => 'error',
-        'message' => 'All files failed to upload',
-        'files' => array_map(fn($r) => $r->toArray(), $results)
+        'message' => 'Ни один файл не был загружен',
+        'data' => ['files' => []]
       ], 400);
     }
 
+    $list = implode(', ', $failedNames);
     return $this->json([
       'status' => 'partial',
-      'message' => 'Some files uploaded, some failed',
-      'files' => array_map(fn($r) => $r->toArray(), $results)
+      'message' => "Файлы загружены частично: {$list}",
+      'data' => ['files' => $successfulFiles]
     ], 207);
   }
 
@@ -234,7 +235,7 @@ final class OrderController extends AbstractController
         'message' => 'Orders list',
         'data' =>
           [
-            'order' => $orders,
+            'orders' => $orders,
             'pagination' => [
               'limit' => $limit,
               'offset' => $offset,

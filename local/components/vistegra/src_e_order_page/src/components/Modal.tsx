@@ -4,6 +4,8 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import type {ReactNode} from "react";
 
@@ -12,16 +14,32 @@ interface ModalProps {
   children: ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  title?: string;
+  description?: string;
 }
 
-export function Modal({trigger, children, open, onOpenChange}: ModalProps) {
+export function Modal({
+                        trigger,
+                        children,
+                        open,
+                        onOpenChange,
+                        title = "",
+                        description = ""
+                      }: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
       <DialogContent
-        className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-50 [&>button]:bg-white [&>button]:rounded-full [&>button]:shadow-lg [&>button]:border">
+        className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white p-5 border-none"
+      >
+          <DialogTitle className="">{title}</DialogTitle>
+
+          <DialogDescription className="">
+            {description}
+          </DialogDescription>
+
         <div className="bg-white rounded-lg">
           {children}
         </div>

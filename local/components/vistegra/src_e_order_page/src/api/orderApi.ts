@@ -1,16 +1,10 @@
-import api from "./client";
+import api, {type ApiResponse} from "./client";
 import { ENDPOINT } from "./constants";
 
 export type CreateOrderData = {
   name: string;
   comment?: string;
   files?: File[];
-};
-
-export type FileUploadResult = {
-  file_id?: number;
-  original_name: string;
-  error?: string;
 };
 
 export interface OrderStatus {
@@ -27,11 +21,14 @@ export interface StatusHistoryItem {
 
 export interface OrderFile {
   id: number;
+  order_id: number;
   name: string;
+  path: string;
   size?: number;
   mime?: string;
-  path?: string;
-  created_at?: number;
+  created_at?: string;
+  uploaded_by?: number;
+  uploaded_by_id?: number;
 }
 
 export type Order = {
@@ -57,16 +54,10 @@ export type Order = {
   status_color: string | null;
   parent_order_number: string | null;
   parent_order_id: number | null;
-  files: OrderFile[] | null;
 };
 
-export type CreateOrderResponse = {
-  order: Order;
-  files?: FileUploadResult[];
-};
-
-export type OrdersListResponse = {
-  order: Order[];
+export type OrdersResponse = {
+  orders: Order[];
   pagination: {
     limit: number;
     offset: number;
@@ -74,15 +65,20 @@ export type OrdersListResponse = {
   };
 };
 
-export type ApiResponse<T> = {
-  status: 'success' | 'error' | 'partial';
-  message: string;
-  data: T;
+export type OrderResponse = {
+  order: Order;
+  files: OrderFile[];
 };
+
+export type UploadFilesResponse = {
+  files: OrderFile[];
+  //ToDo error messages
+};
+
 
 export const orderApi = {
   //Создание заказа
-  async createOrder(data: CreateOrderData): Promise<ApiResponse<CreateOrderResponse>> {
+  async createOrder(data: CreateOrderData): Promise<ApiResponse<OrderResponse>> {
     const formData = new FormData();
     formData.append("name", data.name);
 
@@ -108,7 +104,7 @@ export const orderApi = {
     filter?: string;
     limit?: number;
     offset?: number;
-  }): Promise<ApiResponse<OrdersListResponse>> {
+  }): Promise<ApiResponse<OrdersResponse>> {
 
     const response = await api.get(ENDPOINT.ORDERS, { params });
 
@@ -116,7 +112,7 @@ export const orderApi = {
   },
 
   // Получить заказ
-  async getOrder(id: number): Promise<ApiResponse<{ order: Order }>> {
+  async getOrder(id: number): Promise<ApiResponse<OrderResponse>> {
 
     const { data } = await api.get(`${ENDPOINT.ORDERS}/${id}`);
 
@@ -146,17 +142,11 @@ export const orderApi = {
   },
 
   //Обновить файлы
-  async uploadFiles(
-    orderId: number,
-    files: File[]
-  ): Promise<ApiResponse<{ files: FileUploadResult[] }>> {
+  async uploadFiles(orderId: number, files: File[]): Promise<ApiResponse<UploadFilesResponse>> {
     const formData = new FormData();
     files.forEach((file) => formData.append("file[]", file));
 
-    const { data } = await api.post(
-      `${ENDPOINT.ORDERS}/${orderId}/files`,
-      formData
-    );
+    const { data } = await api.post(`${ENDPOINT.ORDERS}/${orderId}/files`, formData);
     return data;
   },
 

@@ -11,6 +11,7 @@ final class OrderFileRepository
 
   /**
    * Добавить файл
+   * @throws \Exception
    */
   public static function add(
     int $orderId,
@@ -20,7 +21,7 @@ final class OrderFileRepository
     ?string $mime = null,
     int $uploadedBy = 1,
     int $uploadedById = 0
-  ): ?int
+  ): ?array
   {
     $result = OrderFileTable::add([
       'order_id' => $orderId,
@@ -32,7 +33,14 @@ final class OrderFileRepository
       'uploaded_by_id' => $uploadedById,
     ]);
 
-    return $result->isSuccess() ? $result->getId() : null;
+    $id = (int)$result->getId();
+
+    $file = self::getById($id);
+    if (!$file) {
+      throw new \RuntimeException('Файл создан, но не найден при чтении');
+    }
+
+    return $result->isSuccess() ? $file : null;
   }
 
   /**

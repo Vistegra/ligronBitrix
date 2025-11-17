@@ -48,6 +48,8 @@ export function OrdersTablePanel({visibleColumns, setVisibleColumns}: OrdersTabl
             </DropdownMenu>
 
             <Modal
+              title="Новый заказ"
+              description="Заполните необходимые поля для создания нового заказа"
               trigger={
                 <Button>
                   <PlusIcon className="mr-2 h-4 w-4" />

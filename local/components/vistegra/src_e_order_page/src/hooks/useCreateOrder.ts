@@ -1,38 +1,42 @@
 import { useState } from "react";
-import { orderApi, type CreateOrderData, type CreateOrderResponse } from "@/api/orderApi";
+import { orderApi, type CreateOrderData, type OrderResponse } from "@/api/orderApi";
 import type { ApiResponse, SuccessApiResponse, PartialSuccessApiResponse } from "@/api/client";
 
 type UseCreateOrderReturn = {
-  createOrder: (data: CreateOrderData) => Promise<CreateOrderResponse>;
+  createOrder: (data: CreateOrderData) => Promise<OrderResponse>;
   isSubmitting: boolean;
   error: string | null;
   clearError: () => void;
   success: boolean;
   reset: () => void;
-  createdOrder: CreateOrderResponse | null;
+  createdOrder: OrderResponse | null;
 };
 
 export function useCreateOrder(): UseCreateOrderReturn {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<CreateOrderResponse | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
 
-  const createOrder = async (data: CreateOrderData): Promise<CreateOrderResponse> => {
+  const createOrder = async (data: CreateOrderData): Promise<OrderResponse> => {
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
     setCreatedOrder(null);
 
     try {
-      const response: ApiResponse<CreateOrderResponse> = await orderApi.createOrder(data);
+      const response: ApiResponse<OrderResponse> = await orderApi.createOrder(data);
 
       if (response.status === "success" || response.status === "partial") {
-        const successResponse = response as SuccessApiResponse<CreateOrderResponse> | PartialSuccessApiResponse<CreateOrderResponse>;
+        const successResponse = response as SuccessApiResponse<OrderResponse> | PartialSuccessApiResponse<OrderResponse>;
 
         const result = successResponse.data;
         setCreatedOrder(result);
         setSuccess(true);
+
+        if (response.status === "partial") {
+          console.warn("Частичный успех:", response.message);
+        }
 
         return result;
       }

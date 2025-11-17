@@ -11,7 +11,7 @@ export function useChildOrders(parentId: number) {
       try {
         const res = await orderApi.getOrders({ filter: `parent_id=${parentId}` });
         if (res.status === "success") {
-          setChildren(res.data.order);
+          setChildren(res.data.orders);
         }
       } catch {
         // ignore

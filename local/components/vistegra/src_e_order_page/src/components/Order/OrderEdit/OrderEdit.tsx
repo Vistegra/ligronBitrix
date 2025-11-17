@@ -26,7 +26,7 @@ export default function OrderEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const orderId = parseInt(id!, 10);
-  const { order, loading, error, updateComment, uploadFiles, deleteFile } = useOrder(orderId);
+  const { order, loading, error, files, updateComment, uploadFiles, deleteFile } = useOrder(orderId);
   const { children, loading: childLoading } = useChildOrders(orderId);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
@@ -57,11 +57,6 @@ export default function OrderEdit() {
 
   if (loading) return <div className="p-8">Загрузка...</div>;
   if (error || !order) return <Alert variant="destructive"><AlertDescription>{error || "Заказ не найден"}</AlertDescription></Alert>;
-
-  const files = (order.files || [])
-    .map(f => (
-      { id: f.id, name: f.name, size: f.size, url: 'https://ligron.ru' + f.path + f.name }
-    ));
 
   return (
     <div className="min-h-screen bg-background pb-20">

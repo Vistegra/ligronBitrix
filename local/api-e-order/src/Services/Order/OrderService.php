@@ -43,48 +43,33 @@ final readonly class OrderService
   {
     $data['created_by_id'] = $this->user->id;
 
-    // Определяем тип создателя и заполняем связи
     if ($this->user->isDealer()) {
       $data['created_by'] = OrderTable::CREATED_BY_DEALER;
       $data['dealer_prefix'] = $this->user->dealer_prefix;
       $data['dealer_user_id'] = $this->user->id;
-    } elseif ($this->user->isManager() || $this->user->isOfficeManager()) { //ToDo кто может создавать заказ за пользователя дилера?
-      throw new \Error('Функционал не реализован'); //ToDo
-      $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
-      $data['manager_id'] = $this->user->id;
-      $data['dealer_prefix'] = null; //ToDo get subordinate dealer
-      $data['dealer_user_id'] = null; //ToDo get subordinate dealer user
+    } elseif ($this->user->isManager() || $this->user->isOfficeManager()) {
+      throw new \Error('Функционал не реализован'); // ToDo
     } else {
-      return new OrderCreateResult(
-        success: false,
-        orderError: 'Не указана роль пользователя'
-      );
+      return new OrderCreateResult(success: false, orderError: 'Не указана роль пользователя');
     }
 
     $statusData = $this->getDefaultStatusData();
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];
 
-    // Создаём заказ
     try {
       $order = OrderRepository::create($data);
-
     } catch (\Throwable $e) {
-      return new OrderCreateResult(
-        success: false,
-        orderError: 'Ошибка создания заказа в базе данных: ' . $e->getMessage()
-      );
+      return new OrderCreateResult(success: false, orderError: 'Ошибка создания заказа: ' . $e->getMessage());
     }
 
-    // Обрабатываем файлы (если есть)
-    $fileResults = [];
-    if (!empty($uploadedFiles)) {
-      $fileResults = $this->uploadFilesToOrder($order, $uploadedFiles);
-    }
+    $fileResults = !empty($uploadedFiles)
+      ? $this->uploadFilesToOrder($order, $uploadedFiles)
+      : [];
 
     return new OrderCreateResult(
       success: true,
-      orderId: (int)$order['id'],
+      order: $order,
       fileResults: $fileResults
     );
   }
@@ -203,28 +188,9 @@ final readonly class OrderService
     ]);
   }
 
-  /**
-   * Добавить файл к заказу (отдельный вызов)
-   */
-  public function addFile(
-    int     $orderId,
-    string  $name,
-    string  $path,
-    ?int    $size = null,
-    ?string $mime = null
-  ): ?int
+  public function getFilesByOrderId($orderId): ?array
   {
-    $this->getOrder($orderId);
-    $uploadedBy = $this->user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
-    return OrderFileRepository::add(
-      $orderId,
-      $name,
-      $path,
-      $size,
-      $mime,
-      $uploadedBy,
-      $this->user->id
-    );
+    return OrderFileRepository::getByOrderId($orderId);
   }
 
   /**
@@ -233,14 +199,22 @@ final readonly class OrderService
    */
   public function deleteFile(int $orderId, int $fileId): bool
   {
-    // Проверка доступа и получение заказа с файлами
+    if (!$orderId) {
+      throw new \Exception('Не передан id заказа', 404);
+    }
+
+    if (!$fileId) {
+      throw new \Exception('Не передан id файла', 404);
+    }
+
+    // Проверка доступа
     $order = $this->getOrder($orderId);
 
-    // Находим файл в массиве файлов заказа
-    $file = $this->getFileFromOrder($order, $fileId);
-    if (!$file) {
-      throw new \Exception('Файл не найден в заказе', 404);
+    if (!$order) {
+      throw new \Exception("Не найден заказ id={$orderId}", 404);
     }
+
+    $file = OrderFileRepository::getById($fileId);
 
     // Удаляем физический файл с диска
     FileDiskRepository::deleteFile($file['path'], $file['name']);
@@ -248,70 +222,6 @@ final readonly class OrderService
     // Удаляем запись о файле из БД
     return OrderFileRepository::delete($fileId);
   }
-
-  /**
-   * Находит файл в массиве файлов заказа по ID файла
-   */
-  private function getFileFromOrder(array $order, int $fileId): ?array
-  {
-    if (empty($order['files']) || !is_array($order['files'])) {
-      return null;
-    }
-
-    foreach ($order['files'] as $file) {
-      if (isset($file['id']) && $file['id'] == $fileId) {
-        return $file;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Загрузить один файл (вызывается из uploadFilesToOrder)
-   *
-   * @throws \Exception при ошибке
-   */
-  private function uploadFileToOrder(array $order, UploadedFileInterface $file): ?int
-  {
-    $dealerUserId = $order['dealer_user_id'];
-    $dealerPrefix = $order['dealer_prefix'];
-
-    if (!$dealerUserId || !$dealerPrefix) {
-      throw new \RuntimeException('В заказе нет данных дилера id и prefix');
-    }
-
-    $orderId = $order['id'];
-
-    $relativeUploadDir = ApiConfig::UPLOAD_FILES_DIR . "$dealerPrefix/$dealerUserId/$orderId/";
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . $relativeUploadDir;
-
-    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
-      throw new \Exception("Не удалось создать директорию: {$uploadDir}");
-    }
-
-    $filename = $this->sanitizeFilename($file->getClientFilename(), $uploadDir);
-    $path = $uploadDir . $filename;
-
-    try {
-      $file->moveTo($path);
-    } catch (\Throwable $e) {
-      throw new \Exception("Не удалось переместить файл: " . $e->getMessage());
-    }
-
-    $uploadedBy = $this->user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
-
-    return OrderFileRepository::add(
-      orderId: $orderId,
-      name: $filename,
-      path: $relativeUploadDir,
-      size: $file->getSize(),
-      mime: $file->getClientMediaType(),
-      uploadedBy: $uploadedBy,
-      uploadedById: $this->user->id
-    );
-  }
-
 
   /**
    * Обработать все загруженные файлы
@@ -323,60 +233,46 @@ final readonly class OrderService
   public function uploadFilesToOrder(array $order, array $files): array
   {
     $results = [];
+    $uploadDir = $_SERVER['DOCUMENT_ROOT']
+      . ApiConfig::UPLOAD_FILES_DIR
+      . "{$order['dealer_prefix']}/{$order['dealer_user_id']}/{$order['id']}/";
 
-    foreach ($files as $index => $file) {
-      $originalName = $file->getClientFilename() ?: 'unknown_file_' . $index;
+    $uploadedBy = $this->user->isDealer()
+      ? OrderTable::CREATED_BY_DEALER
+      : OrderTable::CREATED_BY_MANAGER;
 
-      // PHP-ошибки загрузки
-      if ($file->getError() !== UPLOAD_ERR_OK) {
-        $results[] = new FileUploadResult(
-          fileId: null,
-          originalName: $originalName,
-          error: 'Ошибка загрузки файла ' . $originalName . ', код ошибки: ' . $file->getError()
-        );
+    foreach ($files as $file) {
+      // 1. Загружаем на диск — получаем FileUploadResult
+      $diskResult = FileDiskRepository::upload($file, $uploadDir);
+
+      // Если ошибка на диске — возвращаем её
+      if (!$diskResult->isSuccess()) {
+        $results[] = $diskResult;
         continue;
       }
 
-      // Попытка загрузки
-      try {
-        $fileId = $this->uploadFileToOrder($order, $file);
-        $results[] = new FileUploadResult(
-          fileId: $fileId,
-          originalName: $originalName
-        );
-      } catch (\Throwable $e) {
-        $results[] = new FileUploadResult(
-          fileId: null,
-          originalName: $originalName,
-          error: "Ошибка загрузки файла: " . $e->getMessage()
-        );
-      }
+      // 2. Сохраняем в БД
+      $fileData = $diskResult->file;
+
+      $savedFileData = OrderFileRepository::add(
+        orderId: $order['id'],
+        name: $fileData['name'],
+        path: $fileData['path'],
+        size: $fileData['size'],
+        mime: $fileData['mime'],
+        uploadedBy: $uploadedBy,
+        uploadedById: $this->user->id
+      );
+
+      // 3. Возвращаем полные данные из БД
+      $results[] = new FileUploadResult(
+        file: $savedFileData,  // Полный массив из БД
+        originalName: null,
+        error: null
+      );
     }
 
     return $results;
-  }
-
-
-  /**
-   * Санитайз имени файла + избежание коллизий
-   */
-  private function sanitizeFilename(string $original, string $dir): string
-  {
-    $original = basename($original);
-    $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $original);
-
-    $info = pathinfo($sanitized);
-    $base = $info['filename'];
-    $ext = isset($info['extension']) ? '.' . $info['extension'] : '';
-    $counter = 1;
-    $candidate = $sanitized;
-
-    while (file_exists($dir . $candidate)) {
-      $candidate = "{$base}_{$counter}{$ext}";
-      $counter++;
-    }
-
-    return $candidate;
   }
 
   /**

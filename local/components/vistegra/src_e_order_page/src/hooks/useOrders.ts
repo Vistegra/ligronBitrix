@@ -58,7 +58,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersReturn {
           throw new Error(response.message || "Ошибка загрузки заказов");
         }
 
-        setOrders(response.data.order);
+        setOrders(response.data.orders);
         setTotal(response.data.pagination.total);
         setOffset(newOffset);
         setFilter(newFilter);

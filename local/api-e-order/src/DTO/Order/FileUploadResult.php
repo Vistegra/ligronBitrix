@@ -6,22 +6,22 @@ namespace OrderApi\DTO\Order;
 final readonly class FileUploadResult
 {
   public function __construct(
-    public ?int    $fileId,
-    public string  $originalName,
+    public ?array  $file = null,
+    public ?string $originalName = null,
     public ?string $error = null
   ) {}
 
   public function isSuccess(): bool
   {
-    return $this->fileId !== null;
+    return $this->file !== null;
   }
 
   public function toArray(): array
   {
     return [
-      'file_id' => $this->fileId,
-      'original_name' => $this->originalName,
-      'error' => $this->error,
-    ];
+        'file' => null,
+        'original_name' => $this->originalName,
+        'error' => $this->error
+      ];
   }
 }

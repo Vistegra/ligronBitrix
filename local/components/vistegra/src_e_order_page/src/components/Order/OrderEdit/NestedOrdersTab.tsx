@@ -8,13 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, fromUnixTime } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Link } from "react-router-dom";
 
 import type { Order } from "@/api/orderApi";
+import StatusBadge from "@/components/Order/StatusBage.tsx";
 
 type Props = {
   orders: Order[];
@@ -74,12 +75,7 @@ export function NestedOrdersTab({ orders, loading }: Props) {
             </TableCell>
             <TableCell>
               {order.status_name ? (
-                <Badge
-                  variant="secondary"
-                  style={{ backgroundColor: order.status_color || "#ccc" }}
-                >
-                  {order.status_name}
-                </Badge>
+                <StatusBadge name={order.status_name} color={order.status_color} />
               ) : (
                 "—"
               )}
