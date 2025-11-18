@@ -18,23 +18,23 @@ export default function Layout() {
     <div className="min-h-screen ">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex flex-row items-center justify-between gap-4">
-          <div className="rounded-lg overflow-hidden">
-            <Link to="/" className="">
-              <svg xmlns="http://www.w3.org/2000/svg" width="49" height="51" viewBox="0 0 49 51" fill="none">
-                <path d="M48.2023 0H0V50.8276H48.2023V0Z" fill="#229E35"/>
-                <path
-                  d="M31.4627 28.1771V34.6543H16V31.8412L18.0773 31.402V17.9399L16 17.5008V14.6738H25.4372V17.5008L22.906 17.9399V30.9628H27.6658L27.7759 28.1771H31.4627Z"
-                  fill="white"/>
-              </svg>
-            </Link>
-          </div>
+          <div className="flex flex-row items-center justify-between gap-4">
+            <div className="rounded-lg overflow-hidden">
+              <Link to="/" className="">
+                <svg xmlns="http://www.w3.org/2000/svg" width="49" height="51" viewBox="0 0 49 51" fill="none">
+                  <path d="M48.2023 0H0V50.8276H48.2023V0Z" fill="#229E35"/>
+                  <path
+                    d="M31.4627 28.1771V34.6543H16V31.8412L18.0773 31.402V17.9399L16 17.5008V14.6738H25.4372V17.5008L22.906 17.9399V30.9628H27.6658L27.7759 28.1771H31.4627Z"
+                    fill="white"/>
+                </svg>
+              </Link>
+            </div>
 
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold">LIGRON</h1>
-            <p className="text-md text-muted-foreground">Электронный заказ</p>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold">LIGRON</h1>
+              <p className="text-md text-muted-foreground">Электронный заказ</p>
+            </div>
           </div>
-        </div>
 
           {user && (
             <div className="flex items-center gap-3">

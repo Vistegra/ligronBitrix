@@ -59,8 +59,8 @@ export default function OrderEdit() {
   if (error || !order) return <Alert variant="destructive"><AlertDescription>{error || "Заказ не найден"}</AlertDescription></Alert>;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="bg-background pb-20">
+      <div className="">
         <Card className="w-full">
 
           <CardHeader>

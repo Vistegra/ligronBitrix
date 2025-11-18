@@ -7,6 +7,7 @@ import { PAGE } from "@/api/constants.ts"
 import { Toaster } from "sonner"
 import { useCheckAuth } from "@/hooks/useCheckAuth.ts"
 import ScreenProvider from "@/components/ScreenProvider.tsx"
+import ProfilePage from "@/pages/ProfilePage.tsx";
 
 export default function App() {
   useCheckAuth()
@@ -22,7 +23,7 @@ export default function App() {
             <Route path={PAGE.ORDERS} element={<OrdersPage />} />
             <Route path={PAGE.ORDERS_CANCELED} element={<OrdersPage />} />
             <Route path={PAGE.DRAFTS} element={<div>Черновики (страница в разработке)</div>} />
-            <Route path={PAGE.PROFILE} element={<div>Профиль (страница в разработке)</div>} />
+            <Route path={PAGE.PROFILE} element={<ProfilePage />} />
             <Route path={PAGE.ORDER_DETAIL} element={<OrderDetailPage />} />
             <Route path="/" element={<OrdersPage />} />
           </Route>
