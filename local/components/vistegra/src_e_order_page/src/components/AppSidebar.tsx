@@ -11,12 +11,10 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import {
-  ChevronRight,
-  FileText,
+  ChevronRight, 
   History,
-  Home,
-  LogOut,
-  User,
+  LogOut,  MonitorDotIcon,
+  User, UserPenIcon,
   XCircle,
 } from "lucide-react"
 import {Link, useLocation} from "react-router-dom"
@@ -86,7 +84,7 @@ export function AppSidebar() {
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton className="w-full justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4"/>
+                    <MonitorDotIcon className="h-4 w-4"/>
                     <span>Заказы</span>
                   </div>
                   <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90"/>
@@ -122,7 +120,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isInDraftsSection}>
               <Link to={PAGE.DRAFTS}>
-                <Home className="h-4 w-4"/>
+                <UserPenIcon className="h-4 w-4"/>
                 <span>Черновики</span>
               </Link>
             </SidebarMenuButton>

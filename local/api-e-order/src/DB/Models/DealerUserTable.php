@@ -64,7 +64,9 @@ abstract class DealerUserTable extends DataManager
       new Fields\StringField('contacts', [
         'nullable' => true,
         'size' => 255,
-        'character_set' => 'utf8'
+        'character_set' => 'utf8',
+        'save_data_modification' => F::toJsonEncode(),
+        'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
       new Fields\DatetimeField('register_date', [

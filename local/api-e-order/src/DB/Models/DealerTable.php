@@ -7,8 +7,6 @@ namespace OrderApi\DB\Models;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
-use \Bitrix\Main\Type\DateTime;
-use RuntimeException;
 use OrderApi\DB\Helpers\ModelFieldHelper as F;
 
 class DealerTable extends DataManager
@@ -54,9 +52,8 @@ class DealerTable extends DataManager
         'default_value' => '{}',
         'size' => 255,
         'character_set' => 'utf8',
-        //ToDO
-     /*   'save_data_modification' => F::toJsonEncode(),
-        'fetch_data_modification' => F::toJsonDecode(),*/
+        'save_data_modification' => F::toJsonEncode(),
+        'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
       new Fields\DatetimeField('register_date', [

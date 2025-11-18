@@ -31,7 +31,7 @@ class WebUserRepository
 
       return $result->fetch() ?: null;
     } catch (\Throwable $e) {
-      error_log('Ligron auth error: ' . $e->getMessage());
+
       return null;
     }
   }

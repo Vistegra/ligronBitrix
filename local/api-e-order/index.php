@@ -66,7 +66,7 @@ use OrderApi\Middleware\{GlobalErrorMiddleware,
   JsonResponseMiddleware,
   AuthMiddleware,
   TrailingSlashMiddleware};
-use OrderApi\Controllers\{AuthController, OrderController};
+use OrderApi\Controllers\{AuthController, OrderController, Webhook1CController};
 
 // DI
 $container = new Container();
@@ -112,6 +112,19 @@ $app->get('', function ($request, $response) {
   return $response;//->withHeader('Content-Type', 'application/json');
 });
 
+$app->get('/prefix', function ($request, $response) {
+  $payload = json_encode(['status' => 'success', 'message' => 'Api is working!', 'data' => \OrderApi\Services\Dealer\DealerInnPrefixService::getInnToPrefixMap()], JSON_UNESCAPED_UNICODE);
+  $response->getBody()->write($payload);
+  return $response;//->withHeader('Content-Type', 'application/json');
+});
+
+$app->get('/user_detailed', function ($request, $response) {
+  $query = $request->getQueryParams();
+  $payload = json_encode(['status' => 'success', 'message' => 'Api is working!', 'data' => \OrderApi\DB\Repositories\DealerUserRepository::findDetailedUserByIds((int)$query['userId'],(int)$query['dealerId'])], JSON_UNESCAPED_UNICODE);
+  $response->getBody()->write($payload);
+  return $response;//->withHeader('Content-Type', 'application/json');
+});
+
 
 $app->group('', function (RouteCollectorProxy $group) {
   $group->get('/statuses', OrderController::class . ':getStatuses');
@@ -128,6 +141,12 @@ $app->group('', function (RouteCollectorProxy $group) {
 
 
 })->add(AuthMiddleware::class);
+
+// Вебхук от 1С — без авторизации, отдельные методы
+$app->get(    '/webhook/1c/orders', Webhook1CController::class . ':get');
+$app->post(   '/webhook/1c/orders', Webhook1CController::class . ':post');
+$app->put(    '/webhook/1c/orders', Webhook1CController::class . ':put');
+$app->delete( '/webhook/1c/orders', Webhook1CController::class . ':delete');
 
 
 
