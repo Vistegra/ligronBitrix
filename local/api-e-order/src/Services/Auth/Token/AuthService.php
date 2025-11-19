@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OrderApi\Services\Auth;
+namespace OrderApi\Services\Auth\Token;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use OrderApi\Config\ApiConfig;
-use OrderApi\DTO\Auth\{UserDTO, JwtPayload};
+use OrderApi\DTO\Auth\{JwtPayload, UserDTO};
 
 class AuthService
 {

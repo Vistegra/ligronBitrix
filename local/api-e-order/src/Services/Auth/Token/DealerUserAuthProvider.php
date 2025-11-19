@@ -2,28 +2,27 @@
 
 declare(strict_types=1);
 
-namespace OrderApi\Services\Auth;
+namespace OrderApi\Services\Auth\Token;
 
-use DateTimeImmutable;
+
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
-use OrderApi\DB\Repositories\WebUserRepository;
-use OrderApi\DTO\Auth\{UserDTO, JwtPayload};
+use OrderApi\Constants\UserRole;
+use OrderApi\DB\Repositories\DealerUserRepository;
+use OrderApi\DTO\Auth\{JwtPayload, UserDTO};
 
-class LigronUserAuthProvider implements AuthProviderInterface
+class DealerUserAuthProvider implements AuthProviderInterface
 {
-  public const string PROVIDER = ProviderType::LIGRON;
+  public const string PROVIDER = ProviderType::DEALER;
 
   public function login(string $login, string $password): ?array
   {
-    if (!$login || !$password) {
-      return null;
-    }
+    if (!$login || !$password) return null;
 
-    $user = WebUserRepository::findUserByLogin($login);
+    $user = DealerUserRepository::findUserByLogin($login);
 
-    if (!$user || $user['password'] !== $password) {
+    if (!$user || !password_verify($password, $user['password'])) {
       return null;
     }
 
@@ -43,12 +42,13 @@ class LigronUserAuthProvider implements AuthProviderInterface
   {
     $userData = $payload['user'] ?? [];
     return ($userData['provider'] ?? '') === self::PROVIDER
-      && in_array($userData['role'] ?? '', ['manager', 'office_manager'], true);
+      && !empty($userData['dealer_id'])
+      && !empty($userData['dealer_prefix']);
   }
 
   private function generateJwt(UserDTO $user): string
   {
-    $now = new DateTimeImmutable();
+    $now = new \DateTimeImmutable();
 
     $payload = new JwtPayload(
       iss: ApiConfig::API_NAME,
@@ -60,18 +60,20 @@ class LigronUserAuthProvider implements AuthProviderInterface
     return JWT::encode($payload->toArray(), ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
   }
 
-  public static function normalizeUser(array $user):  UserDTO
+  public static function normalizeUser(array $user): UserDTO
   {
-    $role = $user['manager'] ? 'manager' : 'office_manager';
+    $contacts = $user['contacts'];
 
     return new UserDTO(
-      id: (int)$user['id'],
+      id: (int)$user['ID'],
       login: $user['login'],
       name: $user['name'] ?? '',
       provider: self::PROVIDER,
-      role: $role,
-      email: $user['email'] ?? '',
-      phone: $user['phone'] ?? ''
+      role: UserRole::DEALER,
+      email: $contacts['email'] ?? '',
+      phone: $contacts['phone'] ?? '',
+      dealer_id: (int)$user['dealer_id'],
+      dealer_prefix: $user['dealer_prefix']
     );
   }
 }

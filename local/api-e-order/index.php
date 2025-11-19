@@ -125,6 +125,18 @@ $app->get('/user_detailed', function ($request, $response) {
   return $response;//->withHeader('Content-Type', 'application/json');
 });
 
+$app->get('/session', function ($request, $response) {
+
+  $payload = json_encode([
+
+    'status' => 'success',
+    'message' => 'Api is working!',
+    'data' => \OrderApi\Services\Auth\Session\AuthSession::all(),
+    'salon_code' => \OrderApi\Services\Auth\Session\AuthSession::getSalonCode()
+    ]);
+  $response->getBody()->write($payload);
+  return $response;//->withHeader('Content-Type', 'application/json');
+})->add(AuthMiddleware::class);
 
 $app->group('', function (RouteCollectorProxy $group) {
   $group->get('/statuses', OrderController::class . ':getStatuses');

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OrderApi\Services\Dealer;
 
-use OrderApi\DB\Repositories\DealerRepository;
-use OrderApi\DB\Repositories\Traits\CacheableTrait;
+use OrderApi\DB\Repositories\DealerUserRepository;
+use OrderApi\Traits\CacheableTrait;
 
 final class DealerInnPrefixService
 {
@@ -20,7 +20,7 @@ final class DealerInnPrefixService
     return self::cache(
       cacheId: self::CACHE_ID,
       ttl: self::CACHE_TTL,
-      callback: fn() => DealerRepository::getInnToPrefixMap(),
+      callback: fn() => DealerUserRepository::getInnToPrefixMap(),
       cacheDir: self::CACHE_DIR
     );
   }

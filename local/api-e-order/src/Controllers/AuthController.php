@@ -1,7 +1,8 @@
 <?php
 namespace OrderApi\Controllers;
 
-use OrderApi\Services\Auth\AuthService;
+
+use OrderApi\Services\Auth\Token\AuthService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 

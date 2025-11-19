@@ -27,11 +27,11 @@ class DealerUserRepository
         $user = $dataClass::getList([
           'select' => ['ID', 'login', 'password', 'contacts', 'name', 'activity'],
           'filter' => ['=login' => $login, '=activity' => 1],
-          'limit'  => 1,
+          'limit' => 1,
         ])->fetch();
 
         if ($user) {
-          $user['dealer_id']     = $dealer['ID'];
+          $user['dealer_id'] = $dealer['ID'];
           $user['dealer_prefix'] = $prefix;
           return $user;
         }
@@ -43,12 +43,13 @@ class DealerUserRepository
     return null;
   }
 
+
   /**
    * Найти пользователя по ID и ID дилера + вернуть полные данные с salon_code
    */
   public static function findDetailedUserByIds(int $userId, int $dealerId): ?array
   {
-    if (!$userId  || !$dealerId) {
+    if (!$userId || !$dealerId) {
       return null;
     }
 
@@ -56,7 +57,7 @@ class DealerUserRepository
     $dealer = DealerTable::getList([
       'select' => ['cms_param', 'settings'],
       'filter' => ['=ID' => $dealerId, '=activity' => 1],
-      'limit'  => 1,
+      'limit' => 1,
     ])->fetch();
 
     if (!$dealer) {
@@ -78,12 +79,14 @@ class DealerUserRepository
       $user = $dataClass::getList([
         'select' => ['ID', 'login', 'password', 'contacts', 'name', 'activity'],
         'filter' => ['=ID' => $userId, '=activity' => 1],
-        'limit'  => 1,
+        'limit' => 1,
       ])->fetch();
 
       if (!$user) {
         return null;
       }
+
+      $result = [];
 
       // 4. Извлекаем название салона
       $salonName = $user['contacts']['code'] ?? null;
@@ -95,15 +98,15 @@ class DealerUserRepository
         : null;
 
       // 6. Формируем результат
-      $user['dealer_id']       = $dealerId;
-      $user['dealer_prefix']   = $prefix;
-      $user['salon_name']      = $salonName;
-      $user['salon_code']      = $salonCode;
+      $result['salon_name'] = $salonName;
+      $result['salon_code'] = $salonCode;
+      $result['password'] = $user['password'];
+      $result['fetched_at'] = time();
 
-      return $user;
+      return $result;
 
     } catch (\Throwable $e) {
-      // Логируем при необходимости
+
       return null;
     }
   }
@@ -139,6 +142,40 @@ class DealerUserRepository
     }
 
     return null;
+  }
+
+  /**
+   * Возвращает готовую карту: [INN => PREFIX]
+   * Только активные дилеры с заполненным INN и prefix
+   *
+   * @return array<string, string>  ['7701234567' => 'dea_', ...]
+   */
+  public static function getInnToPrefixMap(): array
+  {
+    $result = DealerTable::getList([
+      'select' => [
+        'cms_param',
+        'settings',
+      ],
+      'filter' => ['=activity' => 1],
+      'cache' => ['ttl' => 60], // кэшируем сам запрос на 1 минуту
+    ]);
+
+    $map = [];
+
+    while ($dealer = $result->fetch()) {
+      $prefix = $dealer['cms_param']['prefix'] ?? null;
+      $inn = $dealer['settings']['prop_tin'] ?? null;
+
+      if (
+        is_string($prefix) && $prefix !== '' &&
+        is_string($inn) && $inn !== ''
+      ) {
+        $map[trim($inn)] = trim($prefix);
+      }
+    }
+
+    return $map;
   }
 
 }

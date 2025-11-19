@@ -1,6 +1,6 @@
 <?php
 
-namespace OrderApi\Services\Auth;
+namespace OrderApi\Services\Auth\Token;
 
 use OrderApi\DTO\Auth\UserDTO;
 

@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace OrderApi\Services\Auth;
+namespace OrderApi\Services\Auth\Token;
 
-use DateTimeImmutable;
 use Firebase\JWT\JWT;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
-use OrderApi\Constants\UserRole;
-use OrderApi\DB\Repositories\DealerUserRepository;
-use OrderApi\DTO\Auth\{UserDTO, JwtPayload};
+use OrderApi\DB\Repositories\WebUserRepository;
+use OrderApi\DTO\Auth\{JwtPayload, UserDTO};
 
-class DealerUserAuthProvider implements AuthProviderInterface
+class LigronUserAuthProvider implements AuthProviderInterface
 {
-  public const string PROVIDER = ProviderType::DEALER;
+  public const string PROVIDER = ProviderType::LIGRON;
 
   public function login(string $login, string $password): ?array
   {
-    if (!$login || !$password) return null;
+    if (!$login || !$password) {
+      return null;
+    }
 
-    $user = DealerUserRepository::findUserByLogin($login);
+    $user = WebUserRepository::findUserByLogin($login);
 
-    if (!$user || !password_verify($password, $user['password'])) {
+    if (!$user || $user['password'] !== $password) {
       return null;
     }
 
@@ -42,8 +42,7 @@ class DealerUserAuthProvider implements AuthProviderInterface
   {
     $userData = $payload['user'] ?? [];
     return ($userData['provider'] ?? '') === self::PROVIDER
-      && !empty($userData['dealer_id'])
-      && !empty($userData['dealer_prefix']);
+      && in_array($userData['role'] ?? '', ['manager', 'office_manager'], true);
   }
 
   private function generateJwt(UserDTO $user): string
@@ -60,20 +59,18 @@ class DealerUserAuthProvider implements AuthProviderInterface
     return JWT::encode($payload->toArray(), ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
   }
 
-  public static function normalizeUser(array $user): UserDTO
+  public static function normalizeUser(array $user):  UserDTO
   {
-    $contacts = @json_decode($user['contacts'], true) ?? [];
+    $role = $user['manager'] ? 'manager' : 'office_manager';
 
     return new UserDTO(
-      id: (int)$user['ID'],
+      id: (int)$user['id'],
       login: $user['login'],
       name: $user['name'] ?? '',
       provider: self::PROVIDER,
-      role: UserRole::DEALER,
-      email: $contacts['email'] ?? '',
-      phone: $contacts['phone'] ?? '',
-      dealer_id: (int)$user['dealer_id'],
-      dealer_prefix: $user['dealer_prefix']
+      role: $role,
+      email: $user['email'] ?? '',
+      phone: $user['phone'] ?? ''
     );
   }
 }

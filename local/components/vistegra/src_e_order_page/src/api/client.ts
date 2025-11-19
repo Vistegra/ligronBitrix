@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_BASE } from "./constants";
+import {API_BASE} from "./constants";
 import {useAuthStore} from "@/store/authStore.ts";
 
 export type ApiResponseStatus = 'success' | 'error' | 'partial';
@@ -31,8 +31,10 @@ export type ApiResponse<T = any> =
 
 
 const api = axios.create({
-  baseURL: API_BASE/*,
-  headers: { "Content-Type": "application/json" },*/
+  baseURL: API_BASE,
+  withCredentials: true,
+  /*,
+headers: { "Content-Type": "application/json" },*/
 });
 
 api.interceptors.request.use((config) => {

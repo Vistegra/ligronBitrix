@@ -9,37 +9,53 @@ use Slim\Psr7\Response;
 
 final class CorsMiddleware implements MiddlewareInterface
 {
-  private array $origins = [
-    'http://localhost:5173',
+  private array $allowedOrigins = [
     'http://localhost',
-    'https://ligron.ru'
+
+    'http://localhost:5173',
+    'https://localhost:5173',
+
+    'https://local.ligron.ru:5173',
+    'https://ligron.localhost:5173',
+
+    'https://ligron.ru',
+    'http://ligron.ru',
   ];
 
   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
   {
     $origin = $request->getHeaderLine('Origin');
-    $allowed = in_array($origin, $this->origins) ? $origin : 'http://localhost';
+
+    // Проверяем, пришёл ли Origin и разрешён ли он
+    $isAllowedOrigin = $origin !== '' && in_array($origin, $this->allowedOrigins, true);
+
 
     $response = $handler->handle($request);
 
     if ($request->getMethod() === 'OPTIONS') {
       $response = new Response(200);
     }
-   /* if ($request->getMethod() === 'OPTIONS') {
-      return (new Response(200))
-        ->withHeader('Access-Control-Allow-Origin', $allowed)
-        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        ->withHeader('Access-Control-Allow-Headers', 'X-Auth-Token, Content-Type, Authorization')
-        ->withHeader('Access-Control-Allow-Credentials', 'true')
-        ->withHeader('Access-Control-Max-Age', '86400');
+
+    //Для локальной разработки, чтобы сессия не менялась
+    if ($isAllowedOrigin && str_contains($origin, 'localhost')) {
+      $sessionId = session_id();
+      $response = $response->withHeader('Set-Cookie', "PHPSESSID=$sessionId; Path=/; SameSite=None; Secure=false; HttpOnly=false");
+    }
+
+
+    if ($isAllowedOrigin) {
+      $response = $response
+        ->withHeader('Access-Control-Allow-Origin', $origin)
+        ->withHeader('Access-Control-Allow-Credentials', 'true');
+    } /*else {
+      $response = $response->withHeader('Access-Control-Allow-Origin', '*');
     }*/
 
-    $response = $response
-      ->withHeader('Access-Control-Allow-Origin', $allowed)
-      ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      ->withHeader('Access-Control-Allow-Headers', 'X-Auth-Token, Content-Type, Authorization, X-Requested-With')
-      ->withHeader('Access-Control-Allow-Credentials', 'true');
-
-    return $response;
+    return $response
+      ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+      ->withHeader('Access-Control-Allow-Headers', 'X-Auth-Token, Content-Type, Authorization, Cookie, X-Requested-With')
+      ->withHeader('Access-Control-Expose-Headers', 'Set-Cookie')
+      ->withHeader('Vary', 'Origin')
+      ->withHeader('Access-Control-Max-Age', '86400');
   }
 }
