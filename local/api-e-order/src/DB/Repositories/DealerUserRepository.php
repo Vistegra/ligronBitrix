@@ -7,9 +7,32 @@ namespace OrderApi\DB\Repositories;
 
 use OrderApi\DB\Models\DealerTable;
 use OrderApi\DB\Models\DealerUserTable;
+use OrderApi\Traits\CacheableTrait;
 
 class DealerUserRepository
 {
+  use CacheableTrait;
+
+  private const string CACHE_ID  = 'inn_dealer_id_map';
+  private const int CACHE_TTL = 86400; // 24 часа
+  private const string CACHE_DIR = '/order_api/dealers/inn_dealer_id_map';
+
+  public static function getInnToDealerCacheMap(): array
+  {
+    return self::cache(
+      cacheId: self::CACHE_ID,
+      ttl: self::CACHE_TTL,
+      callback: fn() => self::getInnToDealerMap(),
+      cacheDir: self::CACHE_DIR
+    );
+  }
+
+  public static function getDealerByInn(string $inn): ?string
+  {
+    $inn = trim($inn);
+
+    return $inn === '' ? null : (self::getInnToDealerMap()[$inn] ?? null);
+  }
 
   public static function findUserByLogin(string $login): ?array
   {
@@ -71,13 +94,15 @@ class DealerUserRepository
 
     $prefix = trim($prefix);
 
+    $salonsMap = self::getDealerSalonsMapBySettings($dealer['settings']);
+
     try {
       // 2. Получаем класс таблицы {prefix}_users
       $dataClass = DealerUserTable::getEntityClassByPrefix($prefix);
 
       // 3. Ищем пользователя
       $user = $dataClass::getList([
-        'select' => ['ID', 'login', 'password', 'contacts', 'name', 'activity'],
+        'select' => ['ID', 'login', 'password', 'contacts', 'name'],
         'filter' => ['=ID' => $userId, '=activity' => 1],
         'limit' => 1,
       ])->fetch();
@@ -94,7 +119,7 @@ class DealerUserRepository
 
       // 5. Ищем код салона в settings дилера
       $salonCode = $salonName
-        ? self::resolveSalonCodeFromDealerSettings($dealer['settings'], $salonName)
+        ? $salonsMap[mb_strtolower($salonName)]
         : null;
 
       // 6. Формируем результат
@@ -114,7 +139,7 @@ class DealerUserRepository
   /**
    * Вспомогательный метод: ищет код салона по названию в settings['prop_dealercode']
    */
-  private static function resolveSalonCodeFromDealerSettings($settings, string $searchName): ?string
+  public static function resolveSalonCodeFromDealerSettings($settings, string $searchName): ?string
   {
     if (!is_array($settings) || empty($settings['prop_dealercode'])) {
       return null;
@@ -150,28 +175,68 @@ class DealerUserRepository
    *
    * @return array<string, string>  ['7701234567' => 'dea_', ...]
    */
-  public static function getInnToPrefixMap(): array
+  public static function getInnToDealerMap(): array
   {
     $result = DealerTable::getList([
       'select' => [
+        'ID',
         'cms_param',
         'settings',
+        'name'
       ],
       'filter' => ['=activity' => 1],
-      'cache' => ['ttl' => 60], // кэшируем сам запрос на 1 минуту
+      'cache' => ['ttl' => 60], // кэшируем сам запрос на 1 минуту //ToDo TTL level constants
     ]);
 
     $map = [];
 
     while ($dealer = $result->fetch()) {
-      $prefix = $dealer['cms_param']['prefix'] ?? null;
+
       $inn = $dealer['settings']['prop_tin'] ?? null;
 
       if (
-        is_string($prefix) && $prefix !== '' &&
         is_string($inn) && $inn !== ''
       ) {
-        $map[trim($inn)] = trim($prefix);
+        $map[trim($inn)] = [
+          'id' => $dealer['ID'],
+          'prefix' => $dealer['cms_param']['prefix'],
+          'name' => $dealer['name'],
+        ];
+      }
+    }
+
+    return $map;
+  }
+
+  /**
+   * Строит карту слонов из settings['prop_dealercode'] [salon_name => salon_code, ...]
+   * salon_name - в нижнем регистре!
+   */
+  private static function getDealerSalonsMapBySettings(array $settings): array
+  {
+    if (!empty($settings['prop_dealercode'])) {
+      return [];
+    }
+
+    $map = [];
+    foreach ($settings['prop_dealercode'] as $item) {
+      if (!is_array($item)) {
+        continue;
+      }
+
+      $name = '';
+      $code = '';
+
+      if (isset($item['name'], $item['code'])) {
+        $name = trim($item['name']);
+        $code = trim($item['code']);
+      } elseif (count($item) >= 2) {
+        $name = trim($item[0] ?? '');
+        $code = trim($item[1] ?? '');
+      }
+
+      if ($name !== '' && $code !== '') {
+        $map[mb_strtolower($name)] = $code;
       }
     }
 

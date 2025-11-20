@@ -61,7 +61,7 @@ class WebManagerDealerTable extends DataManager
         'fetch_data_modification' => F::cleanString(),
       ]),
 
-      // ИНН дилера (из dealer.inn_dealer)
+      // ИНН дилера
       new Fields\StringField('inn_dealer', [
         'size'     => 20,
         'nullable' => true,

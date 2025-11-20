@@ -47,7 +47,7 @@ class LigronUserAuthProvider implements AuthProviderInterface
 
   private function generateJwt(UserDTO $user): string
   {
-    $now = new DateTimeImmutable();
+    $now = new \DateTimeImmutable();
 
     $payload = new JwtPayload(
       iss: ApiConfig::API_NAME,

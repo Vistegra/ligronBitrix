@@ -15,9 +15,6 @@ final class CorsMiddleware implements MiddlewareInterface
     'http://localhost:5173',
     'https://localhost:5173',
 
-    'https://local.ligron.ru:5173',
-    'https://ligron.localhost:5173',
-
     'https://ligron.ru',
     'http://ligron.ru',
   ];

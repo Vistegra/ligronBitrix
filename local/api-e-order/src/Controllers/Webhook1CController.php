@@ -15,6 +15,7 @@ final class Webhook1CController extends AbstractController
   {
     $query = $request->getQueryParams();
     $body  = $request->getParsedBody() ?? [];
+    $origin = $request->getHeaderLine('Origin');
 
     $logPath = $request->getAttribute('logPath');
     if ($logPath) {
@@ -23,7 +24,8 @@ final class Webhook1CController extends AbstractController
 
       $logger->info("1C WEBHOOK [{$methodLabel}]", [
         'DATA_GET' => $query,
-        'DATA_POST' => $body
+        'DATA_POST' => $body,
+        'ORIGIN' => $origin,
       ]);
     }
 
