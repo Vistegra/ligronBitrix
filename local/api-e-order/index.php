@@ -53,6 +53,7 @@ register_shutdown_function(function () use ($logPath) {
   }
 });
 
+use OrderApi\DB\Models\WebFillingTable;
 use OrderApi\DTO\Auth\UserDTO;
 use DI\Container;
 use OrderApi\Config\ApiConfig;
@@ -134,6 +135,7 @@ $app->get('/session', function ($request, $response) {
     'data' => \OrderApi\Services\Auth\Session\AuthSession::all(),
     'salon_code' => \OrderApi\Services\Auth\Session\AuthSession::getSalonCode()
     ]);
+
   $response->getBody()->write($payload);
   return $response;//->withHeader('Content-Type', 'application/json');
 })->add(AuthMiddleware::class);

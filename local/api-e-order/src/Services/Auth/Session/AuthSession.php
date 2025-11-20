@@ -49,7 +49,7 @@ final class AuthSession
         $data = $provider->fetchDetailedData($user);
 
         $data['session_id'] = self::session()->getId();
-        $data['fetched_at'] = self::session()->getId();
+        $data['fetched_at'] = time();
 
         if (empty($data)) {
           return false;

@@ -37,7 +37,7 @@ class DealerUserRepository
   public static function findUserByLogin(string $login): ?array
   {
     $dealers = DealerTable::getList([
-      'select' => ['ID', 'cms_param'],
+      'select' => ['id', 'cms_param'],
       'filter' => ['=activity' => 1],
     ]);
 
@@ -48,13 +48,13 @@ class DealerUserRepository
       try {
         $dataClass = DealerUserTable::getEntityClassByPrefix($prefix);
         $user = $dataClass::getList([
-          'select' => ['ID', 'login', 'password', 'contacts', 'name', 'activity'],
+          'select' => ['id', 'login', 'password', 'contacts', 'name', 'activity'],
           'filter' => ['=login' => $login, '=activity' => 1],
           'limit' => 1,
         ])->fetch();
 
         if ($user) {
-          $user['dealer_id'] = $dealer['ID'];
+          $user['dealer_id'] = $dealer['id'];
           $user['dealer_prefix'] = $prefix;
           return $user;
         }
@@ -102,7 +102,7 @@ class DealerUserRepository
 
       // 3. Ищем пользователя
       $user = $dataClass::getList([
-        'select' => ['ID', 'login', 'password', 'contacts', 'name'],
+        'select' => ['id', 'login', 'password', 'contacts', 'name'],
         'filter' => ['=ID' => $userId, '=activity' => 1],
         'limit' => 1,
       ])->fetch();
@@ -179,7 +179,7 @@ class DealerUserRepository
   {
     $result = DealerTable::getList([
       'select' => [
-        'ID',
+        'id',
         'cms_param',
         'settings',
         'name'
@@ -198,7 +198,7 @@ class DealerUserRepository
         is_string($inn) && $inn !== ''
       ) {
         $map[trim($inn)] = [
-          'id' => $dealer['ID'],
+          'id' => $dealer['id'],
           'prefix' => $dealer['cms_param']['prefix'],
           'name' => $dealer['name'],
         ];
@@ -214,7 +214,7 @@ class DealerUserRepository
    */
   private static function getDealerSalonsMapBySettings(array $settings): array
   {
-    if (!empty($settings['prop_dealercode'])) {
+    if (empty($settings['prop_dealercode'])) {
       return [];
     }
 

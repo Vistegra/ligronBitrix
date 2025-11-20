@@ -65,7 +65,7 @@ class DealerUserAuthProvider implements AuthProviderInterface
     $contacts = $user['contacts'];
 
     return new UserDTO(
-      id: (int)$user['ID'],
+      id: (int)$user['id'],
       login: $user['login'],
       name: $user['name'] ?? '',
       provider: self::PROVIDER,

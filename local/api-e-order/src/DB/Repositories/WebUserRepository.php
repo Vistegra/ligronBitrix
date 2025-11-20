@@ -84,7 +84,7 @@ class WebUserRepository
       $dataClass = DealerUserTable::getEntityClassByPrefix($dealer['prefix']);
 
       $users = $dataClass::getList([
-        'select' => ['id' => 'ID','name']
+        'select' => ['id','name']
       ])->fetchAll();
 
       $dealers[] = [
