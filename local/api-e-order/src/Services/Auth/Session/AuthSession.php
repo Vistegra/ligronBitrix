@@ -40,7 +40,7 @@ final class AuthSession
    */
   public static function load(UserDTO $user): bool
   {
-    if (self::isLoaded()) {
+    if (self::isLoaded($user)) {
       return true;
     }
 
@@ -50,6 +50,7 @@ final class AuthSession
 
         $data['session_id'] = self::session()->getId();
         $data['fetched_at'] = time();
+        $data['validation_key'] = "{$user->login}_{$user->id}_{$user->provider}_{$user->role}";
 
         if (empty($data)) {
           return false;
@@ -68,9 +69,9 @@ final class AuthSession
   /**
    * Данные уже загружены?
    */
-  public static function isLoaded(): bool
+  private static function isLoaded(UserDTO $user): bool
   {
-    return self::session()->has(self::SESSION_KEY);
+    return "{$user->login}_{$user->id}_{$user->provider}_{$user->role}" == self::get('validation_key');
   }
 
   /**
@@ -97,6 +98,18 @@ final class AuthSession
   public static function all(): array
   {
     $data = self::session()->get(self::SESSION_KEY);
+    return is_array($data) ? $data : [];
+  }
+
+  /**
+   * Получить только публичные данные данные
+   */
+  public static function publicData(): array
+  {
+    $data = self::session()->get(self::SESSION_KEY);
+
+    if ($data['password']) unset($data['password']);
+
     return is_array($data) ? $data : [];
   }
 

@@ -52,6 +52,8 @@ final readonly class AuthMiddleware implements MiddlewareInterface
       'message' => 'Unauthorized: Missing or invalid token'
     ], JSON_UNESCAPED_UNICODE));
 
+    AuthSession::clear();
+
     return $response->withHeader('Content-Type', 'application/json');
   }
 }

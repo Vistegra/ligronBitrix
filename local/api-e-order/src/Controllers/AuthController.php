@@ -2,6 +2,7 @@
 namespace OrderApi\Controllers;
 
 
+use OrderApi\Services\Auth\Session\AuthSession;
 use OrderApi\Services\Auth\Token\AuthService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -33,10 +34,21 @@ final class AuthController extends AbstractController
       : $this->error('Неверный логин или пароль', 401);
   }
 
+  // вызывать с AuthMiddleware
   public function check(ServerRequestInterface $request): ResponseInterface
   {
-    // вызывать с AuthMiddleware
+
     return $this->success('Токен проверен', [], 204);
+  }
+
+  // вызывать с AuthMiddleware
+  public function me(ServerRequestInterface $request): ResponseInterface
+  {
+//    AuthSession::clear();
+//    AuthSession::load($request->getAttribute('user'));
+    // вызывать с AuthMiddleware
+    $data = AuthSession::publicData();
+    return $this->success('Детальные данные пользователя', ['detailed' => $data]);
   }
 
 }
