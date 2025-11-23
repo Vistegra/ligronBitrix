@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,9 +8,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { FilterIcon } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
-import { useMemo } from "react";
+import {FilterIcon} from "lucide-react";
+import {useAuthStore} from "@/store/authStore";
+import {useMemo} from "react";
+import type {ManagerDetailed} from "@/types/user";
 
 interface OrdersTableUserFiltersProps {
   selectedDealerPrefix: string | null;
@@ -24,11 +25,11 @@ export function OrdersTableUserFilters({
                                          selectedUserId,
                                          onSelect,
                                        }: OrdersTableUserFiltersProps) {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   // Вычисляем список пользователей с привязкой к префиксу дилера
   const userOptions = useMemo(() => {
-    const allDealers = user?.detailed?.managed_dealers || [];
+    const allDealers = (user?.detailed as ManagerDetailed)?.managed_dealers || [];
 
     // 1. Определяем, каких дилеров сканировать
     const dealersToScan = selectedDealerPrefix
@@ -66,7 +67,7 @@ export function OrdersTableUserFilters({
           className={`flex items-center gap-1 p-0 h-auto font-medium focus-visible:outline-none focus-visible:ring-0 ${selectedUserId ? "text-primary" : ""}`}
         >
           Пользователь
-          <FilterIcon className="h-3 w-3 ml-1" />
+          <FilterIcon className="h-3 w-3 ml-1"/>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
@@ -76,7 +77,7 @@ export function OrdersTableUserFilters({
         >
           Все пользователи
         </DropdownMenuCheckboxItem>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator/>
 
         {userOptions.map((u) => (
           <DropdownMenuCheckboxItem

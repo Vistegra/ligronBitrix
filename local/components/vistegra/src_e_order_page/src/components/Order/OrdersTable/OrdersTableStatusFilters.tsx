@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {ChevronsUpDownIcon} from "lucide-react";
+import {FilterIcon} from "lucide-react";
 
 interface Status {
   id: number;
@@ -56,7 +56,7 @@ export function OrdersTableStatusFilters({
         >
           Статус
           {selectedStatusIds.length > 0 && ` (${selectedStatusIds.length})`}
-          <ChevronsUpDownIcon className="h-4 w-4"/>
+          <FilterIcon className="h-3 w-3 ml-1"/>
         </Button>
       </DropdownMenuTrigger>
 
