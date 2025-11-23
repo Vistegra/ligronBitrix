@@ -22,7 +22,7 @@ final class OrderRepository
         'parent_order_number' => 'parent.number',
         'parent_order_id' => 'parent.id',
       ],
-      'order' => ['id' => 'desc'],
+      'order' => ['updated_at' => 'desc'],
       'limit' => self::DEFAULT_LIMIT,
       'offset' => 0,
     ];

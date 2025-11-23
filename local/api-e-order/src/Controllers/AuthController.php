@@ -35,17 +35,10 @@ final class AuthController extends AbstractController
   }
 
   // вызывать с AuthMiddleware
-  public function check(ServerRequestInterface $request): ResponseInterface
-  {
-
-    return $this->success('Токен проверен', [], 204);
-  }
-
-  // вызывать с AuthMiddleware
   public function me(ServerRequestInterface $request): ResponseInterface
   {
-//    AuthSession::clear();
-//    AuthSession::load($request->getAttribute('user'));
+    AuthSession::clear();
+    AuthSession::load($request->getAttribute('user'));
     // вызывать с AuthMiddleware
     $data = AuthSession::publicData();
     return $this->success('Детальные данные пользователя', ['detailed' => $data]);

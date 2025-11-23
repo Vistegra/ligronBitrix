@@ -12,7 +12,7 @@ final class FilterParser
   /**
    * Парсит строку фильтра в массив
    *
-   * @param string $filterString Например: "status_id=1,2;dealer_prefix=ABC"
+   * @param string $filterString Например: "status_id=1,2;dealer_prefix=ABC" или "status_id=1&dealer_prefix=ABC"
    * @return array
    */
   public static function parse(string $filterString): array
@@ -22,6 +22,10 @@ final class FilterParser
     }
 
     $result = [];
+
+    // FIX: Заменяем амперсанды на точки с запятой, чтобы поддерживать оба формата разделителей
+    $filterString = str_replace('&', ';', $filterString);
+
     $parts = array_filter(array_map('trim', explode(';', $filterString)));
 
     foreach ($parts as $part) {

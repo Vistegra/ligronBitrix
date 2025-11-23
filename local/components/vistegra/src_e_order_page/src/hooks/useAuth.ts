@@ -1,17 +1,9 @@
-// hooks/useAuth.ts
-import {useEffect, useState} from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/store/authStore";
-import api from "@/api/client.ts";
-import {ENDPOINT, PAGE} from "@/api/constants.ts";
-import type {ProviderType} from "@/types/user";
+import {useEffect, useState, useCallback} from "react";
+import {useNavigate, useLocation} from "react-router-dom";
+import {useAuthStore} from "@/store/authStore";
 
-
-interface LoginCredentials {
-  login: string;
-  password: string;
-  providerType: ProviderType;
-}
+import {PAGE} from "@/api/constants";
+import {authApi, type LoginCredentials} from "@/api/authApi.ts";
 
 export interface LoginResult {
   success: boolean;
@@ -20,68 +12,145 @@ export interface LoginResult {
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const navigate = useNavigate();
-  const { user, token, login: setAuth } = useAuthStore();
+  const location = useLocation();
 
-  // Проверяем авторизацию при монтировании хука
+  const {
+    user,
+    token,
+    login: setAuth,
+    updateUserDetailed,
+    logout,
+  } = useAuthStore();
+
+  /**
+   * функция редиректа на login
+   */
+  const redirectToLogin = useCallback(
+    (fromPath?: string) => {
+      const fullPath = fromPath ?? (location.pathname + location.search);
+
+      navigate(PAGE.LOGIN, {
+        replace: true,
+        state: {from: fullPath},
+      });
+    },
+    [navigate, location.pathname, location.search]
+  );
+
+  /**
+   * функция редиректа после логина
+   */
+  const redirectAfterLogin = useCallback(() => {
+    const from = location.state?.from;
+    const redirectTo = from && from !== PAGE.LOGIN ? from : PAGE.ORDERS;
+
+    navigate(redirectTo, {replace: true});
+  }, [location.state?.from, navigate]);
+
+  /**
+   * Инициализация: проверка токена, пользователя, загрузка detailed → редирект
+   */
   useEffect(() => {
-    if (user && token) {
-      navigate(PAGE.ORDERS);
-    }
-  }, [user, token, navigate]);
+    const init = async () => {
 
+      if (!token || !user) {
+        setIsInitializing(false);
+
+        if (location.pathname !== PAGE.LOGIN) {
+          redirectToLogin();
+        }
+
+        return;
+      }
+
+      // Если подробные данные уже есть
+      if (user?.detailed) {
+        setIsInitializing(false);
+
+        if (location.pathname === PAGE.LOGIN) {
+          redirectAfterLogin();
+        }
+        return;
+      }
+
+      // Иначе загружаем детальные данные пользователя
+      try {
+        const res = await authApi.me();
+
+        if (res.status !== "success") {
+          throw new Error(res.message || "Ошибка получения данных пользователя");
+        }
+
+        updateUserDetailed(res.data.detailed);
+
+        if (location.pathname === PAGE.LOGIN) {
+          redirectAfterLogin();
+        }
+      } catch (err) {
+        console.warn("Токен недействителен", err);
+        logout();
+        redirectToLogin();
+      } finally {
+        setIsInitializing(false);
+      }
+
+    };
+
+    init();
+  }, [
+    token,
+    user,
+    location.pathname,
+    navigate,
+    logout,
+    updateUserDetailed,
+    redirectToLogin,
+    redirectAfterLogin,
+  ]);
+
+  /**
+   * Авторизация
+   */
   const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await api.post(ENDPOINT.AUTH_LOGIN, credentials);
-      const responseData = response.data?.data;
+      const res = await authApi.login(credentials);
 
-      if (!responseData?.user || !responseData?.token) {
-        const errorMessage = "Неверный формат ответа от сервера";
-        setError(errorMessage);
-        return {
-          success: false,
-          error: errorMessage
-        };
+      if (res.status !== "success") {
+        throw new Error(res.message || "Ошибка авторизации");
       }
 
-      // Устанавливаем авторизацию в store
-      setAuth({
-        user: responseData.user,
-        token: responseData.token
-      });
+      const {user: baseUser, token} = res.data;
+      setAuth({user: baseUser, token});
 
-      // Перенаправление после успешного входа
-      navigate(PAGE.ORDERS);
+      redirectAfterLogin();
 
-      return { success: true };
+      return {success: true};
     } catch (err: any) {
-      const errorMessage = err.response?.data?.data?.message ||
-        err.response?.data?.message ||
-        "Ошибка входа";
+      const message = err.response?.data?.message || "Ошибка авторизации";
+      setError(message);
 
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage
-      };
+      return {success: false, error: message};
     } finally {
       setIsLoading(false);
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
-    // State
-    isLoading,
+    isLoading: isLoading || isInitializing,
     error,
 
-    // Actions
     login,
+    logout,
     clearError,
   };
+
 }

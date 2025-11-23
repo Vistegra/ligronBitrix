@@ -34,11 +34,11 @@ export function Modal({
       <DialogContent
         className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white p-5 border-none"
       >
-          <DialogTitle className="">{title}</DialogTitle>
+        <DialogTitle className="">{title}</DialogTitle>
 
-          <DialogDescription className="">
-            {description}
-          </DialogDescription>
+        <DialogDescription className="">
+          {description}
+        </DialogDescription>
 
         <div className="bg-white rounded-lg">
           {children}

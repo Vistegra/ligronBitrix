@@ -10,11 +10,12 @@ export const PAGE = {
   PROFILE: '/profile',
   ORDER_DETAIL: '/orders/:id',
   orderDetail: (id: number | string) => `/orders/${id}`,  // Для навигации
+  REQUESTS: "/requests"
 } as const;
 
 export const ENDPOINT = {
   AUTH_LOGIN: '/auth/login',
-  AUTH_CHECK: '/auth/check',
+  AUTH_DETAILED: '/auth/me',
   ORDERS: '/orders',
   STATUSES: '/statuses'
 }

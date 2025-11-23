@@ -15,8 +15,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import type { Pagination as PaginationType, PageSize } from "./types";
-import { PAGE_SIZES } from "./types";
+import type {Pagination as PaginationType, PageSize} from "./types";
+import {PAGE_SIZES} from "./types";
 
 interface OrdersPaginationProps {
   pagination: PaginationType;
@@ -81,7 +81,7 @@ export function OrdersPagination({
           onValueChange={(v) => onPageSizeChange(parseInt(v) as PageSize)}
         >
           <SelectTrigger className="w-20">
-            <SelectValue />
+            <SelectValue/>
           </SelectTrigger>
           <SelectContent>
             {PAGE_SIZES.map((size) => (

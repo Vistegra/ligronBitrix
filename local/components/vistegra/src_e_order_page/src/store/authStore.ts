@@ -1,55 +1,45 @@
 import { create } from "zustand";
-import {safeStorage} from "@/helpers/storage.ts";
-
-type BaseUser = {
-  id: number;
-  name: string;
-  login: string;
-  email?: string;
-  phone?: string;
-};
-
-type LigronUser = BaseUser & {
-  provider: "ligron";
-  role: "manager" | "office_manager";
-};
-
-type DealerUser = BaseUser & {
-  dealer_id: number;
-  dealer_prefix: string;
-  provider: "dealer";
-  role: "dealer"
-};
-
-type User = LigronUser | DealerUser;
+import { safeStorage } from "@/helpers/storage.ts";
+import type { User } from "@/types/user";
 
 type AuthState = {
   user: User | null;
   token: string | null;
+
   login: (data: { user: User; token: string }) => void;
+  updateUserDetailed: (detailed: User["detailed"]) => void;
   logout: () => void;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: safeStorage.get('auth_user'),
-  token: safeStorage.get('auth_token'),
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: safeStorage.get("auth_user") || null,
+  token: safeStorage.get("auth_token") || null,
 
-  // Сеттеры
   login: ({ user, token }) => {
     if (!user || !token) {
-      console.warn({user, token})
-
-      set((state) => { state.logout();
-        return { user: null, token: null };
-      });
-
+      get().logout();
       return;
     }
 
-    safeStorage.set("auth_user", user);
+    const userWithoutDetailed = { ...user, detailed: undefined };
+
+    safeStorage.set("auth_user", userWithoutDetailed);
     safeStorage.set("auth_token", token);
 
-    set({ user, token });
+    set({ user: userWithoutDetailed, token });
+  },
+
+
+  updateUserDetailed: (detailed) => {
+    set((state) => {
+      if (!state.user) return state;
+
+      const updatedUser = { ...state.user, detailed } as User;
+
+      //safeStorage.set("auth_user", updatedUser);
+
+      return { user: updatedUser };
+    });
   },
 
   logout: () => {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OrderApi\Permissions;
 
 use OrderApi\DTO\Auth\UserDTO;
+use OrderApi\Services\Auth\Session\AuthSession;
 
 final readonly class OrderPermission
 {
@@ -46,7 +47,13 @@ final readonly class OrderPermission
    */
   public function canView(array $order): void
   {
+    // Если это Дилер-владелец
     if ($this->isDealerOwner($order)) {
+      return;
+    }
+
+    // Если это Менеджер Лигрон и заказ принадлежит его дилеру
+    if ($this->isManagerOfOrder($order)) {
       return;
     }
 
@@ -61,6 +68,29 @@ final readonly class OrderPermission
       && $order['dealer_user_id'] == $this->user->id;
   }
 
+  /**
+   * Проверяет, курирует ли текущий менеджер дилера, оформившего заказ
+   */
+  public function isManagerOfOrder(array $order): bool
+  {
+
+    if (!$this->user->isLigronStaff()) {
+      return false;
+    }
+
+    $managedDealers = AuthSession::getManagedDealers();
+
+    if (empty($managedDealers)) {
+      return false;
+    }
+
+    $allowedPrefixes = array_column($managedDealers, 'dealer_prefix');
+
+    $orderPrefix = $order['dealer_prefix'] ?? null;
+
+    // Проверяем, есть ли префикс заказа в списке разрешенных
+    return $orderPrefix && in_array($orderPrefix, $allowedPrefixes, true);
+  }
 
 
   /**

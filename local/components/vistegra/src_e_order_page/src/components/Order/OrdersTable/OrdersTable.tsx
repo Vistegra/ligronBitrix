@@ -7,72 +7,115 @@ import {AlertCircle} from "lucide-react";
 
 import {useOrders} from "@/hooks/useOrders";
 import {useOrderStatuses} from "@/hooks/useOrderStatuses";
+import {useAuthStore} from "@/store/authStore";
 
 import {OrdersTableBody} from "./OrdersTableBody";
 import {OrdersTableSkeleton} from "./OrdersTableSkeleton";
 import {OrdersTableEmpty} from "./OrdersTableEmpty";
 import {OrdersPagination} from "./OrdersPagination";
+import {OrdersTablePanel} from "./OrderTablePanel";
+import {OrdersTableHeader} from "./OrdersTableHeader";
 
-import {OrdersTablePanel} from "./OrderTablePanel.tsx";
-import {OrdersTableHeader} from "./OrdersTableHeader.tsx";
+import type {VisibleColumns} from "./types";
 
-import type {PageSize, VisibleColumns} from "./types";
 export default function OrdersTable() {
+  const {user} = useAuthStore();
+  const isManager = user?.provider === "ligron"; //ToDo подумать над ролью
+
+  // Инициализация колонок: менеджеру показываем дилера и пользователя, дилеру - нет
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
+    id: true,
+    number: true,
     status: true,
     name: true,
     type: true,
+    dealer: isManager,
+    user: isManager,
     fabrication: true,
     ready_date: true,
     created_at: true,
+    updated_at: true,
   });
 
   const {
-    orders, loading, error, pagination, filter,
-    fetchOrders, setLimit, setFilter,
-  } = useOrders({ limit: 10 });
+    orders,
+    loading,
+    error,
+    pagination,
+    activeFilters,
+    updateFilters,
+    setPage,
+    setLimit,
+  } = useOrders(10);
 
-  const { statuses, loading: statusesLoading } = useOrderStatuses();
+  const {statuses, loading: statusesLoading} = useOrderStatuses();
 
   const handleStatusToggle = (statusIds: number[]) => {
-    setFilter(statusIds.length ? `status_id=${statusIds.join(",")}` : "");
+    updateFilters({status_id: statusIds});
+  };
+  const handleDealerSelect = (prefix: string | null) => {
+    // При смене дилера сбрасываем пользователя
+    updateFilters({dealer_prefix: prefix, dealer_user_id: null});
   };
 
-  const handlePageChange = (offset: number) => fetchOrders(offset, filter);
-  const handlePageSizeChange = (size: PageSize) => setLimit(size);
+  const handleUserSelect = (userId: number | null, dealerPrefix?: string | null) => {
+    if (userId === null) {
+      // Если пользователь сброшен
+      updateFilters({dealer_user_id: null});
+    } else {
+      // Если пользователь выбран, устанавливаем и ID, и Префикс
+      updateFilters({
+        dealer_user_id: userId,
+        // Если префикс пришел из компонента фильтра, используем его.
+        // Если нет (редкий случай), оставляем текущий.
+        dealer_prefix: dealerPrefix || activeFilters.dealer_prefix
+      });
+    }
+  };
+
+
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertCircle className="h-4 w-4"/>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
   }
 
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
-
   return (
     <div className="space-y-6">
-      <OrdersTablePanel visibleColumns={visibleColumns} setVisibleColumns={setVisibleColumns} />
+      <OrdersTablePanel
+        visibleColumns={visibleColumns}
+        setVisibleColumns={setVisibleColumns}
+        selectedUserId={activeFilters.dealer_user_id}
+      />
 
       <div className="rounded-md border">
         <Table>
           <OrdersTableHeader
             visibleColumns={visibleColumns}
-            filter={filter}
+            activeFilters={activeFilters}
             statuses={statuses}
             statusesLoading={statusesLoading}
             onStatusToggle={handleStatusToggle}
+            onDealerSelect={handleDealerSelect}
+            onUserSelect={handleUserSelect}
           />
 
           <TableBody>
             {loading ? (
-              <OrdersTableSkeleton visibleColumns={visibleColumns} />
+              <OrdersTableSkeleton visibleColumns={visibleColumns}/>
             ) : orders.length === 0 ? (
-              <OrdersTableEmpty />
+              <OrdersTableEmpty/>
             ) : (
-              <OrdersTableBody orders={orders} pagination={pagination} visibleColumns={visibleColumns} />
+              <OrdersTableBody
+                orders={orders}
+                pagination={pagination}
+                visibleColumns={visibleColumns}
+              />
             )}
           </TableBody>
         </Table>
@@ -82,8 +125,8 @@ export default function OrdersTable() {
         <OrdersPagination
           pagination={pagination}
           totalPages={totalPages}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => setLimit(size)}
         />
       )}
     </div>

@@ -229,18 +229,15 @@ final class OrderController extends AbstractController
     $filter = FilterParser::parse($filterString);
 
     try {
-      $orders = $this->orderService->getOrders($filter, $limit, $offset);
+      $result = $this->orderService->getOrders($filter, $limit, $offset);
+
       return $this->json([
         'status' => 'success',
         'message' => 'Orders list',
         'data' =>
           [
-            'orders' => $orders,
-            'pagination' => [
-              'limit' => $limit,
-              'offset' => $offset,
-              'total' => OrderRepository::getTotalCount($filter)
-            ]
+            'orders' => $result['orders'],
+            'pagination' => $result['pagination'],
           ]
 
       ]);

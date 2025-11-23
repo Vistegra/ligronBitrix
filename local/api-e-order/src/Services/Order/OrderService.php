@@ -5,6 +5,7 @@ namespace OrderApi\Services\Order;
 
 use Bitrix\Bizproc\Api\Response\Error;
 use Bitrix\Main\Type\DateTime;
+use Bitrix\Rest\Event\Session;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
@@ -17,6 +18,7 @@ use OrderApi\DTO\Auth\UserDTO;
 use OrderApi\DTO\Order\FileUploadResult;
 use OrderApi\DTO\Order\OrderCreateResult;
 use OrderApi\Permissions\OrderPermission;
+use OrderApi\Services\Auth\Session\AuthSession;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
@@ -166,6 +168,7 @@ final readonly class OrderService
 
   /**
    * Получить заказы с пагинацией и фильтром
+   * @throws \Exception
    */
   public function getOrders(array $filter = [], int $limit = 20, int $offset = 0): array
   {
@@ -176,16 +179,46 @@ final readonly class OrderService
         '=dealer_user_id' => $this->user->id,
       ]);
     } elseif ($this->user->isLigronStaff()) {
-      $filter['=manager_id'] = $this->user->id; //ToDo подумать, так не обязательно привязанный менджер
+      $managedDealers = AuthSession::getManagedDealers();
+      $dealersPrefix = array_column($managedDealers, 'dealer_prefix');
+
+      $filterPrefix = $filter['=dealer_prefix'] ?? $filter['dealer_prefix'] ?? null;
+
+      if ($filterPrefix) {
+        // Проверяем валидность префикса(ов)
+        if (is_string($filterPrefix) && !in_array($filterPrefix, $dealersPrefix)) {
+          throw new \Exception('Access denied', 403);
+
+        } elseif (is_array($filterPrefix)) {
+          $invalidPrefixes = array_diff($filterPrefix, $dealersPrefix);
+          if (!empty($invalidPrefixes)) {
+            throw new \Exception('Access denied', 403);
+          }
+        }
+      } else {
+        // Если фильтр не указан - используем все доступные префиксы
+        $filter['=dealer_prefix'] = $dealersPrefix;
+      }
     } else {
       throw new \Exception('Access denied', 403);
     }
 
-    return OrderRepository::queryList([
+    $orders = OrderRepository::queryList([
       'filter' => $filter,
       'limit' => $limit,
       'offset' => $offset,
     ]);
+
+    $pagination = [
+      'limit' => $limit,
+      'offset' => $offset,
+      'total' => OrderRepository::getTotalCount($filter)
+    ];
+
+    return [
+      'orders' => $orders,
+      'pagination' => $pagination,
+    ];
   }
 
   public function getFilesByOrderId($orderId): ?array
