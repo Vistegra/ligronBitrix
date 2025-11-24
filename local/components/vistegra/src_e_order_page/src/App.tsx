@@ -18,7 +18,7 @@ export default function App() {
 
           <Route element={<ProtectedLayout />}>
             <Route path={PAGE.ORDERS} element={<OrdersPage />} />
-            <Route path={PAGE.DRAFTS} element={<div>Черновики (страница в разработке)</div>} />
+            <Route path={PAGE.DRAFTS} element={<OrdersPage />} />
             <Route path={PAGE.REQUESTS} element={<div className="p-8">Заявки (страница в разработке)</div>} />
             <Route path={PAGE.PROFILE} element={<ProfilePage />} />
             <Route path={PAGE.ORDER_DETAIL} element={<OrderDetailPage />} />

@@ -1,4 +1,5 @@
 export type ProviderType = 'dealer' | 'ligron';
+export type UserRole = 'manager' | 'office_manager'
 
 export interface ManagedDealer {
   inn: string;
@@ -26,16 +27,16 @@ type BaseUser = {
 };
 
 type LigronUser = BaseUser & {
-  provider: "ligron";
-  role: "manager" | "office_manager";
+  provider: 'ligron';
+  role: 'manager' | 'office_manager';
   detailed?: ManagerDetailed
 };
 
 type DealerUser = BaseUser & {
   dealer_id: number;
   dealer_prefix: string;
-  provider: "dealer";
-  role: "dealer"
+  provider: 'dealer';
+  role: 'dealer';
   detailed?: DealerDetailed
 };
 

@@ -6,6 +6,7 @@ namespace OrderApi\Services\Order;
 use Bitrix\Bizproc\Api\Response\Error;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Rest\Event\Session;
+use MongoDB\Driver\Exception\RuntimeException;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
 use OrderApi\Constants\UserRole;
@@ -49,15 +50,26 @@ final readonly class OrderService
       $data['created_by'] = OrderTable::CREATED_BY_DEALER;
       $data['dealer_prefix'] = $this->user->dealer_prefix;
       $data['dealer_user_id'] = $this->user->id;
-    } elseif ($this->user->isManager() || $this->user->isOfficeManager()) {
-      throw new \Error('Функционал не реализован'); // ToDo
+    } elseif ($this->user->isManager()) {
+      $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
+      if (!$data['dealer_prefix'] || !$data['dealer_user_id']) {
+        throw new \RuntimeException('Не переданы данные пользователя');
+      }
+    } elseif ($this->user->isOfficeManager()) {
+      throw new \RuntimeException('Функционал не реализован');
     } else {
       return new OrderCreateResult(success: false, orderError: 'Не указана роль пользователя');
     }
 
-    $statusData = $this->getDefaultStatusData();
-    $data['status_id'] = $statusData['status_id'];
-    $data['status_history'] = $statusData['status_history'];
+    if (!$data['is_draft']) {
+
+      $statusData = $this->getDefaultStatusData();
+      $data['status_id'] = $statusData['status_id'];
+      $data['status_history'] = $statusData['status_history'];
+
+      //ToDo отправить в 1С
+    }
+
 
     try {
       $order = OrderRepository::create($data);
@@ -114,8 +126,6 @@ final readonly class OrderService
     }
 
     $this->permission->canView($order);
-    // Менеджеры видят все заказы
-    // ToDo permission
 
     return $order;
   }

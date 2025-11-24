@@ -18,21 +18,25 @@ import {OrdersTableHeader} from "./OrdersTableHeader";
 
 import type {VisibleColumns} from "./types";
 
-export default function OrdersTable() {
+interface OrdersTableProps {
+  isDraft: boolean
+}
+
+export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
   const {user} = useAuthStore();
   const isManager = user?.provider === "ligron"; //ToDo подумать над ролью
 
   // Инициализация колонок: менеджеру показываем дилера и пользователя, дилеру - нет
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
     id: true,
-    number: true,
-    status: true,
+    number: isDraft,
+    status: isDraft, // для черновиков нет фильтра по статусам
     name: true,
-    type: true,
-    dealer: isManager,
-    user: isManager,
-    fabrication: true,
-    ready_date: true,
+    type: isDraft,
+    dealer: isDraft && isManager,
+    user: isDraft && isManager,
+    fabrication: isDraft,
+    ready_date: isDraft,
     created_at: true,
     updated_at: true,
   });

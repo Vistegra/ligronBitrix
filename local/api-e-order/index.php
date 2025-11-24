@@ -114,8 +114,11 @@ $app->get('', function ($request, $response) {
   return $response;//->withHeader('Content-Type', 'application/json');
 });
 
-$app->get('/prefix', function ($request, $response) {
-  $payload = json_encode(['status' => 'success', 'message' => 'Api is working!', 'data' => \OrderApi\Services\Dealer\DealerInnPrefixService::getInnToPrefixMap()], JSON_UNESCAPED_UNICODE);
+$app->get('/web_users', function ($request, $response) {
+  $data = \OrderApi\DB\Models\WebUserTable::getList(['limit' => 20])->fetchAll();
+
+  $payload = json_encode(['status' => 'success', 'message' => 'Api is working!',
+    'data' => $data], JSON_UNESCAPED_UNICODE);
   $response->getBody()->write($payload);
   return $response;//->withHeader('Content-Type', 'application/json');
 });

@@ -5,6 +5,10 @@ export type CreateOrderData = {
   name: string;
   comment?: string;
   files?: File[];
+  is_draft: boolean;
+
+  dealer_prefix?: string;
+  dealer_user_id?: string;
 };
 
 export interface OrderStatus {
@@ -89,6 +93,16 @@ export const orderApi = {
     data.files?.forEach((file) => {
       formData.append("file[]", file);
     });
+
+    if (data.is_draft) {
+      formData.append("is_draft", "1");
+    }
+
+    //Если заказ создает менеджер
+    if (data.dealer_prefix && data.dealer_user_id) {
+      formData.append("dealer_prefix", data.dealer_prefix);
+      formData.append("dealer_user_id", data.dealer_user_id);
+    }
 
     const response = await api.post(ENDPOINT.ORDERS, formData);
 

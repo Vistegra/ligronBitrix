@@ -41,3 +41,4 @@ export const COLUMNS_CONFIG: ColumnConfig[] = [
   {key: 'created_at', label: 'Создан', width: 'w-32'},
   {key: 'updated_at', label: 'Обновлен', width: 'w-32'},
 ];
+

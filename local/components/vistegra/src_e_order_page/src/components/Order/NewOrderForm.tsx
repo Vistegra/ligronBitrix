@@ -5,7 +5,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
 import {Loader2, Trash2, UploadIcon, AlertCircle} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 
 import {
   Form,
@@ -34,11 +34,11 @@ import {toast} from "sonner";
 import {PAGE} from "@/api/constants.ts";
 import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
 
+
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
-const { onDropRejected, onDropError } = useFileDropzone();
 
 // Валидация
 const formSchema = z.object({
@@ -49,8 +49,13 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function NewOrderForm() {
+  const [isDraft, setIsDraft] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const {createOrder, isSubmitting, error, success, createdOrder,clearError} = useCreateOrder();
+  const { onDropRejected, onDropError } = useFileDropzone();
+
+  //для создания заказа нужно достать данные по пользователя из фильтра
+  const [searchParams] = useSearchParams();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -59,11 +64,12 @@ export default function NewOrderForm() {
       comment: "",
     },
   });
+
   const navigate = useNavigate();
 
   useEffect(() => {
     if (success && createdOrder?.order?.id) {
-      toast.success("Заказ создан! Открываем заказ...");
+      toast.success(`Открываем ${isDraft ? 'черновик': 'заказ'}...`);
       setFiles([]);
 
       const timer = setTimeout(() => {
@@ -90,11 +96,14 @@ export default function NewOrderForm() {
         name: data.name,
         comment: data.comment || undefined,
         files: files.length > 0 ? files : undefined,
+        is_draft: isDraft,
+        dealer_prefix: searchParams.get('dealer_prefix') ?? '',
+        dealer_user_id: searchParams.get('dealer_user_id') ?? '',
       });
 
-      toast.success("Заказ успешно создан!");
+      toast.success(`${isDraft ? 'Черновик': 'Заказ'} успешно создан!`);
     } catch (err: any) {
-      toast.error(err.message || "Ошибка при создании заказа");
+      toast.error(err.message || `Ошибка при создании ${isDraft ? 'черновика': 'заказа'}`);
     }
   };
 
@@ -210,8 +219,9 @@ export default function NewOrderForm() {
                 type="submit"
                 variant="outline"
                 disabled={isSubmitting || success}
+                onClick={() => setIsDraft(true)}
               >
-                {isSubmitting ? (
+                {isSubmitting && isDraft ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                     Сохранение...
@@ -223,8 +233,9 @@ export default function NewOrderForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting || success}
+                onClick={() => setIsDraft(false)}
               >
-                {isSubmitting ? (
+                {isSubmitting && !isDraft ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                     Сохранение...

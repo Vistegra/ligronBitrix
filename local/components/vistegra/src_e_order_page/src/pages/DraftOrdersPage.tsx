@@ -1,9 +1,9 @@
 import OrdersTable from "@/components/Order/OrdersTable/OrdersTable.tsx";
 
-export default function OrdersPage() {
+export default function DraftOrdersPage() {
   return (
     <>
-     <OrdersTable isDraft={false} />
+     <OrdersTable isDraft={true} />
     </>
   )
 }

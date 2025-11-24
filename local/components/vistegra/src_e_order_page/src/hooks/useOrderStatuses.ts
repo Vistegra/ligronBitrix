@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { orderApi } from "@/api/orderApi";
 import type { OrderStatus } from "@/api/orderApi";
+import {toast} from "sonner";
 
 
 let cachedStatuses: OrderStatus[] | null = null;
@@ -22,6 +23,7 @@ export function useOrderStatuses() {
                 }
             } catch (error) {
                 console.warn("Не удалось загрузить статусы:", error);
+                toast.error('Ошибка сети!')
             } finally {
                 setLoading(false);
                 loadPromise = null;

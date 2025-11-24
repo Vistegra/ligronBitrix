@@ -81,7 +81,7 @@ export default function LoginPage() {
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="dealer">Дилер</TabsTrigger>
-              <TabsTrigger value="ligron">Менеджер Лигрона</TabsTrigger>
+              <TabsTrigger value="ligron">Менеджер Лигрон</TabsTrigger>
             </TabsList>
 
             <TabsContent value={providerType} className="space-y-4 mt-6">

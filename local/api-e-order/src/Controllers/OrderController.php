@@ -227,6 +227,7 @@ final class OrderController extends AbstractController
     $offset = (int)($data['offset'] ?? 0);
 
     $filter = FilterParser::parse($filterString);
+    $filter['!=status_id'] = null;
 
     try {
       $result = $this->orderService->getOrders($filter, $limit, $offset);
@@ -234,11 +235,7 @@ final class OrderController extends AbstractController
       return $this->json([
         'status' => 'success',
         'message' => 'Orders list',
-        'data' =>
-          [
-            'orders' => $result['orders'],
-            'pagination' => $result['pagination'],
-          ]
+        'data' => $result
 
       ]);
     } catch (\Exception $e) {

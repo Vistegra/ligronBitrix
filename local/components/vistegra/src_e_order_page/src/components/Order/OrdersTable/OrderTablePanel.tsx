@@ -34,8 +34,8 @@ export function OrdersTablePanel({
   // 2. Менеджер Лигрон видит кнопку ТОЛЬКО если выбран конкретный пользователь (selectedUserId не null).
 
   const canCreateOrder =
-    user?.provider === "dealer" ||
-    (user?.provider === "ligron" && !!selectedUserId);
+    user?.role === 'dealer' ||
+    (user?.role === 'manager' && !!selectedUserId);
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
