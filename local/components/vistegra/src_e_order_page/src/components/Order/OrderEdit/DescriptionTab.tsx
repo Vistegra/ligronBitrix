@@ -5,13 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 const schema = z.object({ comment: z.string().optional() });
 
 type Props = {
   comment: string | null;
-  onUpdate: (comment?: string) => Promise<boolean>;
+  onUpdate: (comment?: string) => Promise<void>;
 };
 
 export function DescriptionTab({ comment, onUpdate }: Props) {
@@ -22,13 +21,9 @@ export function DescriptionTab({ comment, onUpdate }: Props) {
   });
 
   const onSubmit = async (data: z.infer<typeof schema>) => {
-    const success = await onUpdate(data.comment);
-    if (success) {
-      toast.success("Описание обновлено");
-    } else {
-      toast.error("Ошибка обновления");
-    }
+    await onUpdate(data.comment);
   };
+
 
   return (
     <Form {...form}>

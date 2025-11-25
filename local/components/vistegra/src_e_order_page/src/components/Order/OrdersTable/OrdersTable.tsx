@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {Table, TableBody} from "@/components/ui/table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {AlertCircle} from "lucide-react";
@@ -16,7 +16,8 @@ import {OrdersPagination} from "./OrdersPagination";
 import {OrdersTablePanel} from "./OrderTablePanel";
 import {OrdersTableHeader} from "./OrdersTableHeader";
 
-import type {VisibleColumns} from "./types";
+import {COLUMNS_VISIBILITY_PRESETS, type PartVisibleColumns} from "./types";
+import {PAGE} from "@/api/constants.ts";
 
 interface OrdersTableProps {
   isDraft: boolean
@@ -24,22 +25,29 @@ interface OrdersTableProps {
 
 export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
   const {user} = useAuthStore();
-  const isManager = user?.provider === "ligron"; //ToDo подумать над ролью
+  const isManager = user?.provider === "ligron";
 
-  // Инициализация колонок: менеджеру показываем дилера и пользователя, дилеру - нет
-  const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
-    id: true,
-    number: isDraft,
-    status: isDraft, // для черновиков нет фильтра по статусам
-    name: true,
-    type: isDraft,
-    dealer: isDraft && isManager,
-    user: isDraft && isManager,
-    fabrication: isDraft,
-    ready_date: isDraft,
-    created_at: true,
-    updated_at: true,
-  });
+  const basePage = isDraft ? PAGE.DRAFTS : PAGE.ORDERS;
+
+  const initialVisibility = useMemo(() => {
+     let presetKey = 'default';
+
+    if (isDraft) {
+      presetKey = 'draft';
+    } else if (isManager) {
+      presetKey = 'manager';
+    }
+
+    return COLUMNS_VISIBILITY_PRESETS[presetKey];
+
+  }, [isDraft, isManager]);
+
+
+  const [visibleColumns, setVisibleColumns] = useState<PartVisibleColumns>(initialVisibility);
+
+  useEffect(() => {
+    setVisibleColumns(initialVisibility);
+  }, [initialVisibility]);
 
   const {
     orders,
@@ -119,6 +127,7 @@ export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
                 orders={orders}
                 pagination={pagination}
                 visibleColumns={visibleColumns}
+                basePage={basePage}
               />
             )}
           </TableBody>

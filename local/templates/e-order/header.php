@@ -37,6 +37,7 @@ $title = $APPLICATION->GetTitle(false, false);
 
 
   <?php
+  $asset->addString('<meta name="viewport" content="width=device-width, initial-scale=1">');
   $asset->addString('<meta property="og:title" content="' . $APPLICATION->GetTitle(true, true) . '" />');
   $asset->addString('<meta property="og:url" content="' . CUR_CANONICAL_URL . '" />');
   $asset->addString('<meta property="og:description" content="' . $APPLICATION->GetProperty("description") . '" />');
@@ -58,7 +59,7 @@ $title = $APPLICATION->GetTitle(false, false);
 </head>
 
 <body>
-<div id="panel"><? $APPLICATION->ShowPanel(); ?></div>
+<div id="panel"><? /*$APPLICATION->ShowPanel();*/ ?></div>
 
 <!-- region base-container-->
 <div class="base-container">

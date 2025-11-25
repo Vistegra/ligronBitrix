@@ -3,6 +3,7 @@ namespace OrderApi\Controllers;
 
 
 use OrderApi\Services\Auth\Session\AuthSession;
+use OrderApi\Services\Auth\Token\AuthCrypto;
 use OrderApi\Services\Auth\Token\AuthService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -42,6 +43,30 @@ final class AuthController extends AbstractController
     // вызывать с AuthMiddleware
     $data = AuthSession::publicData();
     return $this->success('Детальные данные пользователя', ['detailed' => $data]);
+  }
+
+  public function crypt(ServerRequestInterface $request): ResponseInterface
+  {
+    $params = $request->getParsedBody();
+
+    if ($params['encrypt'] && $params['code']) {
+      $result = AuthCrypto::encrypt($params['code']);
+
+      return $this->success('Детальные данные пользователя', ['param' => $result]);
+    }
+
+    if ($params['decrypt'] && $params['token']) {
+      $result = AuthCrypto::decrypt($params['token']);
+
+      if (!$result) {
+        return $this->error('Неверный токен ', 400);
+      }
+
+      return $this->success('Детальные данные пользователя', ['param' => $result]);
+    }
+
+    return $this->error('Не переданы все параметеры ', 400);
+
   }
 
 }

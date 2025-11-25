@@ -31,18 +31,13 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
     try {
       await onUpload(accepted);
       toast.success("Файлы добавлены в заказ");
-    } catch {
-      toast.error("Ошибка загрузки файлов");
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка загрузки файлов");
     }
   };
 
   const handleDelete = async (id: number) => {
-    try {
       await onDelete(id);
-      toast.success("Файл удалён");
-    } catch {
-      toast.error("Ошибка удаления файла");
-    }
   };
 
   const handleDownload = async (file: OrderFile) => {

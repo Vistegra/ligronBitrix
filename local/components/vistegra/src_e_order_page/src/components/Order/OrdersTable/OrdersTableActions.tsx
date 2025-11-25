@@ -9,14 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {MoreHorizontal, Eye} from "lucide-react";
-import {PAGE} from "@/api/constants.ts";
 import type {Order} from "@/api/orderApi.ts";
 
 interface OrdersTableActionsProps {
   order: Order;
+  basePage: string;
 }
 
-export function OrdersTableActions({order}: OrdersTableActionsProps) {
+export function OrdersTableActions({order, basePage}: OrdersTableActionsProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -33,7 +33,7 @@ export function OrdersTableActions({order}: OrdersTableActionsProps) {
     }
 
     navigate({
-      pathname: `${PAGE.ORDERS}/${order.id}`,
+      pathname: `${basePage}/${order.id}`,
       search: newParams.toString(),
     });
   };

@@ -7,6 +7,8 @@ import {PAGE} from "@/api/constants.ts"
 import {Toaster} from "sonner"
 import ScreenProvider from "@/components/ScreenProvider.tsx"
 import ProfilePage from "@/pages/ProfilePage.tsx";
+import DraftOrdersPage from "@/pages/DraftOrdersPage.tsx";
+import DraftOrderDetailPage from "@/pages/DraftOrderDetailPage.tsx";
 
 export default function App() {
 
@@ -18,10 +20,11 @@ export default function App() {
 
           <Route element={<ProtectedLayout />}>
             <Route path={PAGE.ORDERS} element={<OrdersPage />} />
-            <Route path={PAGE.DRAFTS} element={<OrdersPage />} />
+            <Route path={PAGE.DRAFTS} element={<DraftOrdersPage />} />
             <Route path={PAGE.REQUESTS} element={<div className="p-8">Заявки (страница в разработке)</div>} />
             <Route path={PAGE.PROFILE} element={<ProfilePage />} />
             <Route path={PAGE.ORDER_DETAIL} element={<OrderDetailPage />} />
+            <Route path={PAGE.DRAFT_DETAIL} element={<DraftOrderDetailPage />} />
             <Route path="/" element={<OrdersPage />} />
           </Route>
 

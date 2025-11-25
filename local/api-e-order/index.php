@@ -107,6 +107,7 @@ $app->add(function ($request, $handler) use ($logPath) {
 $app->post('/auth/login', AuthController::class . ':login');
 $app->get('/auth/check', AuthController::class . ':check')->add(AuthMiddleware::class);
 $app->get('/auth/me', AuthController::class . ':me')->add(AuthMiddleware::class);
+$app->post('/auth/crypt', AuthController::class . ':crypt');
 
 $app->get('', function ($request, $response) {
   $payload = json_encode(['status' => 'success', 'message' => 'Api is working!'], JSON_UNESCAPED_UNICODE);

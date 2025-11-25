@@ -54,6 +54,8 @@ export default function NewOrderForm() {
   const {createOrder, isSubmitting, error, success, createdOrder,clearError} = useCreateOrder();
   const { onDropRejected, onDropError } = useFileDropzone();
 
+  const pageDetailCb = isDraft ? PAGE.draftDetail : PAGE.orderDetail;
+
   //для создания заказа нужно достать данные по пользователя из фильтра
   const [searchParams] = useSearchParams();
 
@@ -73,7 +75,7 @@ export default function NewOrderForm() {
       setFiles([]);
 
       const timer = setTimeout(() => {
-        navigate(PAGE.orderDetail(createdOrder.order.id));
+        navigate(pageDetailCb(createdOrder.order.id));
       }, 1000);
 
       return () => clearTimeout(timer);

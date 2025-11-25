@@ -9,10 +9,9 @@ import {OrdersTableActions} from "./OrdersTableActions.tsx";
 import {useAuthStore} from "@/store/authStore";
 
 import {Link, useSearchParams} from "react-router-dom";
-import {PAGE} from "@/api/constants.ts";
 
-import type {Pagination, VisibleColumns} from "./types";
-import {COLUMNS_CONFIG} from "./types";
+import {COLUMN_DEFINITIONS, type ColumnKey, type Pagination, type PartVisibleColumns} from "./types";
+
 import StatusBadge from "@/components/Order/StatusBage.tsx";
 import type {ManagerDetailed} from "@/types/user";
 
@@ -39,10 +38,11 @@ const formatDate = (timestamp?: number) =>
 interface OrdersTableBodyProps {
   orders: Order[];
   pagination: Pagination;
-  visibleColumns: VisibleColumns;
+  visibleColumns: PartVisibleColumns;
+  basePage: string;
 }
 
-export function OrdersTableBody({orders, pagination, visibleColumns}: OrdersTableBodyProps) {
+export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: OrdersTableBodyProps) {
   const {user} = useAuthStore();
   // Получаем текущие параметры URL
   const [searchParams] = useSearchParams();
@@ -75,10 +75,10 @@ export function OrdersTableBody({orders, pagination, visibleColumns}: OrdersTabl
       newParams.set("dealer_user_id", String(order.dealer_user_id));
     }
 
-    return `${PAGE.ORDERS}/${order.id}?${newParams.toString()}`;
+    return `${basePage}/${order.id}?${newParams.toString()}`;
   };
 
-  const columnRenderers: Record<keyof VisibleColumns, (order: Order) => React.ReactNode> = {
+  const columnRenderers: Record<keyof PartVisibleColumns, (order: Order) => React.ReactNode> = {
     id: (order) => <span className="font-medium">{order.id}</span>,
 
     number: (order) => order.number ? <span className="font-medium">{order.number}</span> :
@@ -126,16 +126,18 @@ export function OrdersTableBody({orders, pagination, visibleColumns}: OrdersTabl
             {pagination.offset + index + 1}
           </TableCell>
 
-          {COLUMNS_CONFIG.map(
-            (column) =>
-              visibleColumns[column.key] && (
-                <TableCell key={column.key}>
-                  {columnRenderers[column.key](order)}
-                </TableCell>
-              )
-          )}
+          {Object.entries(visibleColumns).map(([key, isVisible]) => {
+            if (!isVisible) return null;
+
+            const column = COLUMN_DEFINITIONS[key as ColumnKey];
+            return (
+              <TableCell key={key} className={column.width}>
+                {columnRenderers[key as ColumnKey](order)}
+              </TableCell>
+            );
+          })}
           <TableCell className="w-8 p-1">
-            <OrdersTableActions order={order}/>
+            <OrdersTableActions order={order} basePage={basePage}/>
           </TableCell>
         </TableRow>
       ))}

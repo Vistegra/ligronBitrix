@@ -8,16 +8,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {Columns2Icon, ChevronDownIcon, PlusIcon} from "lucide-react";
-import type {VisibleColumns} from "./types";
-import {COLUMNS_CONFIG} from "./types";
+import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "./types";
+
 import NewOrderForm from "@/components/Order/NewOrderForm.tsx";
 import {Modal} from "@/components/Modal.tsx";
 import {useAuthStore} from "@/store/authStore";
 
 interface OrdersTablePanelProps {
-  visibleColumns: VisibleColumns;
+  visibleColumns: PartVisibleColumns;
   setVisibleColumns: (
-    cols: VisibleColumns | ((prev: VisibleColumns) => VisibleColumns)
+    cols: PartVisibleColumns | ((prev: PartVisibleColumns) => PartVisibleColumns)
   ) => void;
   selectedUserId: number | null;
 }
@@ -51,21 +51,24 @@ export function OrdersTablePanel({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {COLUMNS_CONFIG.map((column) => (
-              <DropdownMenuCheckboxItem
-                key={column.key}
-                checked={visibleColumns[column.key]}
-                onCheckedChange={(checked) =>
-                  setVisibleColumns((prev) => ({
-                    ...prev,
-                    [column.key]: checked,
-                  }))
-                }
-                onSelect={(e) => e.preventDefault()}
-              >
-                {column.label}
-              </DropdownMenuCheckboxItem>
-            ))}
+            {Object.entries(visibleColumns).map(([key, isVisible]) => {
+              const column = COLUMN_DEFINITIONS[key as ColumnKey];
+              return (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={isVisible}
+                  onCheckedChange={(checked) =>
+                    setVisibleColumns((prev) => ({
+                      ...prev,
+                      [key]: checked,
+                    }))
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {column.label}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
 

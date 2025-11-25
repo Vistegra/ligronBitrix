@@ -139,9 +139,9 @@ export const orderApi = {
     data: Partial<Pick<CreateOrderData, "name" | "comment">>
   ): Promise<ApiResponse<{ order: Order }>> {
 
-    const { data: resp } = await api.put(`${ENDPOINT.ORDERS}/${id}`, data);
+    const resp = await api.put(`${ENDPOINT.ORDERS}/${id}`, data);
 
-    return resp;
+    return resp.data;
   },
 
   // Удалить заказ

@@ -9,6 +9,7 @@ export const PAGE = {
   draftDetail: (id: number | string) => `/drafts/${id}`,  // Для навигации
   PROFILE: '/profile',
   ORDER_DETAIL: '/orders/:id',
+  DRAFT_DETAIL: '/drafts/:id',
   orderDetail: (id: number | string) => `/orders/${id}`,  // Для навигации
   REQUESTS: "/requests"
 } as const;

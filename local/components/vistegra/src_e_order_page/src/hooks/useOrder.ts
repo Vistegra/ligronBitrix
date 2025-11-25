@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { orderApi, type Order, type OrderFile } from "@/api/orderApi";
 import { toast } from "sonner";
 
-export function useOrder(id: number) {
+export function useOrder(id: number, isDraft: boolean) {
   const [order, setOrder] = useState<Order | null>(null);
   const [files, setFiles] = useState<OrderFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,22 +21,35 @@ export function useOrder(id: number) {
         setError(res.message);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Ошибка загрузки заказа");
+      setError(err.response?.data?.message || err.message || "Ошибка загрузки заказа");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   const updateComment = async (comment?: string) => {
-    const res = await orderApi.updateOrder(id, { comment });
-    if (res.status === "success") {
-      setOrder(res.data.order);
-      return true;
+    try {
+
+      if (!isDraft) {
+        throw new Error('Функционал временно недоступен')
+      }
+
+      const res = await orderApi.updateOrder(id, { comment });
+      if (res.status === "success") {
+        setOrder(res.data.order);
+        toast.success("Описание успешно обновлено");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || 'Ошибка обвновления комментария');
     }
-    return false;
+
   };
 
   const uploadFiles = async (filesToUpload: File[]) => {
+    if (!isDraft) {
+      throw new Error('Функционал временно недоступен')
+    }
+
     const res = await orderApi.uploadFiles(id, filesToUpload);
 
     if (res.status === "success" || res.status === "partial") {
@@ -55,9 +68,18 @@ export function useOrder(id: number) {
   };
 
   const deleteFile = async (fileId: number) => {
-    await orderApi.deleteFile(id, fileId);
-    setFiles(prev => prev.filter(f => f.id !== fileId));
-    toast.success("Файл удалён");
+    try {
+      if (!isDraft) {
+        throw new Error('Функционал временно недоступен')
+      }
+
+      await orderApi.deleteFile(id, fileId);
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+      toast.success("Файл удалён");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || 'Ошибка удаления файла')
+    }
+
   };
 
   useEffect(() => {
