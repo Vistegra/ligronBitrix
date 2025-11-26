@@ -80,7 +80,7 @@ export default function NewOrderForm() {
 
       return () => clearTimeout(timer);
     }
-  }, [success, createdOrder]);
+  }, [success, createdOrder, isDraft, navigate, pageDetailCb]);
 
   const onDrop = (acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -98,7 +98,7 @@ export default function NewOrderForm() {
         name: data.name,
         comment: data.comment || undefined,
         files: files.length > 0 ? files : undefined,
-        is_draft: isDraft,
+        is_draft: Number(isDraft),
         dealer_prefix: searchParams.get('dealer_prefix') ?? '',
         dealer_user_id: searchParams.get('dealer_user_id') ?? '',
       });

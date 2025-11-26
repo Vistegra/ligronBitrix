@@ -7,7 +7,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
-import {Trash2Icon} from "lucide-react";
+import {CloudUploadIcon, Trash2Icon} from "lucide-react";
 import {toast} from "sonner";
 
 import {useOrder} from "@/hooks/useOrder";
@@ -30,10 +30,11 @@ export default function OrderEdit({isDraft = false}: OrderEditProps) {
   const {id} = useParams();
   const navigate = useNavigate();
   const orderId = parseInt(id!, 10);
-  const {order, loading, error, files, updateComment, uploadFiles, deleteFile} = useOrder(orderId, isDraft);
+  const {order, loading, error, files, updateComment, uploadFiles, deleteFile, sendToLigron} = useOrder(orderId, isDraft);
   const {children, loading: childLoading} = useChildOrders(orderId);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
+  const [sending, setSending] = useState(false);
 
   const basePage = isDraft ? PAGE.DRAFTS : PAGE.ORDERS;
 
@@ -57,6 +58,17 @@ export default function OrderEdit({isDraft = false}: OrderEditProps) {
       }
     } catch {
       toast.error("Не удалось удалить заказ");
+    }
+  };
+
+  const handleSendToLigron = async () => {
+    setSending(true);
+    const updatedOrder = await sendToLigron();
+    setSending(false);
+
+    if (updatedOrder) {
+      // Заказ больше не черновик
+      navigate(`${PAGE.ORDERS}/${orderId}`);
     }
   };
 
@@ -121,24 +133,43 @@ export default function OrderEdit({isDraft = false}: OrderEditProps) {
           </CardContent>
         </Card>
 
-        <div className="fixed bottom-6 right-6">
-          {
-            isDraft && <Button
-              variant="ghost"
-              size="lg"
-              onClick={() =>
-                showDeleteConfirmToast({
-                  title: "Удалить заказ?",
-                  description: "Заказ и все файлы будут удалены навсегда.",
-                  onConfirm: handleDelete,
-                })
-              }
-              className="shadow-lg fixed bottom-6 right-6"
-            >
-              <Trash2Icon className="mr-2 h-5 w-5"/>
-              Удалить заказ
-            </Button>
-          }
+        <div className="fixed bottom-6 right-6 p-2">
+          {isDraft && (
+            <div className="flex gap-4">
+              <Button
+                variant="default"
+                size="lg"
+                onClick={handleSendToLigron}
+                disabled={uploading || sending}
+                className="shadow-lg"
+              >
+                {sending ? (
+                  <>Отправка...</>
+                ) : (
+                  <>
+                    <CloudUploadIcon className="mr-2 h-5 w-5"/>
+                    Отправить в Лигрон
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() =>
+                  showDeleteConfirmToast({
+                    title: "Удалить заказ?",
+                    description: "Заказ и все файлы будут удалены навсегда.",
+                    onConfirm: handleDelete,
+                  })
+                }
+                className="shadow-lg"
+              >
+                <Trash2Icon className="mr-2 h-5 w-5"/>
+                Удалить заказ
+              </Button>
+            </div>
+          )}
         </div>
 
       </div>

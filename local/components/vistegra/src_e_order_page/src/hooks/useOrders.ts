@@ -34,7 +34,7 @@ interface UseOrdersReturn {
   refresh: () => void;
 }
 
-export function useOrders(defaultLimit: number = 20): UseOrdersReturn {
+export function useOrders(defaultLimit: number = 20, isDraft: boolean): UseOrdersReturn {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Состояние данных
@@ -68,9 +68,9 @@ export function useOrders(defaultLimit: number = 20): UseOrdersReturn {
         }
       });
 
-      const filterString = filterParts.join("&");
+      const filterString = filterParts.join(";");
 
-      const response = await orderApi.getOrders({limit, offset, filter: filterString});
+      const response = await orderApi.getOrders({limit, offset, filter: filterString, is_draft: Number(isDraft)});
 
       if (response.status !== "success") throw new Error(response.message || "Ошибка");
 

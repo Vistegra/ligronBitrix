@@ -5,7 +5,7 @@ export type CreateOrderData = {
   name: string;
   comment?: string;
   files?: File[];
-  is_draft: boolean;
+  is_draft: number; //0,1
 
   dealer_prefix?: string;
   dealer_user_id?: string;
@@ -118,6 +118,7 @@ export const orderApi = {
     filter?: string;
     limit?: number;
     offset?: number;
+    is_draft: number // 0, 1
   }): Promise<ApiResponse<OrdersResponse>> {
 
     const response = await api.get(ENDPOINT.ORDERS, { params });
@@ -173,6 +174,12 @@ export const orderApi = {
   async getStatuses(): Promise<ApiResponse<OrderStatus[]>> {
       const response = await api.get(ENDPOINT.STATUSES);
       return response.data;
+  },
+
+  // Отправить черновик в Лигрон (превращает черновик в обычный заказ)
+  async sendToLigron(id: number): Promise<ApiResponse<{ order: Order }>> {
+    const response = await api.post(`${ENDPOINT.ORDERS}/${id}/send-to-ligron`);
+    return response.data;
   },
 
 

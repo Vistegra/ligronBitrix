@@ -58,7 +58,7 @@ export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
     updateFilters,
     setPage,
     setLimit,
-  } = useOrders(10);
+  } = useOrders(10, isDraft);
 
   const {statuses, loading: statusesLoading} = useOrderStatuses();
 

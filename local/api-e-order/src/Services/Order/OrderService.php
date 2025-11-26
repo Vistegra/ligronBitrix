@@ -6,6 +6,7 @@ namespace OrderApi\Services\Order;
 use Bitrix\Bizproc\Api\Response\Error;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Rest\Event\Session;
+use Bitrix\Sale\Order;
 use MongoDB\Driver\Exception\RuntimeException;
 use OrderApi\Config\ApiConfig;
 use OrderApi\Constants\ProviderType;
@@ -41,8 +42,9 @@ final readonly class OrderService
    * @param array $uploadedFiles Массив UploadedFileInterface (может быть пустым)
    *
    * @return OrderCreateResult Результат создания заказа и загрузки файлов
+   * @throws \Exception
    */
-  public function createOrder(array $data, array $uploadedFiles = []): OrderCreateResult
+  public function createOrder(array $data, array $uploadedFiles = [], bool $isDraft = false): OrderCreateResult
   {
     $data['created_by_id'] = $this->user->id;
 
@@ -50,31 +52,31 @@ final readonly class OrderService
       $data['created_by'] = OrderTable::CREATED_BY_DEALER;
       $data['dealer_prefix'] = $this->user->dealer_prefix;
       $data['dealer_user_id'] = $this->user->id;
+
     } elseif ($this->user->isManager()) {
       $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
       if (!$data['dealer_prefix'] || !$data['dealer_user_id']) {
         throw new \RuntimeException('Не переданы данные пользователя');
       }
+
     } elseif ($this->user->isOfficeManager()) {
       throw new \RuntimeException('Функционал не реализован');
+
     } else {
       return new OrderCreateResult(success: false, orderError: 'Не указана роль пользователя');
     }
-
-    if (!$data['is_draft']) {
-
-      $statusData = $this->getDefaultStatusData();
-      $data['status_id'] = $statusData['status_id'];
-      $data['status_history'] = $statusData['status_history'];
-
-      //ToDo отправить в 1С
-    }
-
 
     try {
       $order = OrderRepository::create($data);
     } catch (\Throwable $e) {
       return new OrderCreateResult(success: false, orderError: 'Ошибка создания заказа: ' . $e->getMessage());
+    }
+
+
+    if (!$isDraft) {
+      $this->sendToLigron($order['id']);
+      //ToDo отправить в 1С
+      //ToDo обработать ошибки
     }
 
     $fileResults = !empty($uploadedFiles)
@@ -86,6 +88,21 @@ final readonly class OrderService
       order: $order,
       fileResults: $fileResults
     );
+  }
+
+  /**
+   * @throws \Exception
+   */
+  public function sendToLigron(int $orderId): array
+  {
+    //ToDo if sent to ligron
+
+    $statusData = $this->getDefaultStatusData();
+    $data['status_id'] = $statusData['status_id'];
+    $data['status_history'] = $statusData['status_history'];
+    //$data['number]
+
+    return OrderRepository::update($orderId, $data);
   }
 
   /**
@@ -134,7 +151,7 @@ final readonly class OrderService
    * Обновить заказ
    * @throws \Exception
    */
-  public function updateOrder(int $id, array $data): bool
+  public function updateOrder(int $id, array $data): ?array
   {
     // проверка доступа
     $order = $this->getOrder($id);

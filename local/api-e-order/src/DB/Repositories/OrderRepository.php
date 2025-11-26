@@ -69,10 +69,17 @@ final class OrderRepository
    * Обновить заказ
    * @throws \Exception
    */
-  public static function update(int $id, array $data): bool
+  public static function update(int $id, array $data): ?array
   {
     $result = OrderTable::update($id, $data);
-    return $result->isSuccess();
+
+    if (!$result->isSuccess()) {
+      $errors = $result->getErrorMessages();
+
+      throw new \RuntimeException('Ошибка обновления заказа: ' .implode(', ', $errors));
+    }
+
+    return self::getById($id);
   }
 
   /**
@@ -81,6 +88,7 @@ final class OrderRepository
   public static function delete(int $id): bool
   {
     $result = OrderTable::delete($id);
+
     return $result->isSuccess();
   }
 
@@ -90,7 +98,7 @@ final class OrderRepository
   public static function getById(int $id): ?array
   {
 
-    $params = array_merge(self::defaultQueryParams, ['filter' => ['=id' => $id]]);
+    $params = array_merge(self::defaultQueryParams, ['filter' => ['=id' => $id], 'limit' => 1]);
 
     $result = OrderTable::getList($params);
 

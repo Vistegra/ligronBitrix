@@ -158,6 +158,7 @@ $app->group('', function (RouteCollectorProxy $group) {
   $group->post('/orders/{id}/files', OrderController::class . ':uploadFiles');    // Загрузить файлы к заказу
   $group->delete('/orders/{id}/files/{fileId}', OrderController::class . ':deleteFile'); // Удалить файл
 
+  $group->post('/orders/{id}/send-to-ligron', OrderController::class . ':sendToLigron'); //Преобразовать в заказ, получить номер
 
 })->add(AuthMiddleware::class);
 

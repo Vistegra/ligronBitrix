@@ -12,6 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
 use OrderApi\DTO\Auth\UserDTO;
+
 /**
  * Контроллер для работы с заказами
  */
@@ -19,19 +20,30 @@ final class OrderController extends AbstractController
 {
   public function __construct(
     private readonly OrderService $orderService
-  ) {}
+  )
+  {
+  }
+
 
   // POST /orders
+
+  /**
+   * @throws \Exception
+   */
   public function create(ServerRequestInterface $request): ResponseInterface
   {
     $data = $request->getParsedBody() ?? [];
+
+    $isDraft = (bool)$data['is_draft'];
+    if (isset($data['is_draft'])) unset($data['is_draft']);
+
     $uploadedFiles = $request->getUploadedFiles()['file'] ?? [];
 
     if ($uploadedFiles && !is_array($uploadedFiles)) {
       $uploadedFiles = [$uploadedFiles];
     }
 
-    $result = $this->orderService->createOrder($data, $uploadedFiles);
+    $result = $this->orderService->createOrder($data, $uploadedFiles, $isDraft);
 
     if (!$result->success) {
       return $this->error($result->orderError ?? 'Ошибка создания заказа', 400);
@@ -62,10 +74,22 @@ final class OrderController extends AbstractController
     }
 
     return $this->json([
-      'status'  => $status,
+      'status' => $status,
       'message' => $message,
-      'data'    => $responseData,
+      'data' => $responseData,
     ], $code);
+  }
+
+  /**
+   * @throws \Exception
+   */
+  public function sendToLigron(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+  {
+    $orderId = (int)$args['id'];
+
+    $order = $this->orderService->sendToLigron($orderId);
+
+    return $this->success('Заказ отправлен в Лигрон', ['order' => $order]);
   }
 
   // GET /orders/{id}
@@ -98,11 +122,8 @@ final class OrderController extends AbstractController
     $data = $request->getParsedBody() ?? [];
 
     try {
-      if (!$this->orderService->updateOrder($orderId, $data)) {
-        return $this->error('Не удалось обновить заказ', 500);
-      }
+      $order = $this->orderService->updateOrder($orderId, $data);
 
-      $order = $this->orderService->getOrder($orderId);
       return $this->success('Заказ обновлен', ['order' => $order]);
     } catch (\Exception $e) {
       return $this->handleError($e);
@@ -225,9 +246,14 @@ final class OrderController extends AbstractController
     $filterString = $data['filter'] ?? '';
     $limit = (int)($data['limit'] ?? 20);
     $offset = (int)($data['offset'] ?? 0);
+    $isDraft = (bool)$data['is_draft']; // '0', '1'
 
-    $filter = FilterParser::parse($filterString);
-    $filter['!=status_id'] = null;
+    if ($isDraft) {
+      $filter['=status_id'] = null;
+    } else {
+      $filter = FilterParser::parse($filterString);
+      $filter['!=status_id'] = null;
+    }
 
     try {
       $result = $this->orderService->getOrders($filter, $limit, $offset);

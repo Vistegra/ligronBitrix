@@ -82,6 +82,40 @@ export function useOrder(id: number, isDraft: boolean) {
 
   };
 
+  const sendToLigron = async (): Promise<Order | null> => {
+    if (!isDraft) {
+      toast.error("Можно отправлять только черновики");
+      return null;
+    }
+
+    try {
+      const res = await orderApi.sendToLigron(id);
+
+      if (res.status === "success") {
+        toast.success("Заказ успешно отправлен в Лигрон");
+
+        // Обновляем локальное состояние — заказ теперь не черновик
+        if (res.data?.order) {
+          setOrder(res.data.order);
+        }
+
+        return res.data?.order || order;
+      } else {
+        toast.error(res.message || "Не удалось отправить заказ");
+        return null;
+      }
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Ошибка при отправке заказа в Лигрон";
+
+      toast.error(message);
+      console.error("[sendToLigron] error:", err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (id > 0) fetchOrder();
   }, [id, fetchOrder]);
@@ -95,5 +129,6 @@ export function useOrder(id: number, isDraft: boolean) {
     updateComment,
     uploadFiles,
     deleteFile,
+    sendToLigron
   };
 }
