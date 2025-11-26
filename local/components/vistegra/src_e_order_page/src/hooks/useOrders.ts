@@ -1,148 +1,87 @@
-import {useState, useCallback, useEffect, useMemo} from "react";
-import {useSearchParams} from "react-router-dom";
-import {orderApi, type Order} from "@/api/orderApi";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { orderApi } from "@/api/orderApi";
 
-// Доступные фильтры
-interface FilterParams {
-  status_id?: number[];
-  dealer_prefix?: string | null;
-  dealer_user_id?: number | null;
-}
-
-interface Pagination {
-  limit: number;
-  offset: number;
-  total: number
-}
-
-// Если функция возвращает null/пустую строку, параметр будет удален из URL.
-const FILTER_HANDLERS: Record<keyof FilterParams, (value: any) => string | null> = {
-  status_id: (value: number[]) => (value?.length ? value.join(",") : null),
-  dealer_prefix: (value: string) => value || null,
-  dealer_user_id: (value: number) => (value ? String(value) : null),
-};
-
-interface UseOrdersReturn {
-  orders: Order[];
-  loading: boolean;
-  error: string | null;
-  pagination: Pagination;
-  activeFilters: Required<FilterParams>;
-  updateFilters: (newFilters: Partial<FilterParams>) => void;
-  setPage: (offset: number) => void;
-  setLimit: (limit: number) => void;
-  refresh: () => void;
-}
-
-export function useOrders(defaultLimit: number = 20, isDraft: boolean): UseOrdersReturn {
+export function useOrders(defaultLimit = 20, isDraft: boolean) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Состояние данных
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
-
-  // Читаем пагинацию
+  // Парсим параметры из URL
   const limit = Number(searchParams.get("limit")) || defaultLimit;
   const offset = Number(searchParams.get("offset")) || 0;
 
-  // Парсим фильтры из URL
-  const activeFilters = useMemo(() => ({
-    status_id: searchParams.get("status_id")?.split(",").map(Number) || [],
-    dealer_prefix: searchParams.get("dealer_prefix") || null,
-    dealer_user_id: searchParams.get("dealer_user_id") ? Number(searchParams.get("dealer_user_id")) : null,
-  }), [searchParams]);
-
-  // Загрузка данных
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Собираем строку фильтра для API
-      const filterParts: string[] = [];
-      searchParams.forEach((value, key) => {
-        if (key !== "limit" && key !== "offset" && value) {
-          filterParts.push(`${key}=${value}`);
-        }
-      });
-
-      const filterString = filterParts.join(";");
-
-      const response = await orderApi.getOrders({limit, offset, filter: filterString, is_draft: Number(isDraft)});
-
-      if (response.status !== "success") throw new Error(response.message || "Ошибка");
-
-      setOrders(response.data.orders);
-      setTotal(response.data.pagination.total);
-
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Ошибка загрузки заказов");
-
-    } finally {
-      setLoading(false);
+  // Собираем фильтры для API (строка вида "key1=val,val;key2=val2")
+  const filterParts: string[] = [];
+  searchParams.forEach((value, key) => {
+    if (key !== "limit" && key !== "offset" && value) {
+      filterParts.push(`${key}=${value}`);
     }
-  }, [searchParams, limit, offset]);
+  });
+  const filterString = filterParts.join(";");
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  // TanStack Query
 
-  // Функция обновления параметров фильтров
-  const updateFilters = useCallback((newFilters: Partial<FilterParams>) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
+  const { data, isLoading, isError, error, isFetching } = useQuery({
+    // Уникальный ключ. Любое изменение этих переменных вызовет новый запрос.
+    queryKey: ['orders', 'list', { isDraft: Number(isDraft), limit, offset, filter: filterString }],
 
-      // Проходимся по ключам пришедшего объекта (например, только { dealer_prefix: 'abc' })
-      (Object.keys(newFilters) as Array<keyof FilterParams>).forEach((key) => {
-        const rawValue = newFilters[key];
-        const handler = FILTER_HANDLERS[key];
+    queryFn: () => orderApi.getOrders({
+      limit,
+      offset,
+      is_draft: Number(isDraft),
+      filter: filterString
+    }),
 
-        // Если для ключа есть обработчик в конфиге
-        if (handler) {
-          const stringValue = handler(rawValue);
+    // Оставляем старые данные на экране, пока грузятся новые (для плавности таблицы)
+    placeholderData: keepPreviousData,
+    staleTime: 300, // Данные считаются свежими 300мс
+  });
 
-          if (stringValue) {
-            newParams.set(key, stringValue);
-          } else {
-            newParams.delete(key);
-          }
-        }
-      });
-
-      // При изменении фильтров сбрасываем пагинацию
-      newParams.set("offset", "0");
-      return newParams;
-    });
-  }, [setSearchParams]);
-
-  const setPage = useCallback((newOffset: number) => {
+  // Хелперы для управления URL
+  const setPage = (newOffset: number) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
       p.set("offset", String(newOffset));
       return p;
     });
-  }, [setSearchParams]);
+  };
 
-  const setLimit = useCallback((newLimit: number) => {
+  const setLimit = (newLimit: number) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
       p.set("limit", String(newLimit));
       p.set("offset", "0");
       return p;
     });
-  }, [setSearchParams]);
+  };
+
+  const updateFilters = (newFilters: Record<string, string | number | null>) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+
+      Object.entries(newFilters).forEach(([key, value]) => {
+        if (value) p.set(key, String(value));
+        else p.delete(key);
+      });
+      p.set("offset", "0"); // Сброс страницы при фильтрации
+      return p;
+    });
+  };
 
   return {
-    orders,
-    loading,
-    error,
-    pagination: {limit, offset, total},
-    activeFilters,
-    updateFilters,
+    orders: data?.data?.orders || [],
+    pagination: data?.data?.pagination || { limit, offset, total: 0 },
+    loading: isLoading,
+    isFetching,
+    error: isError ? (error as Error).message : null,
+
     setPage,
     setLimit,
-    refresh: fetchOrders,
+    updateFilters,
+
+    activeFilters: { // Для удобства в компоненте
+      dealer_prefix: searchParams.get("dealer_prefix"),
+      dealer_user_id: Number(searchParams.get("dealer_user_id")) || null,
+      status_id: searchParams.get("status_id")?.split(",").map(Number) || []
+    }
   };
 }

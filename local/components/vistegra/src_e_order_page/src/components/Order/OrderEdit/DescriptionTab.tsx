@@ -24,7 +24,6 @@ export function DescriptionTab({ comment, onUpdate }: Props) {
     await onUpdate(data.comment);
   };
 
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -35,7 +34,7 @@ export function DescriptionTab({ comment, onUpdate }: Props) {
             <FormItem>
               <FormLabel>Описание</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={6} />
+                <Textarea {...field} rows={6} disabled={form.formState.isSubmitting} />
               </FormControl>
             </FormItem>
           )}
@@ -50,7 +49,6 @@ export function DescriptionTab({ comment, onUpdate }: Props) {
             "Обновить"
           )}
         </Button>
-
       </form>
     </Form>
   );

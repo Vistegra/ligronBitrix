@@ -1,46 +1,30 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
-import {Loader2, Trash2, UploadIcon, AlertCircle} from "lucide-react";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import {Loader2, Trash2, UploadIcon, AlertCircle, CheckCircle2} from "lucide-react";
+import {useSearchParams} from "react-router-dom";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemTitle,
-} from "@/components/ui/item";
+import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item";
 import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 import {useCreateOrder} from "@/hooks/useCreateOrder";
-import {toast} from "sonner";
-import {PAGE} from "@/api/constants.ts";
-import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
-
+import {useFileDropzone} from "@/hooks/useFileDropzone";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
-
-// Валидация
 const formSchema = z.object({
   name: z.string().min(1, "Название заказа обязательно"),
   comment: z.string().optional(),
@@ -51,36 +35,17 @@ type FormData = z.infer<typeof formSchema>;
 export default function NewOrderForm() {
   const [isDraft, setIsDraft] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const {createOrder, isSubmitting, error, success, createdOrder,clearError} = useCreateOrder();
-  const { onDropRejected, onDropError } = useFileDropzone();
 
-  const pageDetailCb = isDraft ? PAGE.draftDetail : PAGE.orderDetail;
+  // Используем TanStack хук
+  const {create, isPending, error, isSuccess} = useCreateOrder();
 
-  //для создания заказа нужно достать данные по пользователя из фильтра
+  const {onDropRejected, onDropError} = useFileDropzone();
   const [searchParams] = useSearchParams();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      comment: "",
-    },
+    defaultValues: {name: "", comment: ""},
   });
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (success && createdOrder?.order?.id) {
-      toast.success(`Открываем ${isDraft ? 'черновик': 'заказ'}...`);
-      setFiles([]);
-
-      const timer = setTimeout(() => {
-        navigate(pageDetailCb(createdOrder.order.id));
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [success, createdOrder, isDraft, navigate, pageDetailCb]);
 
   const onDrop = (acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -90,23 +55,15 @@ export default function NewOrderForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = async (data: FormData) => {
-    clearError();
-
-    try {
-      await createOrder({
-        name: data.name,
-        comment: data.comment || undefined,
-        files: files.length > 0 ? files : undefined,
-        is_draft: Number(isDraft),
-        dealer_prefix: searchParams.get('dealer_prefix') ?? '',
-        dealer_user_id: searchParams.get('dealer_user_id') ?? '',
-      });
-
-      toast.success(`${isDraft ? 'Черновик': 'Заказ'} успешно создан!`);
-    } catch (err: any) {
-      toast.error(err.message || `Ошибка при создании ${isDraft ? 'черновика': 'заказа'}`);
-    }
+  const onSubmit = (data: FormData) => {
+    create({
+      name: data.name,
+      comment: data.comment || undefined,
+      files: files.length > 0 ? files : undefined,
+      is_draft: Number(isDraft),
+      dealer_prefix: searchParams.get('dealer_prefix') ?? '',
+      dealer_user_id: searchParams.get('dealer_user_id') ?? '',
+    });
   };
 
   return (
@@ -121,7 +78,7 @@ export default function NewOrderForm() {
                 <FormItem>
                   <FormLabel>Название заказа</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите название" {...field} disabled={isSubmitting}/>
+                    <Input placeholder="Введите название" {...field} disabled={isPending}/>
                   </FormControl>
                   <FormMessage/>
                 </FormItem>
@@ -139,7 +96,7 @@ export default function NewOrderForm() {
                       placeholder="Введите описание"
                       className="min-h-[150px]"
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isPending}
                     />
                   </FormControl>
                   <FormMessage/>
@@ -155,7 +112,7 @@ export default function NewOrderForm() {
                 onDropAccepted={onDrop}
                 onDropRejected={onDropRejected}
                 onError={onDropError}
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
               >
                 <div className="flex flex-col items-center space-y-2">
@@ -163,9 +120,7 @@ export default function NewOrderForm() {
                     <UploadIcon size={16}/>
                   </div>
                   <p className="font-medium">Перетащите файлы или кликните для выбора</p>
-                  <p className="text-xs text-muted-foreground">
-                    До 20 МБ, любые типы файлов
-                  </p>
+                  <p className="text-xs text-muted-foreground">До 20 МБ</p>
                 </div>
               </Dropzone>
 
@@ -175,9 +130,7 @@ export default function NewOrderForm() {
                     <Item key={index} variant="outline" size="sm">
                       <ItemContent>
                         <ItemTitle className="text-sm">{file.name}</ItemTitle>
-                        <ItemDescription className="text-xs">
-                          {(file.size / 1024).toFixed(0)} КБ
-                        </ItemDescription>
+                        <ItemDescription className="text-xs">{(file.size / 1024).toFixed(0)} КБ</ItemDescription>
                       </ItemContent>
                       <ItemActions>
                         <Button
@@ -185,7 +138,7 @@ export default function NewOrderForm() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removeFile(index)}
-                          disabled={isSubmitting}
+                          disabled={isPending}
                         >
                           <Trash2 className="h-4 w-4"/>
                         </Button>
@@ -196,7 +149,7 @@ export default function NewOrderForm() {
               )}
             </div>
 
-            {/* Глобальная ошибка */}
+            {/* Ошибки из хука */}
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4"/>
@@ -205,14 +158,12 @@ export default function NewOrderForm() {
               </Alert>
             )}
 
-            {success && (
-              <Alert variant="default" className="border-green-500 bg-green-50">
-                <AlertTitle>Заказ успешно создан!</AlertTitle>
-                <AlertDescription>
-                  {createdOrder?.files && createdOrder.files.length > 0
-                    ? `Загружено файлов: ${createdOrder.files.length}`
-                    : "Файлы не были прикреплены"}
-                </AlertDescription>
+            {/*  Успеха из хука (показывается перед редиректом) */}
+            {isSuccess && (
+              <Alert className="border-green-500 bg-green-50 text-green-900">
+                <CheckCircle2 className="h-4 w-4 text-green-600"/>
+                <AlertTitle>Успешно!</AlertTitle>
+                <AlertDescription>Заказ создан. Перенаправление...</AlertDescription>
               </Alert>
             )}
 
@@ -220,31 +171,17 @@ export default function NewOrderForm() {
               <Button
                 type="submit"
                 variant="outline"
-                disabled={isSubmitting || success}
+                disabled={isPending || isSuccess}
                 onClick={() => setIsDraft(true)}
               >
-                {isSubmitting && isDraft ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                    Сохранение...
-                  </>
-                ) : (
-                  "Сохранить как черновик"
-                )}
+                {isPending && isDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Сохранить как черновик"}
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || success}
+                disabled={isPending || isSuccess}
                 onClick={() => setIsDraft(false)}
               >
-                {isSubmitting && !isDraft ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                    Сохранение...
-                  </>
-                ) : (
-                  "Создать заказ"
-                )}
+                {isPending && !isDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Отправить в Лигрон"}
               </Button>
             </div>
           </form>

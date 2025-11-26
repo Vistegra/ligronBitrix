@@ -1,82 +1,46 @@
-import { useState } from "react";
-import { orderApi, type CreateOrderData, type OrderResponse } from "@/api/orderApi";
-import type { ApiResponse, SuccessApiResponse, PartialSuccessApiResponse } from "@/api/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { orderApi, type CreateOrderData } from "@/api/orderApi";
+import { PAGE } from "@/api/constants";
+import {toast} from "sonner";
 
-type UseCreateOrderReturn = {
-  createOrder: (data: CreateOrderData) => Promise<OrderResponse>;
-  isSubmitting: boolean;
-  error: string | null;
-  clearError: () => void;
-  success: boolean;
-  reset: () => void;
-  createdOrder: OrderResponse | null;
-};
 
-export function useCreateOrder(): UseCreateOrderReturn {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
-  const createOrder = async (data: CreateOrderData): Promise<OrderResponse> => {
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess(false);
-    setCreatedOrder(null);
+  const mutation = useMutation({
+    mutationFn: (data: CreateOrderData) => orderApi.createOrder(data),
+    onSuccess: (response, variables) => {
+      // Чистим списки, чтобы новый заказ появился там
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-    try {
-      const response: ApiResponse<OrderResponse> = await orderApi.createOrder(data);
+      const isDraft = !!variables.is_draft;
 
-      if (response.status === "success" || response.status === "partial") {
-        const successResponse = response as SuccessApiResponse<OrderResponse> | PartialSuccessApiResponse<OrderResponse>;
+      toast.success("Успешно создан!");
 
-        const result = successResponse.data;
-        setCreatedOrder(result);
-        setSuccess(true);
+      const orderId = response?.data?.order?.id;
 
-        if (response.status === "partial") {
-          console.warn("Частичный успех:", response.message);
-        }
+      if (!orderId) throw new Error('Не установлен идентификатор заказа')
 
-        return result;
-      }
+      // Редирект с задержкой, чтобы юзер увидел Alert
+      const targetPage = isDraft
+        ? PAGE.draftDetail(orderId)
+        : PAGE.orderDetail(orderId);
 
-      if (response.status === "error") {
-        const errorMessage = response.message || "Ошибка при создании заказа";
-        setError(errorMessage);
-        throw new Error(errorMessage);
-      }
+      setTimeout(() => {
+        navigate(targetPage);
+      }, 1500);
+    },
 
-      throw new Error("Неизвестный статус ответа сервера");
-    } catch (err: any) {
-      const message =
-        err.response?.data?.message ||
-        err.message ||
-        "Неизвестная ошибка при создании заказа";
-
-      setError(message);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const clearError = () => setError(null);
-
-  const reset = () => {
-    setError(null);
-    setSuccess(false);
-    setIsSubmitting(false);
-    setCreatedOrder(null);
-  };
+    onError: (err) => toast.error(err.message)
+  });
 
   return {
-    createOrder,
-    isSubmitting,
-    error,
-    clearError,
-    success,
-    reset,
-    createdOrder,
+    create: mutation.mutate, // Функция вызова
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error ? (mutation.error as Error).message : null,
+    data: mutation.data?.data // Данные ответа (OrderResponse)
   };
 }

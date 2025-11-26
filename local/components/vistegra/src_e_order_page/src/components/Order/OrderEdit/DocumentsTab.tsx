@@ -9,11 +9,9 @@ import type {OrderFile} from "@/api/orderApi.ts";
 import {URL_BASE} from "@/api/constants.ts";
 import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
 
-
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-
 
 type Props = {
   files: OrderFile[];
@@ -28,17 +26,13 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
 
   const handleDrop = async (accepted: File[]) => {
     if (accepted.length === 0) return;
-    try {
-      await onUpload(accepted);
-      toast.success("Файлы добавлены в заказ");
-    } catch (err: any) {
-      toast.error(err.message || "Ошибка загрузки файлов");
-    }
+    await onUpload(accepted);
   };
 
   const handleDelete = async (id: number) => {
-      await onDelete(id);
+    await onDelete(id);
   };
+
 
   const handleDownload = async (file: OrderFile) => {
     const url = URL_BASE + file.path + file.name

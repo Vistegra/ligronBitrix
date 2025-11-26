@@ -1,47 +1,25 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { orderApi } from "@/api/orderApi";
-import type { OrderStatus } from "@/api/orderApi";
-
-
-let cachedStatuses: OrderStatus[] | null = null;
-let loadPromise: Promise<void> | null = null;
 
 export function useOrderStatuses() {
-    const [loading, setLoading] = useState(!cachedStatuses);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['statuses'],
+    queryFn: () => orderApi.getStatuses(),
+    staleTime: 1000 * 60 * 10, // 10 минут (справочник редко меняется)
+    gcTime: 1000 * 60 * 60, // Хранить в памяти 1 час
+  });
 
-    useEffect(() => {
-        // Если уже есть кэш или идёт загрузка — ничего не делаем
-        if (cachedStatuses || loadPromise) return;
+  const statuses = data?.data || [];
 
-        loadPromise = (async () => {
-            try {
-                setLoading(true);
-                const response = await orderApi.getStatuses();
-                if (response.status === "success") {
-                    cachedStatuses = response.data;
-                }
-            } catch (error) {
-                console.warn("Не удалось загрузить статусы:", error);
-                //toast.error('Ошибка сети!')
-            } finally {
-                setLoading(false);
-                loadPromise = null;
-            }
-        })();
+  // Хелперы для поиска статусов
+  const getStatusById = (id: number) => statuses.find(s => s.id === id);
+  const getStatusByCode = (code: string) => statuses.find(s => s.code === code);
 
-        loadPromise.catch(() => {});
-    }, []);
-
-    const getStatusById = (id: number): OrderStatus | undefined =>
-        cachedStatuses?.find(s => s.id === id);
-
-    const getStatusByCode = (code: string): OrderStatus | undefined =>
-        cachedStatuses?.find(s => s.code === code);
-
-    return {
-        loading,
-        statuses: cachedStatuses || [],
-        getStatusById,
-        getStatusByCode,
-    };
+  return {
+    statuses,
+    loading: isLoading,
+    isError,
+    getStatusById,
+    getStatusByCode
+  };
 }

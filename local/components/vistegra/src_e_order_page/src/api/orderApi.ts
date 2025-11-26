@@ -1,12 +1,11 @@
-import api, {type ApiResponse} from "./client";
-import { ENDPOINT } from "./constants";
+import api, {makeRequest} from "./client";
+import {ENDPOINT} from "./constants";
 
 export type CreateOrderData = {
   name: string;
   comment?: string;
   files?: File[];
-  is_draft: number; //0,1
-
+  is_draft: number; // 0, 1
   dealer_prefix?: string;
   dealer_user_id?: string;
 };
@@ -20,7 +19,7 @@ export interface OrderStatus {
 
 export interface StatusHistoryItem {
   id: number;
-  date: string; // формат "DD.MM.YYYY HH:mm:ss" //ToDo подумать timestamp
+  date: string;
 }
 
 export interface OrderFile {
@@ -46,7 +45,7 @@ export type Order = {
   dealer_prefix: string | null;
   dealer_user_id: number | null;
   manager_id: number | null;
-  fabrication: any | null;
+  fabrication: string | null;
   ready_date: number | null;
   comment: string | null;
   children_count: number;
@@ -76,111 +75,99 @@ export type OrderResponse = {
 
 export type UploadFilesResponse = {
   files: OrderFile[];
-  //ToDo error messages
 };
 
+export interface OrdersRequest {
+  filter?: string;
+  limit?: number;
+  offset?: number;
+  is_draft: number
+}
 
 export const orderApi = {
-  //Создание заказа
-  async createOrder(data: CreateOrderData): Promise<ApiResponse<OrderResponse>> {
+  // Создание заказа
+  createOrder(data: CreateOrderData) {
     const formData = new FormData();
-    formData.append("name", data.name);
 
-    if (data.comment) {
-      formData.append("comment", data.comment);
+    formData.append("name", data.name);
+    if (data.comment) formData.append("comment", data.comment);
+    if (data.is_draft) formData.append("is_draft", "1");
+
+    // Если создает менеджер за дилера
+    if (data.dealer_prefix && data.dealer_user_id) {
+      formData.append("dealer_prefix", data.dealer_prefix);
+      formData.append("dealer_user_id", data.dealer_user_id);
     }
 
     data.files?.forEach((file) => {
       formData.append("file[]", file);
     });
 
-    if (data.is_draft) {
-      formData.append("is_draft", "1");
-    }
-
-    //Если заказ создает менеджер
-    if (data.dealer_prefix && data.dealer_user_id) {
-      formData.append("dealer_prefix", data.dealer_prefix);
-      formData.append("dealer_user_id", data.dealer_user_id);
-    }
-
-    const response = await api.post(ENDPOINT.ORDERS, formData);
-
-    if (!response.data?.data) {
-      throw new Error("Invalid response format");
-    }
-
-    return response.data;
+    return makeRequest<OrderResponse>(() =>
+      api.post(ENDPOINT.ORDERS, formData, {
+        headers: {"Content-Type": "multipart/form-data"},
+      })
+    );
   },
 
-  // Получение заказов
-  async getOrders(params?: {
-    filter?: string;
-    limit?: number;
-    offset?: number;
-    is_draft: number // 0, 1
-  }): Promise<ApiResponse<OrdersResponse>> {
-
-    const response = await api.get(ENDPOINT.ORDERS, { params });
-
-    return response.data;
+  // Получение списка заказов
+  getOrders(params?: OrdersRequest) {
+    return makeRequest<OrdersResponse>(() =>
+      api.get(ENDPOINT.ORDERS, {params})
+    );
   },
 
-  // Получить заказ
-  async getOrder(id: number): Promise<ApiResponse<OrderResponse>> {
-
-    const { data } = await api.get(`${ENDPOINT.ORDERS}/${id}`);
-
-    return data;
+  // Получить один заказ
+  getOrder(id: number) {
+    return makeRequest<OrderResponse>(() =>
+      api.get(`${ENDPOINT.ORDERS}/${id}`)
+    );
   },
 
   // Обновление заказа
-  async updateOrder(
-    id: number,
-    data: Partial<Pick<CreateOrderData, "name" | "comment">>
-  ): Promise<ApiResponse<{ order: Order }>> {
-
-    const resp = await api.put(`${ENDPOINT.ORDERS}/${id}`, data);
-
-    return resp.data;
+  updateOrder(id: number, data: Partial<Pick<CreateOrderData, "name" | "comment">>) {
+    return makeRequest<{ order: Order }>(() =>
+      api.put(`${ENDPOINT.ORDERS}/${id}`, data)
+    );
   },
 
   // Удалить заказ
-  async deleteOrder(id: number): Promise<ApiResponse<null>> {
-    const response = await api.delete<ApiResponse<null>>(`${ENDPOINT.ORDERS}/${id}`);
-
-    if (response.data.status !== "success") {
-      throw new Error(response.data.message || "Ошибка удаления заказа");
-    }
-
-    return response.data;
+  deleteOrder(id: number) {
+    return makeRequest<null>(() =>
+      api.delete(`${ENDPOINT.ORDERS}/${id}`)
+    );
   },
 
-  //Обновить файлы
-  async uploadFiles(orderId: number, files: File[]): Promise<ApiResponse<UploadFilesResponse>> {
+  // Загрузить файлы
+  uploadFiles(orderId: number, files: File[]) {
     const formData = new FormData();
     files.forEach((file) => formData.append("file[]", file));
 
-    const { data } = await api.post(`${ENDPOINT.ORDERS}/${orderId}/files`, formData);
-    return data;
+    return makeRequest<UploadFilesResponse>(() =>
+      api.post(`${ENDPOINT.ORDERS}/${orderId}/files`, formData, {
+        headers: {"Content-Type": "multipart/form-data"},
+      })
+    );
   },
 
-  // Удлаить файл
-  async deleteFile(orderId: number, fileId: number): Promise<void> {
-    await api.delete(`${ENDPOINT.ORDERS}/${orderId}/files/${fileId}`);
+  // Удалить файл
+  deleteFile(orderId: number, fileId: number) {
+    return makeRequest<null>(() =>
+      api.delete(`${ENDPOINT.ORDERS}/${orderId}/files/${fileId}`)
+    );
   },
 
-  //Получение статусов
-  async getStatuses(): Promise<ApiResponse<OrderStatus[]>> {
-      const response = await api.get(ENDPOINT.STATUSES);
-      return response.data;
+  // Статусы
+  getStatuses() {
+    return makeRequest<OrderStatus[]>(() =>
+      api.get(ENDPOINT.STATUSES)
+    );
   },
 
-  // Отправить черновик в Лигрон (превращает черновик в обычный заказ)
-  async sendToLigron(id: number): Promise<ApiResponse<{ order: Order }>> {
-    const response = await api.post(`${ENDPOINT.ORDERS}/${id}/send-to-ligron`);
-    return response.data;
+  // Отправить черновик в Лигрон и создать заказ (получаем номерб статус)
+  sendToLigron(id: number) {
+    return makeRequest<{ order: Order }>(() =>
+      api.post(`${ENDPOINT.ORDERS}/${id}/send-to-ligron`)
+    );
   },
-
-
 };

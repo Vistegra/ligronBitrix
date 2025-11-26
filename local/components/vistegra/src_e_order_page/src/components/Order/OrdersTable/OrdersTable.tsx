@@ -3,7 +3,7 @@
 import {useEffect, useMemo, useState} from "react";
 import {Table, TableBody} from "@/components/ui/table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import {AlertCircle} from "lucide-react";
+import {AlertCircle, Loader2Icon} from "lucide-react";
 
 import {useOrders} from "@/hooks/useOrders";
 import {useOrderStatuses} from "@/hooks/useOrderStatuses";
@@ -23,14 +23,14 @@ interface OrdersTableProps {
   isDraft: boolean
 }
 
-export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
+export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   const {user} = useAuthStore();
   const isManager = user?.provider === "ligron";
 
   const basePage = isDraft ? PAGE.DRAFTS : PAGE.ORDERS;
 
   const initialVisibility = useMemo(() => {
-     let presetKey = 'default';
+    let presetKey = 'default';
 
     if (isDraft) {
       presetKey = 'draft';
@@ -51,7 +51,8 @@ export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
 
   const {
     orders,
-    loading,
+    loading, // первая загрузка
+    isFetching, // фоновое обновление
     error,
     pagination,
     activeFilters,
@@ -63,7 +64,7 @@ export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
   const {statuses, loading: statusesLoading} = useOrderStatuses();
 
   const handleStatusToggle = (statusIds: number[]) => {
-    updateFilters({status_id: statusIds});
+    updateFilters({status_id: statusIds.join(',')});
   };
   const handleDealerSelect = (prefix: string | null) => {
     // При смене дилера сбрасываем пользователя
@@ -105,7 +106,14 @@ export default function OrdersTable({ isDraft = false }:OrdersTableProps) {
         selectedUserId={activeFilters.dealer_user_id}
       />
 
-      <div className="rounded-md border">
+      <div className="rounded-md border relative">
+
+        {isFetching && !loading && (
+          <div className="absolute top-2 right-2 z-10">
+            <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground"/>
+          </div>
+        )}
+
         <Table>
           <OrdersTableHeader
             visibleColumns={visibleColumns}
