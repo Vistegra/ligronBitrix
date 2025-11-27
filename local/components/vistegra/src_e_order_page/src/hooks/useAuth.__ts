@@ -1,0 +1,147 @@
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/authStore";
+import { PAGE } from "@/api/constants";
+import { authApi, type LoginCredentials } from "@/api/authApi";
+import { toast } from "sonner";
+import { useTokenAuth } from "./useTokenAuth"; 
+
+export interface LoginResult {
+  success: boolean;
+  error?: string;
+}
+
+export function useAuth() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  const { isTokenProcessing } = useTokenAuth();
+
+  const {
+    user,
+    token,
+    login: setAuth,
+    updateUserDetailed,
+    logout: storeLogout,
+  } = useAuthStore();
+
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+.
+  const redirectToLogin = useCallback(() => {
+    if (location.pathname === PAGE.LOGIN) return;
+    const fullPath = location.pathname + location.search;
+    navigate(PAGE.LOGIN, { replace: true, state: { from: fullPath } });
+  }, [navigate, location.pathname, location.search]);
+
+  const redirectAfterLogin = useCallback(() => {
+    const from = location.state?.from;
+    const redirectTo = from && from !== PAGE.LOGIN ? from : PAGE.ORDERS;
+    navigate(redirectTo, { replace: true });
+  }, [location.state?.from, navigate]);
+
+  const loginMutation = useMutation({
+    mutationFn: async (creds: LoginCredentials) => {
+      const res = await authApi.login(creds);
+      if (!res.data?.user) throw new Error("Нет данных");
+      return res;
+    },
+    onSuccess: (res) => {
+      setAuth({ user: res.data.user, token: res.data.token });
+      toast.success("Вход выполнен");
+  
+    },
+  });
+
+  const login = async (creds: LoginCredentials): Promise<LoginResult> => {
+    try {
+      await loginMutation.mutateAsync(creds);
+      return { success: true };
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка");
+      return { success: false, error: err.message };
+    }
+  };
+
+  const profileQuery = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: () => authApi.me(),
+    // ВАЖНО: Не грузим профиль, пока обрабатывается URL-токен
+    enabled: !!token && !isTokenProcessing,
+    retry: false,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  useEffect(() => {
+   
+    if (isTokenProcessing) return;
+
+    let mounted = true;
+
+    const checkAuth = async () => {
+      // 1. Нет токена -> Логин
+      if (!token) {
+        if (mounted) setIsProfileLoading(false);
+        if (location.pathname !== PAGE.LOGIN) redirectToLogin();
+        return;
+      }
+
+      // 2. Ошибка профиля -> Логин
+      if (profileQuery.isError) {
+        storeLogout();
+        queryClient.clear();
+        redirectToLogin();
+        if (mounted) setIsProfileLoading(false);
+        return;
+      }
+
+      // 3. Данные пришли -> Обновляем стор и редиректим
+      if (profileQuery.data?.data?.detailed) {
+        if (JSON.stringify(user?.detailed) !== JSON.stringify(profileQuery.data.data.detailed)) {
+          updateUserDetailed(profileQuery.data.data.detailed);
+        }
+
+        // Если мы всё еще на логине — пускаем внутрь
+        if (location.pathname === PAGE.LOGIN) {
+          redirectAfterLogin();
+        }
+      }
+
+      // Если запрос завершен (успех или нет), снимаем флаг
+      if (!profileQuery.isLoading && mounted) {
+        setIsProfileLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    return () => { mounted = false; };
+  }, [
+    token,
+    profileQuery.data,
+    profileQuery.isError,
+    profileQuery.isLoading,
+    location.pathname,
+    user?.detailed,
+    isTokenProcessing, // Важная зависимость
+
+  ]);
+
+  const logout = useCallback(() => {
+    storeLogout();
+    queryClient.clear();
+    redirectToLogin();
+  }, [storeLogout, queryClient, redirectToLogin]);
+
+  const isLoading = isTokenProcessing || loginMutation.isPending || (!!token && isProfileLoading);
+
+  return {
+    isLoading,
+    error: loginMutation.error ? (loginMutation.error as Error).message : null,
+    login,
+    logout,
+    clearError: loginMutation.reset,
+  };
+}

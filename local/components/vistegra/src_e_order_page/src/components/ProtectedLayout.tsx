@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Outlet } from "react-router-dom"
 
 import { AppSidebar } from "@/components/Sidebar/AppSidebar.tsx";
-import { useAuth } from "@/hooks/useAuth.ts";
+import { useAuth } from "@/hooks/auth/useAuth.ts";
 import FullscreenLoader from "@/components/ui/FullscreenLoader.tsx";
 import {AppBreadcrumbs} from "@/components/Sidebar/AppBreadcrumbs.tsx";
 

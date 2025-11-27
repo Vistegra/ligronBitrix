@@ -1,0 +1,93 @@
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/authStore";
+import { authApi } from "@/api/authApi";
+import { toast } from "sonner";
+import { PAGE } from "@/api/constants";
+
+let processingTokenGlobal: string | null = null;
+
+export function useTokenAuth() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  const utToken = searchParams.get("ut");
+
+  const [isProcessing, setIsProcessing] = useState(!!utToken);
+
+  useEffect(() => {
+   
+    if (!utToken) {
+      setIsProcessing(false);
+      return;
+    }
+
+    if (processingTokenGlobal === utToken) {
+      setIsProcessing(true); 
+      return;
+    }
+
+    const processLogin = async () => {
+      try {
+        // БЛОКИРУЕМ токен глобально
+        processingTokenGlobal = utToken;
+        setIsProcessing(true);
+
+    
+        const currentToken = useAuthStore.getState().token;
+        if (currentToken) {
+          useAuthStore.getState().logout();
+          queryClient.clear();
+        }
+
+        const res = await authApi.loginByUt(utToken);
+
+        if (!res.data?.user || !res.data?.token) {
+          throw new Error("Пустой ответ от сервера");
+        }
+
+       
+        useAuthStore.getState().login({
+          user: res.data.user,
+          token: res.data.token
+        });
+
+        toast.success("Вход по ссылке выполнен");
+
+        // --- РЕДИРЕКТ ---
+        if (location.pathname === PAGE.LOGIN) {
+          navigate(PAGE.ORDERS, { replace: true });
+        } else {
+          const newParams = new URLSearchParams(location.search);
+          newParams.delete("ut");
+
+          navigate(
+            { pathname: location.pathname, search: newParams.toString() },
+            { replace: true }
+          );
+        }
+
+      } catch (err: any) {
+        console.error("Token auth error", err);
+        toast.error(err.message || "Ссылка недействительна");
+
+        navigate(PAGE.LOGIN, { replace: true });
+
+      } finally {
+       
+        processingTokenGlobal = null;
+        setIsProcessing(false);
+      }
+    };
+
+    processLogin();
+
+  }, [utToken, navigate, location.pathname, location.search, queryClient]);
+
+  return {
+    isTokenProcessing: isProcessing || !!utToken
+  };
+}

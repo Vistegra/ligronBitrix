@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import type {ProviderType} from "@/types/user";
-import {useAuth} from "@/hooks/useAuth.ts";
+import {useAuth} from "@/hooks/auth/useAuth.ts";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -61,6 +61,7 @@ export default function LoginPage() {
     setProviderType(provider as ProviderType );
     clearError();
   };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
