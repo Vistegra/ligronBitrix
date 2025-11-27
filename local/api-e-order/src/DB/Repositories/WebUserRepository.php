@@ -7,6 +7,7 @@ namespace OrderApi\DB\Repositories;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
+use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\DealerUserTable;
 use OrderApi\DB\Models\WebManagerDealerTable;
 use OrderApi\DB\Models\WebUserTable;
@@ -124,6 +125,56 @@ class WebUserRepository
     return [
       'managed_dealers' => $dealers,
     ];
+  }
+
+  /**
+   * Получает данные менеджера и офис-менеджера по ИНН дилера.
+   *
+   * @param string $innDealer ИНН дилера.
+   * @return array Возвращает массив с данными менеджеров.
+   */
+  public static function getManagerDetailsByInn(string $innDealer): array
+  {
+    $innDealer = trim($innDealer);
+    if ($innDealer === '') {
+      return [];
+    }
+
+    // 1. Ищем связки manager-dealer по ИНН дилера
+    $managerCodes = WebManagerDealerTable::getList([
+      'select' => ['code_user', 'code_user_manager'],
+      'filter' => [
+        '=inn_dealer' => $innDealer,
+      ],
+      'limit' => 1, // Дилер связан с одним менеджером и одним офис-менеджером через одну запись
+    ])->fetch();
+
+    //ToDo нати замещающего
+    $result = [];
+
+    foreach ($managerCodes as $managerCode) {
+      $manager = WebUserTable::getList([
+        'select' => ['name', 'email', 'phone', 'code_user', 'manager'],
+        'filter' => [
+          '=code_user' => $managerCode,
+          '=active' => 1,
+        ],
+        'limit' => 1,
+      ])->fetch();
+
+      if ($manager) {
+        $result[] = [
+          'code_user' => $managerCode,
+          'name' => $manager['name'],
+          'email' => $manager['email'],
+          'phone' => $manager['phone'],
+          'role' => $manager['manager'] ? UserRole::MANAGER : UserRole::OFFICE_MANAGER,
+        ];
+      }
+
+    }
+
+    return $result;
   }
 
 }

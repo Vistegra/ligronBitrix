@@ -78,7 +78,7 @@ class DealerUserRepository
 
     // 1. Получаем дилера + префикс
     $dealer = DealerTable::getList([
-      'select' => ['cms_param', 'settings'],
+      'select' => ['name', 'cms_param', 'settings'],
       'filter' => ['=ID' => $dealerId, '=activity' => 1],
       'limit' => 1,
     ])->fetch();
@@ -95,6 +95,7 @@ class DealerUserRepository
     $prefix = trim($prefix);
 
     $salonsMap = self::getDealerSalonsMapBySettings($dealer['settings']);
+    $inn = $dealer['settings']['prop_tin'] ?? '';
 
     try {
       // 2. Получаем класс таблицы {prefix}_users
@@ -123,10 +124,13 @@ class DealerUserRepository
         : null;
 
       // 6. Формируем результат
+      $result['dealer_name'] = $dealer['name'];
       $result['salon_name'] = $salonName;
       $result['salon_code'] = $salonCode;
       $result['password'] = $user['password'];
       $result['fetched_at'] = time();
+      $result['inn'] = $inn;
+      $result['managers'] = WebUserRepository::getManagerDetailsByInn($inn);
 
       return $result;
 

@@ -11,11 +11,26 @@ export interface ManagedDealer {
 
 export interface ManagerDetailed {
   managed_dealers?: ManagedDealer[];
+  session_id: string;
+  validation_key: string;
+  fetched_at: number; // timestamp
 }
 
 export interface DealerDetailed {
-    salon_name: string;
-    salon_code: string;
+  dealer_name: string;
+  salon_name: string;
+  salon_code: string;
+  inn: string;
+  managers: Array<{
+    code_user: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: "manager" | "office_manager";
+  }>;
+  session_id: string;
+  validation_key: string;
+  fetched_at: number; // timestamp
 }
 
 type BaseUser = {

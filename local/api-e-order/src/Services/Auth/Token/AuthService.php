@@ -8,18 +8,20 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use OrderApi\Config\ApiConfig;
 use OrderApi\DTO\Auth\{JwtPayload, UserDTO};
+use OrderApi\Services\Auth\Session\AuthSession;
 
 class AuthService
 {
   public function login(string $login, string $password, string $providerType): ?array
   {
+    AuthSession::clear();
     $provider = $this->getAuthProvider($providerType);
     return $provider?->login($login, $password);
   }
 
   public function logout(): void
   {
-    // Клиент сам очистит localStorage
+    AuthSession::clear();
   }
 
   private function getAuthProvider(string $providerType): ?AuthProviderInterface

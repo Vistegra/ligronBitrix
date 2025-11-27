@@ -73,7 +73,7 @@ export default function ProfilePage() {
                   {isDealer && user.dealer_prefix && (
                     <>
                       <span className="hidden sm:inline">·</span>
-                      <span>Дилер: <span className="font-medium">{user.dealer_prefix}</span></span>
+                      <span>Дилер: <span className="font-medium">{user.detailed?.dealer_name}</span></span>
                     </>
                   )}
                 </div>
@@ -171,7 +171,7 @@ export default function ProfilePage() {
         <div className="space-y-6">
 
           {/* Если ДИЛЕР — показываем менеджеров */}
-          {isDealer && (
+          {isDealer && dealerDetails?.managers && dealerDetails.managers.length > 0 && (
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -179,27 +179,40 @@ export default function ProfilePage() {
                   Ваши менеджеры
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  Закреплённые специалисты LIGRON
+                  Закреплённые специалисты LIGRON ({dealerDetails.managers.length})
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-5">
-                {/* Менеджер по продажам */}
-                <div className="flex gap-3">
-                  <Avatar className="h-11 w-11 shrink-0">
-                    <AvatarFallback className="text-xs">МП</AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium text-base">Иванов Иван</p>
-                    <p className="text-muted-foreground">Менеджер по продажам</p>
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                      <Mail className="h-3.5 w-3.5" /> ivanov@ligron.ru
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                      <Phone className="h-3.5 w-3.5" /> +7 (999) 123-45-67
+              <CardContent className="space-y-4">
+                {dealerDetails.managers.map((manager) => (
+                  <div key={manager.code_user} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Avatar className="h-12 w-12 shrink-0">
+                      <AvatarFallback className="text-sm font-bold bg-primary/20">
+                        {getInitials(manager.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <p className="font-medium text-sm truncate" title={manager.name}>
+                        {manager.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {manager.role === "office_manager" ? "Офис-менеджер" : "Менеджер"}
+                      </p>
+                      {manager.email && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate" title={manager.email}>{manager.email}</span>
+                        </div>
+                      )}
+                      {manager.phone && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate" title={manager.phone}>{manager.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                ))}
               </CardContent>
             </Card>
           )}
@@ -231,7 +244,6 @@ export default function ProfilePage() {
                           </p>
                           <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                             <span className="truncate">ИНН: {dealer.inn}</span>
-                            <span className="truncate">Префикс: {dealer.dealer_prefix}</span>
                             <span>Пользователей: {dealer.users.length}</span>
                           </div>
                         </div>
