@@ -20,7 +20,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import type {ProviderType} from "@/types/user";
 import {useAuth} from "@/hooks/useAuth.ts";
-import {toast} from "sonner";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -47,16 +46,13 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     clearError();
 
-    const { success, error: serverError }  = await login({
+    const { success }  = await login({
       ...data,
       providerType
     });
 
     if (!success) {
       reset({ password: "" });
-      toast.error(serverError)
-    } else {
-      toast.success('Вы авторизованы')
     }
 
   };

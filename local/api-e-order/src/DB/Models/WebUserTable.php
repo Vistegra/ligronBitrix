@@ -90,6 +90,12 @@ class WebUserTable extends DataManager
         'nullable' => true,
         'fetch_data_modification' => F::cleanString(),
       ]),
+
+      new Fields\StringField('token', [
+        'size'     => 30,
+        'nullable' => true,
+        'fetch_data_modification' => F::cleanString(),
+      ]),
     ];
   }
 }

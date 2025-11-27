@@ -14,6 +14,31 @@ class LigronUserAuthProvider implements AuthProviderInterface
 {
   public const string PROVIDER = ProviderType::LIGRON;
 
+  public function loginByToken(string $token): ?array
+  {
+    if (!$token) {
+      return null;
+    }
+
+    $user = WebUserRepository::findUserByToken($token);
+
+    if (!$user) {
+      return null;
+    }
+
+    $userDTO = self::normalizeUser($user);
+
+    $jwtToken = $this->generateJwt($userDTO);
+
+    return [
+      'user' => $userDTO->toArray(),
+      'token' => $jwtToken,
+      'expires_in' => ApiConfig::JWT_EXPIRE,
+      'token_type' => 'Bearer',
+      'provider' => self::PROVIDER,
+    ];
+  }
+
   public function login(string $login, string $password): ?array
   {
     if (!$login || !$password) {

@@ -1,9 +1,11 @@
-import {useEffect, useState, useCallback} from "react";
-import {useNavigate, useLocation} from "react-router-dom";
-import {useAuthStore} from "@/store/authStore";
+import { useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/authStore";
 
-import {PAGE} from "@/api/constants";
-import {authApi, type LoginCredentials} from "@/api/authApi.ts";
+import { PAGE } from "@/api/constants";
+import { authApi, type LoginCredentials } from "@/api/authApi";
+import { toast } from "sonner";
 
 export interface LoginResult {
   success: boolean;
@@ -11,146 +13,182 @@ export interface LoginResult {
 }
 
 export function useAuth() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const {
     user,
     token,
     login: setAuth,
     updateUserDetailed,
-    logout,
+    logout: storeLogout,
   } = useAuthStore();
 
-  /**
-   * функция редиректа на login
-   */
-  const redirectToLogin = useCallback(
-    (fromPath?: string) => {
-      const fullPath = fromPath ?? (location.pathname + location.search);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const utToken = searchParams.get("ut");
 
-      navigate(PAGE.LOGIN, {
-        replace: true,
-        state: {from: fullPath},
-      });
-    },
-    [navigate, location.pathname, location.search]
-  );
+  const utProcessed = useRef(false);
 
-  /**
-   * функция редиректа после логина
-   */
+  // хелперы
+  const redirectToLogin = useCallback(() => {
+    if (location.pathname === PAGE.LOGIN) return;
+    const fullPath = location.pathname + location.search;
+    navigate(PAGE.LOGIN, { replace: true, state: { from: fullPath } });
+  }, [navigate, location.pathname, location.search]);
+
   const redirectAfterLogin = useCallback(() => {
     const from = location.state?.from;
     const redirectTo = from && from !== PAGE.LOGIN ? from : PAGE.ORDERS;
-
-    navigate(redirectTo, {replace: true});
+    navigate(redirectTo, { replace: true });
   }, [location.state?.from, navigate]);
 
-  /**
-   * Инициализация: проверка токена, пользователя, загрузка detailed → редирект
-   */
+  const removeUtTokenFromUrl = useCallback(() => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete("ut");
+      return newParams;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+
+  // Мутация входа по ссылке
+  const utLoginMutation = useMutation({
+    mutationFn: async (ut: string) => {
+      const res = await authApi.loginByUt(ut);
+      if (!res.data?.user || !res.data?.token) throw new Error("Нет данных пользователя");
+      return res;
+    },
+    onSuccess: (res) => {
+      console.log({res})
+      setAuth({ user: res.data.user, token: res.data.token });
+      toast.success("Вход выполнен по ссылке");
+      removeUtTokenFromUrl();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Ссылка для входа недействительна или устарела");
+      removeUtTokenFromUrl();
+      redirectToLogin();
+    }
+  });
+
+
   useEffect(() => {
-    const init = async () => {
 
-      if (!token || !user) {
-        setIsInitializing(false);
+    if (utToken && !utProcessed.current) {
+      utProcessed.current = true;
 
-        if (location.pathname !== PAGE.LOGIN) {
-          redirectToLogin();
-        }
-
-        return;
+      if (token) {
+        storeLogout();
+        queryClient.clear();
       }
 
-      // Если подробные данные уже есть
-      if (user?.detailed) {
-        setIsInitializing(false);
+      utLoginMutation.mutate(utToken);
+    }
+  }, [utToken, token, storeLogout, queryClient]);
 
-        if (location.pathname === PAGE.LOGIN) {
-          redirectAfterLogin();
-        }
-        return;
-      }
 
-      // Иначе загружаем детальные данные пользователя
-      try {
-        const res = await authApi.me();
+  // Мутация обычного входа
+  const loginMutation = useMutation({
+    mutationFn: async (creds: LoginCredentials) => {
+      const res = await authApi.login(creds);
+      if (!res.data?.user || !res.data?.token) throw new Error("Нет данных пользователя");
+      return res;
+    },
+    onSuccess: (res) => {
+      setAuth({ user: res.data.user, token: res.data.token });
+      toast.success("Вход выполнен");
+    },
+  });
 
-        if (res.status !== "success") {
-          throw new Error(res.message || "Ошибка получения данных пользователя");
-        }
-
-        updateUserDetailed(res.data.detailed);
-
-        if (location.pathname === PAGE.LOGIN) {
-          redirectAfterLogin();
-        }
-      } catch (err) {
-        console.warn("Токен недействителен", err);
-        logout();
-        redirectToLogin();
-      } finally {
-        setIsInitializing(false);
-      }
-
-    };
-
-    init();
-  }, [
-    token,
-    user,
-    location.pathname,
-    navigate,
-    logout,
-    updateUserDetailed,
-    redirectToLogin,
-    redirectAfterLogin,
-  ]);
-
-  /**
-   * Авторизация
-   */
   const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const res = await authApi.login(credentials);
-
-      if (res.status !== "success") {
-        throw new Error(res.message || "Ошибка авторизации");
-      }
-
-      const {user: baseUser, token} = res.data;
-      setAuth({user: baseUser, token});
-
-      redirectAfterLogin();
-
-      return {success: true};
+      await loginMutation.mutateAsync(credentials);
+      return { success: true };
     } catch (err: any) {
-      const message = err.response?.data?.message || "Ошибка авторизации";
-      setError(message);
-
-      return {success: false, error: message};
-    } finally {
-      setIsLoading(false);
+      const msg = err.message || "Ошибка авторизации";
+      toast.error(msg);
+      return { success: false, error: msg };
     }
   };
 
-  const clearError = useCallback(() => setError(null), []);
+
+  // Загрузка детальных данных пользователя
+  const profileQuery = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: () => authApi.me(),
+    // Включаем запрос только если есть токен И НЕ идет процесс входа по ссылке
+    // (чтобы не пытаться грузить профиль старого юзера в момент переключения)
+    enabled: !!token && !utLoginMutation.isPending,
+    retry: false,
+    staleTime: 1000 * 60 * 5,
+  });
+
+
+  // Глобальная синхронизация
+  useEffect(() => {
+    // 1. Если идет процесс входа по ссылке — ждем, ничего не делаем
+    if (utLoginMutation.isPending) return;
+
+    // 2. Если токена нет — редирект на логин
+    if (!token) {
+      if (utToken) return;
+
+      if (location.pathname !== PAGE.LOGIN) redirectToLogin();
+      return;
+    }
+
+    // 3. Если ошибка получения профиля
+    if (profileQuery.isError) {
+      console.warn("Ошибка сессии:", profileQuery.error);
+      storeLogout();
+      queryClient.clear();
+      redirectToLogin();
+      return;
+    }
+
+    // 4. Если пришли детальные данные — обновляем стор и редиректим
+    if (profileQuery.data?.data?.detailed) {
+      if (JSON.stringify(user?.detailed) !== JSON.stringify(profileQuery.data.data.detailed)) {
+        updateUserDetailed(profileQuery.data.data.detailed);
+      }
+
+      if (location.pathname === PAGE.LOGIN) {
+        redirectAfterLogin();
+      }
+    }
+
+  }, [
+    token,
+    profileQuery.data,
+    profileQuery.isError,
+    location.pathname,
+    user?.detailed,
+    storeLogout,
+    queryClient,
+    updateUserDetailed,
+    redirectToLogin,
+    redirectAfterLogin,
+    utLoginMutation.isPending,
+
+  ]);
+
+  const logout = useCallback(() => {
+    storeLogout();
+    queryClient.clear();
+    redirectToLogin();
+  }, [storeLogout, queryClient, redirectToLogin]);
+
+
+  const isInitializing =
+    (!!token && (profileQuery.isLoading || !user?.detailed)) ||
+    utLoginMutation.isPending;
 
   return {
-    isLoading: isLoading || isInitializing,
-    error,
-
+    isLoading: loginMutation.isPending || isInitializing,
+    error: loginMutation.error ? (loginMutation.error as Error).message : null,
     login,
     logout,
-    clearError,
+    clearError: loginMutation.reset,
   };
-
 }

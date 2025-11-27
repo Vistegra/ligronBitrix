@@ -13,6 +13,30 @@ use OrderApi\DB\Models\WebUserTable;
 
 class WebUserRepository
 {
+  public static function findUserByToken(string $token): ?array
+  {
+    try {
+      $result = WebUserTable::getList([
+        'select' => [
+          'id',
+          'login' => 'username',
+          'name',
+          'email',
+          'phone',
+          'manager',
+        ],
+        'filter' => [
+          '=token' => $token,
+          '=active' => 1,
+        ],
+        'limit' => 1,
+      ]);
+
+      return $result->fetch() ?: null;
+    } catch (\Throwable $e) {
+      return null;
+    }
+  }
   public static function findUserByLogin(string $login): ?array
   {
     try {

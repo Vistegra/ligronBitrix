@@ -2,6 +2,17 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { orderApi } from "@/api/orderApi";
 
+
+const ALLOWED_FILTERS = [
+  "status_id",
+  "dealer_prefix",
+  "dealer_user_id",
+  "parent_id",
+  // "date_from", // добавить в будущем
+  // "date_to",
+];
+
+
 export function useOrders(defaultLimit = 20, isDraft: boolean) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -12,13 +23,11 @@ export function useOrders(defaultLimit = 20, isDraft: boolean) {
   // Собираем фильтры для API (строка вида "key1=val,val;key2=val2")
   const filterParts: string[] = [];
   searchParams.forEach((value, key) => {
-    if (key !== "limit" && key !== "offset" && value) {
+    if (ALLOWED_FILTERS.includes(key) && value) {
       filterParts.push(`${key}=${value}`);
     }
   });
   const filterString = filterParts.join(";");
-
-  // TanStack Query
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
     // Уникальный ключ. Любое изменение этих переменных вызовет новый запрос.
@@ -54,18 +63,34 @@ export function useOrders(defaultLimit = 20, isDraft: boolean) {
     });
   };
 
-  const updateFilters = (newFilters: Record<string, string | number | null>) => {
+  const updateFilters = (newFilters: Record<string, string | number | null | number[]>) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
 
       Object.entries(newFilters).forEach(([key, value]) => {
-        if (value) p.set(key, String(value));
-        else p.delete(key);
+        // Если передан массив (например, статусы [1,2]), превращаем в "1,2"
+        if (Array.isArray(value)) {
+          if (value.length > 0) {
+            p.set(key, value.join(','));
+          } else {
+            p.delete(key);
+          }
+        }
+        // Обычные значения
+        else if (value !== null && value !== undefined && value !== "") {
+          p.set(key, String(value));
+        }
+        // Удаление
+        else {
+          p.delete(key);
+        }
       });
+
       p.set("offset", "0"); // Сброс страницы при фильтрации
       return p;
     });
   };
+
 
   return {
     orders: data?.data?.orders || [],

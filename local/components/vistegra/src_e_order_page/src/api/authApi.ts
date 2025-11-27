@@ -33,4 +33,11 @@ export const authApi = {
       api.get(ENDPOINT.AUTH_DETAILED)
     );
   },
+
+  /** Вход по специальному токену из URL */
+  loginByUt(user_token: string) {
+    return makeRequest<LoginResponse>(() =>
+      api.post('/auth/login-by-token', { user_token })
+    );
+  },
 };

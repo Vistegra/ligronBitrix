@@ -64,7 +64,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   const {statuses, loading: statusesLoading} = useOrderStatuses();
 
   const handleStatusToggle = (statusIds: number[]) => {
-    updateFilters({status_id: statusIds.join(',')});
+    updateFilters({status_id: statusIds});
   };
   const handleDealerSelect = (prefix: string | null) => {
     // При смене дилера сбрасываем пользователя

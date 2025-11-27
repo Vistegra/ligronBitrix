@@ -105,6 +105,7 @@ $app->add(function ($request, $handler) use ($logPath) {
 
 
 $app->post('/auth/login', AuthController::class . ':login');
+$app->post('/auth/login-by-token', AuthController::class . ':loginByToken');
 $app->get('/auth/check', AuthController::class . ':check')->add(AuthMiddleware::class);
 $app->get('/auth/me', AuthController::class . ':me')->add(AuthMiddleware::class);
 $app->post('/auth/crypt', AuthController::class . ':crypt');

@@ -12,6 +12,24 @@ final class AuthController extends AbstractController
 {
   public function __construct(private readonly AuthService $auth) {}
 
+   // POST /auth/login-by-token
+  public function loginByToken(ServerRequestInterface $request): ResponseInterface
+  {
+    $input = $request->getParsedBody() ?? [];
+
+    $token = $input['user_token'] ?? null;
+
+    if (!$token) {
+      return $this->error('Токен обязателен', 400);
+    }
+
+    $result = $this->auth->loginByToken($token);
+
+    return $result
+      ? $this->success('Успешный вход по ссылке', $result)
+      : $this->error('Неверный или устаревший токен', 401);
+  }
+
   // POST /auth/login
   public function login(ServerRequestInterface $request): ResponseInterface
   {

@@ -73,4 +73,11 @@ class AuthService
     $payload = self::validateToken($token);
     return $payload?->user;
   }
+
+  public function loginByToken(string $token): ?array
+  {
+    //реализована только для пользователей Ligron (WebUser)
+    $provider = new LigronUserAuthProvider();
+    return $provider->loginByToken($token);
+  }
 }
