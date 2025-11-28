@@ -11,6 +11,7 @@ use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\DealerUserTable;
 use OrderApi\DB\Models\WebManagerDealerTable;
 use OrderApi\DB\Models\WebUserTable;
+use PhpParser\Error;
 
 class WebUserRepository
 {
@@ -84,7 +85,7 @@ class WebUserRepository
     //Колонка manager указывает на принадлежность к менеджеру
     // false для офис-менеджера, true - менеджера
     //'code_user_manager' - офис менеджер,  'code_user' - менеджер
-    $codeUserRole = $user['manager'] === true ? 'code_user' : 'code_user_manager';
+    $codeUserRole = (bool)$user['manager'] === true ? '=code_user_manager' : '=code_user';
 
     $dealersInn = WebManagerDealerTable::getList([
       'select' => ['inn_dealer'],
@@ -92,9 +93,7 @@ class WebUserRepository
         $codeUserRole => $user['code_user'],
         '=active'            => 1,
       ],
-      'cache' => ['ttl' => 300], // 5 минут
     ])->fetchAll();
-
 
     $innToDealerMap = DealerUserRepository::getInnToDealerCacheMap();
 

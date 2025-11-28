@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { orderApi, type CreateOrderData } from "@/api/orderApi";
-import { PAGE } from "@/api/constants";
+import { orderApi, type CreateOrderData } from "@/api/orderApi.ts";
+import { PAGE } from "@/api/constants.ts";
 
 export function useOrderMutations(orderId: number, isDraft: boolean) {
   const queryClient = useQueryClient();

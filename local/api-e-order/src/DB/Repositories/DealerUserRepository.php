@@ -13,7 +13,7 @@ class DealerUserRepository
 {
   use CacheableTrait;
 
-  private const string CACHE_ID  = 'inn_dealer_id_map';
+  private const string CACHE_ID = 'inn_dealer_id_map';
   private const int CACHE_TTL = 86400; // 24 часа
   private const string CACHE_DIR = '/order_api/dealers/inn_dealer_id_map';
 
@@ -138,6 +138,13 @@ class DealerUserRepository
 
       return null;
     }
+  }
+
+  public static function getDealerByPrefix(string $prefix, $params = []): array|false
+  {
+    $params = array_merge($params, ['filter' => ['%cms_param' => $prefix], 'limit' => 1]);
+
+    return DealerTable::getList($params)->fetch();
   }
 
   /**

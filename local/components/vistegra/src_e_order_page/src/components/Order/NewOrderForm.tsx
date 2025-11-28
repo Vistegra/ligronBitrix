@@ -18,8 +18,8 @@ import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/comp
 import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
-import {useCreateOrder} from "@/hooks/useCreateOrder";
-import {useFileDropzone} from "@/hooks/useFileDropzone";
+import {useCreateOrder} from "@/hooks/order/useCreateOrder.ts";
+import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;

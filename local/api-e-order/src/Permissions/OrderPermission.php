@@ -47,6 +47,11 @@ final readonly class OrderPermission
    */
   public function canView(array $order): void
   {
+    //Офисный менеджер может смотреть все заказы
+    if ($this->user->isOfficeManager()) {
+      return;
+    }
+
     // Если это Дилер-владелец
     if ($this->isDealerOwner($order)) {
       return;

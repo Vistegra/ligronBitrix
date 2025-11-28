@@ -7,7 +7,7 @@ import {toast} from "sonner";
 import {ConfirmPopover} from "@/components/ui/popups/ConfirmPopover.tsx";
 import type {OrderFile} from "@/api/orderApi.ts";
 import {URL_BASE} from "@/api/constants.ts";
-import {useFileDropzone} from "@/hooks/useFileDropzone.ts";
+import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;

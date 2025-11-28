@@ -17,6 +17,8 @@ final class AuthSession
 {
   private const string SESSION_KEY = 'order_api_auth_detailed_data';
 
+  private const int SESSION_LIFETIME = 3600; // 1 час
+
   /** @var AuthSessionProviderInterface[] */
   private static array $providers = [];
 
@@ -68,11 +70,27 @@ final class AuthSession
   }
 
   /**
-   * Данные уже загружены?
+   * Данные уже загружены и еще не истекли?
    */
   private static function isLoaded(UserDTO $user): bool
   {
-    return "{$user->login}_{$user->id}_{$user->provider}_{$user->role}" == self::get('validation_key');
+    $validationKey = "{$user->login}_{$user->id}_{$user->provider}_{$user->role}";
+    $currentValidationKey = self::get('validation_key');
+    $fetchedAt = self::get('fetched_at');
+
+    // Проверяем совпадение ключа валидации
+    if ($validationKey !== $currentValidationKey) {
+      return false;
+    }
+
+    // Проверяем не истекло ли время
+    if ($fetchedAt && (time() - $fetchedAt) > self::SESSION_LIFETIME) {
+      // Время истекло - очищаем данные
+      self::clear();
+      return false;
+    }
+
+    return true;
   }
 
   /**

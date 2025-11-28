@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { orderApi } from "@/api/orderApi";
+import { orderApi } from "@/api/orderApi.ts";
 
 export function useOrder(id: number) {
   const { data, isLoading, isError, error } = useQuery({

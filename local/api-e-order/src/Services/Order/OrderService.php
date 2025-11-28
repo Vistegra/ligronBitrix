@@ -73,15 +73,15 @@ final readonly class OrderService
     }
 
 
+    $fileResults = !empty($uploadedFiles)
+      ? $this->uploadFilesToOrder($order, $uploadedFiles)
+      : [];
+
     if (!$isDraft) {
       $this->sendToLigron($order['id']);
       //ToDo отправить в 1С
       //ToDo обработать ошибки
     }
-
-    $fileResults = !empty($uploadedFiles)
-      ? $this->uploadFilesToOrder($order, $uploadedFiles)
-      : [];
 
     return new OrderCreateResult(
       success: true,
@@ -96,7 +96,7 @@ final readonly class OrderService
   public function sendToLigron(int $orderId): array
   {
     //ToDo if sent to ligron
-
+    $
     $statusData = $this->getDefaultStatusData();
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];

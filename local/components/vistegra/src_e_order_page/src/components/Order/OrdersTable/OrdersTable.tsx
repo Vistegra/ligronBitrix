@@ -5,8 +5,8 @@ import {Table, TableBody} from "@/components/ui/table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {AlertCircle, Loader2Icon} from "lucide-react";
 
-import {useOrders} from "@/hooks/useOrders";
-import {useOrderStatuses} from "@/hooks/useOrderStatuses";
+import {useOrders} from "@/hooks/order/useOrders.ts";
+import {useOrderStatuses} from "@/hooks/order/useOrderStatuses.ts";
 import {useAuthStore} from "@/store/authStore";
 
 import {OrdersTableBody} from "./OrdersTableBody";

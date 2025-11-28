@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { CloudUploadIcon, Trash2Icon, Loader2 } from "lucide-react";
 import { useState } from "react";
 
-import { useOrder } from "@/hooks/useOrder";
-import { useChildOrders } from "@/hooks/useChildOrders";
-import { useOrderMutations } from "@/hooks/useOrderMutations";
+import { useOrder } from "@/hooks/order/useOrder.ts";
+import { useChildOrders } from "@/hooks/order/useChildOrders.ts";
+import { useOrderMutations } from "@/hooks/order/useOrderMutations.ts";
 
 import { DescriptionTab } from "./DescriptionTab";
 import { DocumentsTab } from "./DocumentsTab";

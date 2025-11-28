@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { orderApi } from "@/api/orderApi";
+import { orderApi } from "@/api/orderApi.ts";
 
 
 const ALLOWED_FILTERS = [

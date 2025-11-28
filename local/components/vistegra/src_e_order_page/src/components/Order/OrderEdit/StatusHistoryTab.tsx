@@ -2,7 +2,7 @@
 
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/Order/StatusBage.tsx";
-import { useOrderStatuses } from "@/hooks/useOrderStatuses";
+import { useOrderStatuses } from "@/hooks/order/useOrderStatuses.ts";
 
 type StatusHistoryItem = {
   id: number;

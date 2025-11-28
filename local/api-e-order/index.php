@@ -106,23 +106,24 @@ $app->add(function ($request, $handler) use ($logPath) {
 
 $app->post('/auth/login', AuthController::class . ':login');
 $app->post('/auth/login-by-token', AuthController::class . ':loginByToken');
-$app->get('/auth/check', AuthController::class . ':check')->add(AuthMiddleware::class);
 $app->get('/auth/me', AuthController::class . ':me')->add(AuthMiddleware::class);
 $app->post('/auth/crypt', AuthController::class . ':crypt');
 
 $app->get('', function ($request, $response) {
   $payload = json_encode(['status' => 'success', 'message' => 'Api is working!'], JSON_UNESCAPED_UNICODE);
   $response->getBody()->write($payload);
-  return $response;//->withHeader('Content-Type', 'application/json');
+  return $response;
 });
 
 $app->get('/web_users', function ($request, $response) {
-  $data = \OrderApi\DB\Models\WebUserTable::getList(['limit' => 20])->fetchAll();
+  $dealer = \OrderApi\DB\Repositories\DealerUserRepository::getDealerByPrefix('pin', ['select' => ['id']]);
+  $users =  \OrderApi\DB\Models\WebUserTable::getList(['limit' => 20])->fetchAll();
+  $links =  \OrderApi\DB\Models\WebManagerDealerTable::getList(['limit' => 20])->fetchAll();
 
   $payload = json_encode(['status' => 'success', 'message' => 'Api is working!',
-    'data' => $data], JSON_UNESCAPED_UNICODE);
+    'data' => ['dealer' => $dealer,'users' => $users, 'links' => $links]], JSON_UNESCAPED_UNICODE);
   $response->getBody()->write($payload);
-  return $response;//->withHeader('Content-Type', 'application/json');
+  return $response;
 });
 
 $app->get('/user_detailed', function ($request, $response) {

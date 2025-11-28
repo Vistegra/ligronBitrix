@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { orderApi, type CreateOrderData } from "@/api/orderApi";
-import { PAGE } from "@/api/constants";
+import { orderApi, type CreateOrderData } from "@/api/orderApi.ts";
+import { PAGE } from "@/api/constants.ts";
 import {toast} from "sonner";
 
 
