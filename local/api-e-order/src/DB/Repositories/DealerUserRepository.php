@@ -124,6 +124,9 @@ class DealerUserRepository
         : null;
 
       // 6. Формируем результат
+      $result['name'] = $user['name'];
+      $result['phone'] = $user['contacts']['phone'] ?? '';
+      $result['email'] = $user['contacts']['email'] ?? '';
       $result['dealer_name'] = $dealer['name'];
       $result['salon_name'] = $salonName;
       $result['salon_code'] = $salonCode;

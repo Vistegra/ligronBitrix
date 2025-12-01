@@ -78,14 +78,14 @@ final readonly class OrderService
       : [];
 
     if (!$isDraft) {
-      $this->sendToLigron($order['id']);
+      $updatedOrder = $this->sendToLigron($order['id']);
       //ToDo отправить в 1С
       //ToDo обработать ошибки
     }
 
     return new OrderCreateResult(
       success: true,
-      order: $order,
+      order: $updatedOrder ?? $order,
       fileResults: $fileResults
     );
   }
@@ -93,14 +93,19 @@ final readonly class OrderService
   /**
    * @throws \Exception
    */
-  public function sendToLigron(int $orderId): array
+  public function sendToLigron(int $orderId): ?array
   {
-    //ToDo if sent to ligron
-    $
+
+    $integrationService = new Integration1CService($this->user);
+    $ligronNumber = $integrationService->sendOrder($orderId);
+
+    if (!$ligronNumber) {
+      return null;
+    }
     $statusData = $this->getDefaultStatusData();
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];
-    //$data['number]
+    $data['number'] = $ligronNumber;
 
     return OrderRepository::update($orderId, $data);
   }

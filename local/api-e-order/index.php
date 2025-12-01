@@ -115,6 +115,50 @@ $app->get('', function ($request, $response) {
   return $response;
 });
 
+/** ТЕСТОВЫЕ ЭНДПОИНТЫ */
+$app->post('/fake-1c-webhook', \OrderApi\Controllers\Fake1CWebhookController::class . ':post');
+
+$app->get('/integration/send', function ($request, $response) {
+  $query = $request->getQueryParams();
+  $orderId = (int)$query['orderId'];
+
+  $service = new \OrderApi\Services\Order\Integration1CService($request->getAttribute('user'));
+
+  $result = $service->sendOrder($orderId);
+
+  $payload = json_encode(
+    ['data' => $result],
+    JSON_UNESCAPED_UNICODE
+  );
+
+  $response->getBody()->write($payload);
+  return $response;
+})->add(AuthMiddleware::class);
+
+$app->get('/integration', function ($request, $response) {
+  $query = $request->getQueryParams();
+  $orderId = (int)$query['orderId'];
+  $order = \OrderApi\DB\Repositories\OrderRepository::getById($orderId);
+  $files = \OrderApi\DB\Repositories\OrderFileRepository::getByOrderId($orderId);
+
+  $service = new \OrderApi\Services\Order\Integration1CService($request->getAttribute('user'));
+
+  $result = $service->buildRequestData($order, $files);
+
+  $payload = json_encode(['status' => 'success', 'message' => 'Api is working!',
+    'data' => [
+      'order' => $order,
+      'files' => $files,
+      'result' => $result
+    ]],
+    JSON_UNESCAPED_UNICODE
+  );
+
+  $response->getBody()->write($payload);
+  return $response;
+})->add(AuthMiddleware::class);
+
+
 $app->get('/web_users', function ($request, $response) {
   $dealer = \OrderApi\DB\Repositories\DealerUserRepository::getDealerByPrefix('pin', ['select' => ['id']]);
   $users =  \OrderApi\DB\Models\WebUserTable::getList(['limit' => 20])->fetchAll();
@@ -146,6 +190,8 @@ $app->get('/session', function ($request, $response) {
   $response->getBody()->write($payload);
   return $response;//->withHeader('Content-Type', 'application/json');
 })->add(AuthMiddleware::class);
+
+/** /ТЕСТОВЫЕ ЭНДПОИНТЫ */
 
 $app->group('', function (RouteCollectorProxy $group) {
   $group->get('/statuses', OrderController::class . ':getStatuses');

@@ -1,6 +1,6 @@
 import {StrictMode} from 'react'
 import ReactDOM from "react-dom/client";
-import {BrowserRouter, HashRouter, MemoryRouter} from "react-router-dom";
+import {BrowserRouter} from "react-router-dom";
 import App from './App.tsx'
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
@@ -36,14 +36,15 @@ const timerId = setInterval(() => {
   ReactDOM.createRoot(rootElem as HTMLElement).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <HashRouter
+        <BrowserRouter
+          basename={import.meta.env.BASE_URL || '/'}
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
           }}
         >
           <App/>
-        </HashRouter>
+        </BrowserRouter>
       </QueryClientProvider>
     </StrictMode>
   );

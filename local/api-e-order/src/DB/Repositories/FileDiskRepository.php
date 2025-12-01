@@ -67,8 +67,18 @@ final class FileDiskRepository
 
   private static function sanitizeFilename(string $original, string $dir): string
   {
+    // Получаем только имя файла без пути
     $original = basename($original);
-    $sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $original);
+
+    // Удаляем небезопасные символы, но оставляем кириллицу и пробелы
+    // Разрешаем: буквы (латинские и кириллические), цифры, пробелы, точки, дефисы, подчеркивания
+    $sanitized = preg_replace('/[^\p{L}\p{N}\s._-]/u', '_', $original);
+
+    // Убираем множественные пробелы и подчеркивания
+    $sanitized = preg_replace('/\s+/', ' ', $sanitized);
+
+    // Заменяем пробелы на нижнее подчеркивание
+    $sanitized = preg_replace('/\s+/', '_', $sanitized);
 
     $info = pathinfo($sanitized);
     $base = $info['filename'];

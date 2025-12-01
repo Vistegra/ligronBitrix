@@ -9,8 +9,13 @@ use OrderApi\DTO\Auth\UserDTO;
 
 /**
  * Фасад для работы с детальными данными пользователя в сессии (Bitrix D7)
+ * Для пользователя дилера
  * @method static getSalonCode()
  * @method static getSalonName()
+ * @method static getInn()
+ * @method static getManagers()
+ *
+ * Для пользователя менеджера
  * @method static getManagedDealers()
  */
 final class AuthSession

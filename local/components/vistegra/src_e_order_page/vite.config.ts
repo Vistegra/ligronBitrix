@@ -4,8 +4,10 @@ import { defineConfig } from "vite";
 import fs from "fs";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+
+  base: mode === 'development' ? '/' : '/e-order/',
 
   resolve: {
     alias: {
@@ -51,4 +53,4 @@ export default defineConfig({
       preserveEntrySignatures: "strict",
     },
   },
-});
+}));

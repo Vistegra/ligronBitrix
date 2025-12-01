@@ -10,7 +10,7 @@ const schema = z.object({ comment: z.string().optional() });
 
 type Props = {
   comment: string | null;
-  onUpdate: (comment?: string) => Promise<void>;
+  onUpdate: (comment?: string) => void;
 };
 
 export function DescriptionTab({ comment, onUpdate }: Props) {

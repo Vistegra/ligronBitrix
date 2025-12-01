@@ -16,8 +16,8 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 type Props = {
   files: OrderFile[];
   uploading: boolean;
-  onUpload: (files: File[]) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
+  onUpload: (files: File[]) => void;
+  onDelete: (id: number) => void;
 };
 
 export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {

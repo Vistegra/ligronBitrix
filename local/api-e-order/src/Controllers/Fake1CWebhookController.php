@@ -20,7 +20,7 @@ final class Fake1CWebhookController extends AbstractController
     }
 
     // Генерация случайного ligron_number (от 1,000,000)
-    $ligronNumber = (string) rand(1000000, 9999999);
+    $ligronNumber = 'fake_' . (string) rand(1000000, 9999999);
 
     // Дата - используем текущую или из входных данных
     $date = $input['date'] ?? date('d.m.Y');

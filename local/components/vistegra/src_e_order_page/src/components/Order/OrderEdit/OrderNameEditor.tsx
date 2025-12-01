@@ -10,7 +10,7 @@ interface OrderNameEditorProps {
   name: string;
   isDraft: boolean;
   isSaving: boolean;
-  onSave: (newName: string) => Promise<never>;
+  onSave: (newName: string) => Promise<any>;
 }
 
 export function OrderNameEditor({ name, isDraft, isSaving, onSave }: OrderNameEditorProps) {

@@ -89,6 +89,10 @@ final class OrderController extends AbstractController
 
     $order = $this->orderService->sendToLigron($orderId);
 
+    if (!$order) {
+      return $this->error('Произошла ошибка при отправке заказа в Лигрон');
+    }
+
     return $this->success('Заказ отправлен в Лигрон', ['order' => $order]);
   }
 
