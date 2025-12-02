@@ -22,6 +22,7 @@ class WebUserRepository
         'select' => [
           'id',
           'login' => 'username',
+          'code' => 'code_user',
           'name',
           'email',
           'phone',
@@ -46,6 +47,7 @@ class WebUserRepository
         'select' => [
           'id',
           'login' => 'username',
+          'code' => 'code_user',
           'password',
           'name',
           'email',

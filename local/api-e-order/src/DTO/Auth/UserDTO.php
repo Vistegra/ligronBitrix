@@ -18,7 +18,8 @@ final readonly class UserDTO
     public ?string $email = null,
     public ?string $phone = null,
     public ?int    $dealer_id = null,
-    public ?string $dealer_prefix = null
+    public ?string $dealer_prefix = null,
+    public ?string $code = null,
   ) {}
 
   public function isDealer(): bool
@@ -52,7 +53,8 @@ final readonly class UserDTO
       'dealer_id' => $this->dealer_id,
       'dealer_prefix' => $this->dealer_prefix,
       'provider' => $this->provider,
-      'role' => $this->role
+      'role' => $this->role,
+      'code' => $this->code
     ], fn($value) => $value !== null);
   }
 
@@ -67,7 +69,8 @@ final readonly class UserDTO
       email: $data['email'] ?? null,
       phone: $data['phone'] ?? null,
       dealer_id: isset($data['dealer_id']) ? (int)$data['dealer_id'] : null,
-      dealer_prefix: $data['dealer_prefix'] ?? null
+      dealer_prefix: $data['dealer_prefix'] ?? null,
+      code: $data['code'] ?? null,
     );
   }
   public static function fromStdClass(\stdClass $obj): self
@@ -81,7 +84,8 @@ final readonly class UserDTO
       email: $obj->email ?? null,
       phone: $obj->phone ?? null,
       dealer_id: isset($obj->dealer_id) ? (int)$obj->dealer_id : null,
-      dealer_prefix: $obj->dealer_prefix ?? null
+      dealer_prefix: $obj->dealer_prefix ?? null,
+      code: $obj->code ?? null,
     );
   }
 

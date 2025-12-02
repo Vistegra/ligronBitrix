@@ -95,7 +95,8 @@ class LigronUserAuthProvider implements AuthProviderInterface
       provider: self::PROVIDER,
       role: $role,
       email: $user['email'] ?? '',
-      phone: $user['phone'] ?? ''
+      phone: $user['phone'] ?? '',
+      code: $user['code'] ?? '',
     );
   }
 }
