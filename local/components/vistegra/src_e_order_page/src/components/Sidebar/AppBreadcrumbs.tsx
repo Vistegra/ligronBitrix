@@ -12,6 +12,7 @@ import {
 import {PAGE} from "@/api/constants";
 import {useAuthStore} from "@/store/authStore";
 import {useMemo} from "react";
+import {useBreadcrumbStore} from "@/store/breadcrumbStore.ts";
 
 interface BreadcrumbCrumb {
   label: string;
@@ -20,6 +21,8 @@ interface BreadcrumbCrumb {
 }
 
 export function AppBreadcrumbs() {
+  const {orderNumber} = useBreadcrumbStore()
+
   const location = useLocation();
   const params = useParams();
   const [searchParams] = useSearchParams();
@@ -120,21 +123,21 @@ export function AppBreadcrumbs() {
         crumbs.push({label: "Заказы", isGroup: true});
 
         crumbs.push({
-          label: "История заказов",
+          label: "Все заказы",
           to: isOrderDetail ? PAGE.ORDERS : undefined
         });
       }
 
       // Если мы на детальной странице
       if (isOrderDetail) {
-        crumbs.push({label: `Заказ (ID: ${params.id})`});
+        crumbs.push({label: orderNumber ? `Заказ №${orderNumber}`: `Заказ (ID: ${params.id})`});
       }
 
       return crumbs;
     }
 
     return [{label: "Главная"}];
-  }, [location.pathname, params, searchParams, user]);
+  }, [location.pathname, params, searchParams, user, orderNumber]);
 
   return (
     <Breadcrumb>

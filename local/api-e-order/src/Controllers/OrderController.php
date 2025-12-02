@@ -83,6 +83,7 @@ final class OrderController extends AbstractController
   /**
    * @throws \Exception
    */
+  // POST /orders/{id}/send-to-ligron'
   public function sendToLigron(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
     $orderId = (int)$args['id'];
@@ -94,6 +95,20 @@ final class OrderController extends AbstractController
     }
 
     return $this->success('Заказ отправлен в Лигрон', ['order' => $order]);
+  }
+
+  // GET /orders/{id}/send-to-ligron/json
+  public function getLigronRequestData(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+  {
+    $orderId = (int)$args['id'];
+
+    $data = $this->orderService->getLigronRequestData($orderId);
+
+    if (!$data) {
+      return $this->error('Заказ не найден или произошла непредвиденная ошибка');
+    }
+
+    return $this->success('Заказ отправлен в Лигрон', $data);
   }
 
   // GET /orders/{id}
@@ -117,6 +132,29 @@ final class OrderController extends AbstractController
     } catch (\Exception $e) {
       return $this->handleError($e);
     }
+  }
+
+  // GET /orders/number/{number}
+  public function getByNumber(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+  {
+    try {
+      $number = (string)($args['number'] ?? '');
+
+      if (empty($number)) {
+        return $this->error('Номер заказа обязателен', 400);
+      }
+
+      $order = $this->orderService->getOrderByNumber($number);
+
+      if (!$order) {
+        return $this->error('Заказ не найден', 404);
+      }
+
+      return $this->success('Детали заказа', ['order' => $order]);
+    } catch (\Exception $e) {
+      return $this->handleError($e);
+    }
+
   }
 
   // PUT /orders/{id}

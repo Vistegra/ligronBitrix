@@ -170,4 +170,18 @@ export const orderApi = {
       api.post(`${ENDPOINT.ORDERS}/${id}/send-to-ligron`)
     );
   },
+
+  // Получить заказ по номеру
+  getByNumber(number: string) {
+    return makeRequest<OrderResponse>(() =>
+      api.get(`${ENDPOINT.ORDERS}/number/${number}`)
+    );
+  },
+
+  // Получить JSON для отправки в Лигрон (для предпросмотра)
+  getLigronRequestData(id: number) {
+    return makeRequest<any>(() =>
+      api.get(`${ENDPOINT.ORDERS}/${id}/ligron-request-data`)
+    );
+  },
 };

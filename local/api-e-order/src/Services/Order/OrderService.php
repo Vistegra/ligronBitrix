@@ -79,8 +79,6 @@ final readonly class OrderService
 
     if (!$isDraft) {
       $updatedOrder = $this->sendToLigron($order['id']);
-      //ToDo отправить в 1С
-      //ToDo обработать ошибки
     }
 
     return new OrderCreateResult(
@@ -102,12 +100,19 @@ final readonly class OrderService
     if (!$ligronNumber) {
       return null;
     }
+
     $statusData = $this->getDefaultStatusData();
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];
     $data['number'] = $ligronNumber;
 
     return OrderRepository::update($orderId, $data);
+  }
+
+  public function getLigronRequestData(int $orderId): ?array
+  {
+    $integrationService = new Integration1CService($this->user);
+    return $integrationService->buildRequestData($orderId);
   }
 
   /**
@@ -143,6 +148,24 @@ final readonly class OrderService
   public function getOrder(int $id): ?array
   {
     $order = OrderRepository::getById($id);
+    if (!$order) {
+      return null;
+    }
+
+    $this->permission->canView($order);
+
+    return $order;
+  }
+
+  /**
+   * Получить заказ по номеру с проверкой доступа
+   *
+   * @throws \Exception если доступ запрещён
+   */
+  public function getOrderByNumber(string $number): ?array
+  {
+    $order = OrderRepository::getByNumber($number);
+
     if (!$order) {
       return null;
     }

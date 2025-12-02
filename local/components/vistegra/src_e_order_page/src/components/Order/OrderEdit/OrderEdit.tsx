@@ -1,39 +1,43 @@
 "use client";
 
-import { useParams } from "react-router-dom";
-import { format, fromUnixTime } from "date-fns";
-import { ru } from "date-fns/locale";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { CloudUploadIcon, Trash2Icon, Loader2 } from "lucide-react";
-import { useState } from "react";
+import {useParams} from "react-router-dom";
+import {format, fromUnixTime} from "date-fns";
+import {ru} from "date-fns/locale";
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {CloudUploadIcon, Trash2Icon, Loader2} from "lucide-react";
+import {useEffect, useState} from "react";
 
-import { useOrder } from "@/hooks/order/useOrder.ts";
-import { useChildOrders } from "@/hooks/order/useChildOrders.ts";
-import { useOrderMutations } from "@/hooks/order/useOrderMutations.ts";
+import {useOrder} from "@/hooks/order/useOrder.ts";
+import {useChildOrders} from "@/hooks/order/useChildOrders.ts";
+import {useOrderMutations} from "@/hooks/order/useOrderMutations.ts";
 
-import { DescriptionTab } from "./DescriptionTab";
-import { DocumentsTab } from "./DocumentsTab";
-import { StatusHistoryTab } from "./StatusHistoryTab";
-import { NestedOrdersTab } from "@/components/Order/OrderEdit/NestedOrdersTab.tsx";
-import { showDeleteConfirmToast } from "@/components/ui/popups/DeleteConfirmToast.tsx";
+import {DescriptionTab} from "./DescriptionTab";
+import {DocumentsTab} from "./DocumentsTab";
+import {StatusHistoryTab} from "./StatusHistoryTab";
+import {NestedOrdersTab} from "@/components/Order/OrderEdit/NestedOrdersTab.tsx";
+import {showDeleteConfirmToast} from "@/components/ui/popups/DeleteConfirmToast.tsx";
 import {OrderNameEditor} from "@/components/Order/OrderEdit/OrderNameEditor.tsx";
+import {OrderJsonModal} from "@/components/Order/OrderJsonModal.tsx";
+import {useBreadcrumbStore} from "@/store/breadcrumbStore.ts";
 
 interface OrderEditProps {
   isDraft: boolean
 }
 
-export default function OrderEdit({ isDraft = false }: OrderEditProps) {
-  const { id } = useParams();
+export default function OrderEdit({isDraft = false}: OrderEditProps) {
+  const {setOrderNumber} = useBreadcrumbStore();
+
+  const {id} = useParams();
   const orderId = parseInt(id!, 10);
 
   const [activeTab, setActiveTab] = useState("description");
 
   // Хук чтения
-  const { order, loading, error, files } = useOrder(orderId);
-  const { children, loading: childLoading } = useChildOrders(orderId);
+  const {order, loading, error, files} = useOrder(orderId);
+  const {children, loading: childLoading} = useChildOrders(orderId);
 
   // Хук мутаций
   const {
@@ -45,12 +49,22 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
     isWorking // Общий флаг загрузки
   } = useOrderMutations(orderId, isDraft);
 
+  useEffect(() => {
+    setOrderNumber(order?.number || null);
+
+    return () => {
+      setOrderNumber(null);
+    };
+  }, [order?.number, setOrderNumber]);
+
+
   if (loading) return <div className="p-8">Загрузка...</div>;
   if (error || !order) return (
     <Alert variant="destructive">
       <AlertDescription>{error || "Заказ не найден"}</AlertDescription>
     </Alert>
   );
+
 
   return (
     <div className="bg-background pb-20">
@@ -62,10 +76,10 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
                 name={order.name}
                 isDraft={isDraft}
                 isSaving={update.isPending}
-                onSave={(newName) => update.mutateAsync({ name: newName })}
+                onSave={(newName) => update.mutateAsync({name: newName})}
               />
               <div className="text-muted-foreground">
-                {format(fromUnixTime(order.created_at), "dd.MM.yyyy", { locale: ru })}
+                {format(fromUnixTime(order.created_at), "dd.MM.yyyy", {locale: ru})}
               </div>
             </div>
           </CardHeader>
@@ -83,7 +97,7 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
                 <DescriptionTab
                   comment={order.comment}
                   // Передаем mutateAsync, чтобы форма могла ждать завершения
-                  onUpdate={async (comment) => update.mutateAsync({ comment })}
+                  onUpdate={async (comment) => update.mutateAsync({comment})}
                 />
               </TabsContent>
 
@@ -98,11 +112,11 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
               </TabsContent>
 
               <TabsContent value="statuses" className="mt-0">
-                <StatusHistoryTab history={order.status_history} />
+                <StatusHistoryTab history={order.status_history}/>
               </TabsContent>
 
               <TabsContent value="nested" className="mt-0">
-                <NestedOrdersTab orders={children} loading={childLoading} />
+                <NestedOrdersTab orders={children} loading={childLoading}/>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -111,6 +125,9 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
         <div className="fixed bottom-6 right-6 p-2">
           {isDraft && (
             <div className="flex gap-4">
+              {/* Кнопка с информацией (JSON) */}
+              <OrderJsonModal orderId={orderId}/>
+
               <Button
                 variant="default"
                 size="lg"
@@ -120,12 +137,12 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
               >
                 {sendToLigron.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin"/>
                     Отправка...
                   </>
                 ) : (
                   <>
-                    <CloudUploadIcon className="mr-2 h-5 w-5" />
+                    <CloudUploadIcon className="mr-2 h-5 w-5"/>
                     Отправить в Лигрон
                   </>
                 )}
@@ -145,9 +162,9 @@ export default function OrderEdit({ isDraft = false }: OrderEditProps) {
                 className="shadow-lg"
               >
                 {deleteOrder.isPending ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin"/>
                 ) : (
-                  <Trash2Icon className="mr-2 h-5 w-5" />
+                  <Trash2Icon className="mr-2 h-5 w-5"/>
                 )}
                 Удалить заказ
               </Button>

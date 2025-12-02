@@ -35,10 +35,10 @@ final class Integration1CService
     int $orderId
   ): ?string
   {
-    $order = OrderRepository::getById($orderId);
-    $files = OrderFileRepository::getByOrderId($orderId) ?? [];
 
-    $requestData = $this->buildRequestData($order, $files);
+    $requestData = $this->buildRequestData($orderId);
+
+    if (!$requestData) return null;
 
     try {
       $response = $this->httpClient->post(ApiConfig::INTEGRATION_1C_ORDER_URL, [
@@ -63,8 +63,16 @@ final class Integration1CService
   /**
    * Сформировать данные для запроса в 1C
    */
-  public function buildRequestData(array $order, array $files): array
+  public function buildRequestData(int $orderId): array
   {
+    $order = OrderRepository::getById($orderId);
+
+    if (!$order) {
+      return [];
+    }
+
+    $files = OrderFileRepository::getByOrderId($orderId) ?? [];
+
     // Формируем данные пользователя дилера в зависимости от роли текущего пользователя
     $dealerUserData = $this->getDealerUserData($order);
 
@@ -76,7 +84,7 @@ final class Integration1CService
 
     return [
       'buildVersion' => ApiConfig::API_DATE_VERSION,
-      'releaseType' => 'dev', //ToDo prod
+      'releaseType' => ApiConfig::API_MODE,
       'date' => date('d.m.Y'),
       'order_link' => ApiConfig::APP_ORDERS_PAGE . '/' . $order['id'],
       'order_type' => 112,
@@ -91,7 +99,6 @@ final class Integration1CService
       'client' => $dealerUserData['inn'],
       'order_number' => $orderNumber,
       'order_link_jpg' => $fileUrls,
-      'tab_elements' => new \stdClass()
     ];
   }
 
@@ -170,7 +177,7 @@ final class Integration1CService
   /**
    * Сформировать URL файлов из загруженных или загружаемых файлов
    */
-  private function buildFileUrls(array $order, array $files): array
+  private function buildFileUrls(array $order, ?array $files = []): array
   {
     $fileUrls = [];
 
@@ -187,6 +194,11 @@ final class Integration1CService
   private function parseResponse(ResponseInterface $response): ?string
   {
     $data = json_decode($response->getBody()->getContents(), true);
+
+    if ($data["error"]) {
+      global $logger;
+      $logger->error(json_encode($data["error"], JSON_PRETTY_PRINT));
+    }
 
     return $data['ligron_number'] ?? $data['data']['ligron_number'] ?? null;
   }

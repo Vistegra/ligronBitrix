@@ -14,18 +14,18 @@ final class OrderRepository
   private const int DEFAULT_LIMIT = 20;
   private const int DEFAULT_CACHE_TTL = 3600;
   private const array defaultQueryParams = [
-      'select' => [
-        '*',
-        'status_code' => 'status.code',
-        'status_name' => 'status.name',
-        'status_color' => 'status.color',
-        'parent_order_number' => 'parent.number',
-        'parent_order_id' => 'parent.id',
-      ],
-      'order' => ['updated_at' => 'desc'],
-      'limit' => self::DEFAULT_LIMIT,
-      'offset' => 0,
-    ];
+    'select' => [
+      '*',
+      'status_code' => 'status.code',
+      'status_name' => 'status.name',
+      'status_color' => 'status.color',
+      'parent_order_number' => 'parent.number',
+      'parent_order_id' => 'parent.id',
+    ],
+    'order' => ['updated_at' => 'desc'],
+    'limit' => self::DEFAULT_LIMIT,
+    'offset' => 0,
+  ];
 
   /**
    * Универсальная выборка с пагинацией
@@ -76,7 +76,7 @@ final class OrderRepository
     if (!$result->isSuccess()) {
       $errors = $result->getErrorMessages();
 
-      throw new \RuntimeException('Ошибка обновления заказа: ' .implode(', ', $errors));
+      throw new \RuntimeException('Ошибка обновления заказа: ' . implode(', ', $errors));
     }
 
     return self::getById($id);
@@ -178,6 +178,19 @@ final class OrderRepository
       'limit' => $limit,
       'offset' => $offset,
     ]);
+  }
+
+  /**
+   * Получить заказ по номеру (number)
+   */
+  public static function getByNumber(string $number): ?array
+  {
+    $result = OrderTable::getList([
+      'filter' => ['=number' => $number],
+      'limit' => 1
+    ]);
+
+    return $result->fetch() ?: null;
   }
 
   /**

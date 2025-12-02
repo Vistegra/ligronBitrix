@@ -208,6 +208,10 @@ $app->group('', function (RouteCollectorProxy $group) {
 
   $group->post('/orders/{id}/send-to-ligron', OrderController::class . ':sendToLigron'); //Преобразовать в заказ, получить номер
 
+  $group->get('/orders/number/{number}', [OrderController::class, 'getByNumber']); //получить заказ по номеру
+  $group->get('/orders/{id}/ligron-request-data', OrderController::class . ':getLigronRequestData'); //Получить json данные отправки в Ligron
+
+
 })->add(AuthMiddleware::class);
 
 // Вебхук от 1С — без авторизации, отдельные методы
