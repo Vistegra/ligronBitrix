@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {orderApi} from "@/api/orderApi.ts";
-import {Loader2, AlertCircle, Copy, Info} from "lucide-react";
+import {Loader2, AlertCircle, Copy, Info, DownloadIcon} from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
 import {toast} from "sonner";
 import {Alert, AlertDescription} from "@/components/ui/alert.tsx";
@@ -34,6 +34,36 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
       toast.success("JSON скопирован");
     } catch (err) {
       toast.error("Не удалось скопировать данные");
+    }
+  };
+
+  const handleDownload = () => {
+    if (!data?.data) {
+      toast.error("Нет данных для скачивания");
+      return;
+    }
+
+    try {
+
+      const jsonString = JSON.stringify(data.data, null, 2);
+      const blob = new Blob([jsonString], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+
+      const fileName = `${data.data.order_number || `order_${orderId}`}.json`;
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Файл ${fileName} скачан`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при скачивании файла");
     }
   };
 
@@ -81,6 +111,16 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
 
 
         <div className="flex justify-end gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDownload}
+            disabled={isLoading || !!error}
+          >
+            <DownloadIcon className="h-4 w-4 mr-2"/>
+            Скачать
+          </Button>
+
           <Button
             variant="outline"
             size="sm"

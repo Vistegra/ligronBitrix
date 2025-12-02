@@ -22,7 +22,7 @@ final class OrderStatusRepository
   {
     $result = OrderStatusTable::getList([
       'select' => ['*'],
-      'order' => ['sort' => 'asc', 'id' => 'asc'],
+      'order' => ['sort' => 'asc'],
       'cache' => ['ttl' => self::CACHE_TTL],
     ]);
 

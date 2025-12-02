@@ -20,6 +20,7 @@ import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 import {useCreateOrder} from "@/hooks/order/useCreateOrder.ts";
 import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
+import {useAuthStore} from "@/store/authStore.ts";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
@@ -35,6 +36,8 @@ type FormData = z.infer<typeof formSchema>;
 export default function NewOrderForm() {
   const [isDraft, setIsDraft] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const {user} = useAuthStore();
+  const isDealer = user?.provider === "dealer";
 
   // Используем TanStack хук
   const {create, isPending, error, isSuccess} = useCreateOrder();
@@ -168,14 +171,16 @@ export default function NewOrderForm() {
             )}
 
             <div className="flex justify-end space-x-4">
-              <Button
+              {isDealer &&
+                <Button
                 type="submit"
                 variant="outline"
                 disabled={isPending || isSuccess}
                 onClick={() => setIsDraft(true)}
               >
                 {isPending && isDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Сохранить как черновик"}
-              </Button>
+              </Button>}
+
               <Button
                 type="submit"
                 disabled={isPending || isSuccess}
