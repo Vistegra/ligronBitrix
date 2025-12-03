@@ -6,6 +6,7 @@ namespace OrderApi\Controllers;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use OrderApi\Services\LogService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,17 +18,15 @@ final class Webhook1CController extends AbstractController
     $body  = $request->getParsedBody() ?? [];
     $origin = $request->getHeaderLine('Origin');
 
-    $logPath = $request->getAttribute('logPath');
-    if ($logPath) {
-      $logger = new Logger('webhook_1c');
-      $logger->pushHandler(new StreamHandler($logPath));
-
-      $logger->info("1C WEBHOOK [{$methodLabel}]", [
+    LogService::info(
+      "1C WEBHOOK [{$methodLabel}]",
+      [
         'DATA_GET' => $query,
         'DATA_POST' => $body,
         'ORIGIN' => $origin,
-      ]);
-    }
+      ],
+      'webhook_1c'
+    );
 
     return [$query, $body];
   }

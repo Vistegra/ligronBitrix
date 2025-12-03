@@ -21,6 +21,7 @@ use OrderApi\DTO\Order\FileUploadResult;
 use OrderApi\DTO\Order\OrderCreateResult;
 use OrderApi\Permissions\OrderPermission;
 use OrderApi\Services\Auth\Session\AuthSession;
+use OrderApi\Services\LogService;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
@@ -79,6 +80,14 @@ final readonly class OrderService
 
     if (!$isDraft) {
       $updatedOrder = $this->sendToLigron($order['id']);
+
+      if (!$updatedOrder) {
+        LogService::error('Номер лигрон не получен',
+          [],
+          '1c_integration'
+        );
+      }
+
     }
 
     return new OrderCreateResult(
@@ -95,16 +104,51 @@ final readonly class OrderService
   {
 
     $integrationService = new Integration1CService($this->user);
-    $ligronNumber = $integrationService->sendOrder($orderId);
+    $responseData = $integrationService->sendOrder($orderId);
 
-    if (!$ligronNumber) {
+    if (!$responseData || !$responseData['ligron_number']) {
       return null;
     }
 
-    $statusData = $this->getDefaultStatusData();
+    if (!$responseData['status_zakaza'] || !$responseData['status_zakaza']['status_code']) {
+      $statusData = $this->getDefaultStatusData();
+
+      LogService::error('Нет статуса заказа',
+        $responseData,
+        '1c_integration'
+      );
+
+    } else {
+      $statusCode = trim($responseData['status_zakaza']['status_code']);
+      $statusDate = $responseData['status_zakaza']['status_date'];
+
+      $status = OrderStatusRepository::findByCode($statusCode);
+
+      if (!$status) {
+        $statusData = $this->getDefaultStatusData();
+
+        LogService::error("Не найден код статуса $statusCode",
+          [],
+          '1c_integration'
+        );
+      } else {
+        $statusData = [
+          'status_id' => $status['id'],
+          'status_history' => [
+            [
+              'id' => $status['id'],
+              'code' => $status['code'],
+              'date' => $statusDate ?? (new DateTime())->toString(),
+            ]
+          ]
+        ];
+      }
+
+    }
+
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];
-    $data['number'] = $ligronNumber;
+    $data['number'] = $responseData['ligron_number'];
 
     return OrderRepository::update($orderId, $data);
   }
@@ -134,6 +178,7 @@ final readonly class OrderService
       'status_history' => [
         [
           'id' => $status['id'],
+          'code' => $status['code'],
           'date' => (new DateTime())->toString(),
         ]
       ]

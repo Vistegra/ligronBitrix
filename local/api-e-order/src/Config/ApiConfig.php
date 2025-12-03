@@ -14,7 +14,7 @@ final class ApiConfig
   public const string API_VERSION = '1.0';
   public const string API_NAME = 'Order API';
   public const string UPLOAD_FILES_DIR = '/upload/e-order/files/';
-  public const string API_DATE_VERSION = '28.11.2025';
+  public const string API_DATE_VERSION = '03.12.2025';
   public const string SITE_ROOT_URL = 'https://ligron.ru';
   public const string  APP_ORDERS_PAGE = 'https://ligron.ru/e-order/orders';
 

@@ -12,6 +12,7 @@ use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\DB\Repositories\OrderRepository;
 use OrderApi\DTO\Auth\UserDTO;
 use OrderApi\Services\Auth\Session\AuthSession;
+use OrderApi\Services\LogService;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -31,11 +32,8 @@ final class Integration1CService
   /**
    * Отправить заказ в 1C и получить номер
    */
-  public function sendOrder(
-    int $orderId
-  ): ?string
+  public function sendOrder(int $orderId): ?array
   {
-
     $requestData = $this->buildRequestData($orderId);
 
     if (!$requestData) return null;
@@ -54,8 +52,12 @@ final class Integration1CService
       return $this->parseResponse($response);
 
     } catch (\Throwable $e) {
-      global $logger;
-      $logger->error("1C Integration Error: " .$e->getMessage());
+
+      LogService::error($e,
+        [],
+        '1c_integration'
+      );
+
       return null;
     }
   }
@@ -191,15 +193,23 @@ final class Integration1CService
   /**
    * Парсить ответ от 1C
    */
-  private function parseResponse(ResponseInterface $response): ?string
+  private function parseResponse(ResponseInterface $response): ?array
   {
     $data = json_decode($response->getBody()->getContents(), true);
 
-    if ($data["error"]) {
-      global $logger;
-      $logger->error(json_encode($data["error"], JSON_PRETTY_PRINT));
+    if (!$data || $data["error"]) {
+      LogService::error('Error parse 1c response',
+        $data["error"],
+        '1c_integration'
+      );
+      return null;
     }
 
-    return $data['ligron_number'] ?? $data['data']['ligron_number'] ?? null;
+    LogService::info('данные отправлены в Лигрон, получено: ',
+     $data,
+     '1c_integration'
+    );
+
+    return $data;
   }
 }

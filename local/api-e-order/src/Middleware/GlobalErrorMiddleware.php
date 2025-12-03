@@ -1,15 +1,14 @@
 <?php
 namespace OrderApi\Middleware;
 
+use OrderApi\Services\LogService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Slim\Psr7\Response;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 use Slim\Exception\HttpMethodNotAllowedException;
 use Slim\Exception\HttpNotFoundException;
+use Slim\Psr7\Response;
 
 final class GlobalErrorMiddleware implements MiddlewareInterface
 {
@@ -48,13 +47,7 @@ final class GlobalErrorMiddleware implements MiddlewareInterface
 
     //Необработанный тип ошибки
     catch (\Throwable $e) {
-      $logPath = $request->getAttribute('logPath');
-
-      if ($logPath) {
-        $log = new Logger('api');
-        $log->pushHandler(new StreamHandler($logPath));
-        $log->error($e);
-      }
+      LogService::error($e);
 
       $response = new Response(500);
 
@@ -64,10 +57,10 @@ final class GlobalErrorMiddleware implements MiddlewareInterface
         'type' => $e::class,
         'file' => $e->getFile(),
         'line' => $e->getLine(),
-        'log_file' => $logPath
       ], JSON_UNESCAPED_UNICODE));
 
       return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
     }
+
   }
 }
