@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация API | E-Order</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 30px 40px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            margin-top: 5px;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .doc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .doc-list li {
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .doc-list li:last-child {
+            border-bottom: none;
+        }
+
+        .doc-link {
+            display: flex;
+            align-items: center;
+            padding: 20px 40px;
+            text-decoration: none;
+            color: #495057;
+            transition: background-color 0.2s ease, padding-left 0.2s ease;
+        }
+
+        .doc-link:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+            padding-left: 45px; /* Эффект сдвига */
+        }
+
+        .icon {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+
+        .title {
+            font-weight: 600;
+            font-size: 16px;
+            flex-grow: 1;
+        }
+
+        .arrow {
+            color: #adb5bd;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .doc-link:hover .arrow {
+            color: #007bff;
+        }
+
+        /* Теги категорий */
+        .tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-right: 15px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .tag.webhook { background-color: #d1ecf1; color: #0c5460; }
+        .tag.ref { background-color: #fff3cd; color: #856404; }
+        .tag.auth { background-color: #d4edda; color: #155724; }
+        .tag.orders { background-color: #d4edda; color: #503777; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Order API Documentation</h1>
+        <div class="subtitle">Интеграция с системой электронных заказов и 1С</div>
+    </div>
+
+    <ul class="doc-list">
+
+        <!-- Авторизация -->
+        <li>
+            <a href="./auth" class="doc-link">
+                <span class="tag auth">Security</span>
+                <span class="title">Авторизация и получение токена</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Справочники -->
+        <li>
+            <a href="./statuses" class="doc-link">
+                <span class="tag ref">Reference</span>
+                <span class="title">Справочник статусов (GET /statuses)</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Вебхуки -->
+        <li>
+            <a href="./webhook_1c" class="doc-link">
+                <span class="tag webhook">Webhook</span>
+                <span class="title">Webhook 1C: Обновление статусов</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Создание заказов -->
+        <li>
+            <a href="./create_orders" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Создание заказа</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Получение заказа по номеру -->
+        <li>
+            <a href="./orders_get_by_number" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Получение по номеру</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Получение заказа по id -->
+        <li>
+            <a href="./orders_get_by_id" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Получение по ID</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Получение списка заказов -->
+        <li>
+            <a href="./orders_list" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Получение списка заказов</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- обновление заказа -->
+        <li>
+            <a href="./orders_update" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Обновление заказа</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Добавить файлы -->
+        <li>
+            <a href="./orders_upload_files" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Заказы: Добавление файлов в заказ</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+
+        <!-- Удалить файл -->
+        <li>
+            <a href="./orders_delete_file" class="doc-link">
+                <span class="tag orders">Orders</span>
+                <span class="title">Удалить файл из заказа</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+</body>
+</html>

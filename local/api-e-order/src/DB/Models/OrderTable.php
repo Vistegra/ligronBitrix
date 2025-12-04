@@ -55,6 +55,7 @@ class OrderTable extends DataManager
       ),
       new Fields\IntegerField('status_id', [
         'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       // Связь с родителем
