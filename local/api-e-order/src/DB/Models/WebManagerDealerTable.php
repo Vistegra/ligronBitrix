@@ -47,14 +47,14 @@ class WebManagerDealerTable extends DataManager
         'default_value' => 1,
       ]),
 
-      // Код подчинённого пользователя (из user.code_user)
+      // Код закрепленного менеджера
       new Fields\StringField('code_user', [
         'size'     => 10,
         'nullable' => true,
         'fetch_data_modification' => F::cleanString(),
       ]),
 
-      // Код менеджера (из user.code_user)
+      // Код закрепленного офис-менеджера
       new Fields\StringField('code_user_manager', [
         'size'     => 10,
         'nullable' => true,

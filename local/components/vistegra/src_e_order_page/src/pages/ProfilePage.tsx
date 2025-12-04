@@ -4,10 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { User, Mail, Phone, LogOut, Shield, Users, Building2, Store, Hash } from "lucide-react"
+import {
+  User,
+  Mail,
+  Phone,
+  LogOut,
+  Shield,
+  Users,
+  Building2,
+  Store,
+  Hash,
+  PalmtreeIcon,
+  UserPlusIcon
+} from "lucide-react"
 import { PAGE } from "@/api/constants.ts"
 import { useNavigate } from "react-router-dom"
 import type { ManagerDetailed, DealerDetailed } from "@/types/user"
+import {cn} from "@/lib/utils.ts";
+import {Badge} from "@/components/ui/badge.tsx";
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
@@ -179,40 +193,85 @@ export default function ProfilePage() {
                   Ваши менеджеры
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  Закреплённые специалисты LIGRON ({dealerDetails.managers.length})
+                  Закреплённые специалисты LIGRON
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {dealerDetails.managers.map((manager) => (
-                  <div key={manager.code_user} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                    <Avatar className="h-12 w-12 shrink-0">
-                      <AvatarFallback className="text-sm font-bold bg-primary/20">
-                        {getInitials(manager.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <p className="font-medium text-sm truncate" title={manager.name}>
-                        {manager.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {manager.role === "office_manager" ? "Офис-менеджер" : "Менеджер"}
-                      </p>
-                      {manager.email && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate" title={manager.email}>{manager.email}</span>
-                        </div>
+                {dealerDetails.managers.map((manager) => {
+                  // Определяем состояние
+                  const isOnVacation = manager.is_on_vacation;
+                  const isSubstitute = manager.is_substitute;
+
+                  return (
+                    <div
+                      key={manager.code_user}
+                      className={cn(
+                        "flex gap-3 p-3 rounded-lg transition-all relative overflow-hidden border",
+                        // Стили для отпуска: серый, полупрозрачный
+                        isOnVacation
+                          ? "bg-muted/30 opacity-70 grayscale-[0.8]"
+                          : "bg-muted/50 border-transparent",
+                        // Стили для заместителя: подсветка, синеватый фон
+                        isSubstitute
+                          ? "bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900"
+                          : ""
                       )}
-                      {manager.phone && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Phone className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate" title={manager.phone}>{manager.phone}</span>
+                    >
+
+                      <Avatar className="h-12 w-12 shrink-0">
+                        <AvatarFallback className={cn(
+                          "text-sm font-bold",
+                          isSubstitute ? "bg-blue-100 text-blue-700" : "bg-primary/20"
+                        )}>
+                          {getInitials(manager.name)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={cn(
+                            "font-medium text-sm truncate",
+                            isOnVacation && "line-through decoration-slate-400"
+                          )} title={manager.name}>
+                            {manager.name}
+                          </p>
+
+                          {isOnVacation && (
+                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] text-orange-600 border-orange-200 bg-orange-50/50">
+                              <PalmtreeIcon className="h-3 w-3 mr-1" />
+                              В отпуске
+                            </Badge>
+                          )}
+
+                          {isSubstitute && (
+                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100">
+                              <UserPlusIcon className="h-3 w-3 mr-1" />
+                              Заменяет
+                            </Badge>
+                          )}
                         </div>
-                      )}
+
+                        <p className="text-xs text-muted-foreground capitalize flex items-center gap-2">
+                          {manager.role === "office_manager" ? "Офис-менеджер" : "Менеджер"}
+                        </p>
+
+                        {manager.email && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate" title={manager.email}>{manager.email}</span>
+                          </div>
+                        )}
+                        {manager.phone && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate" title={manager.phone}>{manager.phone}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CardContent>
             </Card>
           )}
@@ -232,23 +291,56 @@ export default function ProfilePage() {
 
               <CardContent>
                 {managedDealers.length > 0 ? (
-                  <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-1">
-                    {managedDealers.map((dealer) => (
-                      <div key={dealer.dealer_prefix} className="flex gap-3 group">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
-                          <Store className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <div className="flex-1 space-y-1 overflow-hidden">
-                          <p className="font-medium text-sm truncate" title={dealer.name}>
-                            {dealer.name}
-                          </p>
-                          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                            <span className="truncate">ИНН: {dealer.inn}</span>
-                            <span>Пользователей: {dealer.users.length}</span>
+                  <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+                    {managedDealers.map((dealer) => {
+
+                      const isSubstituted = dealer.is_substituted;
+
+                      return (
+                        <div
+                          key={dealer.dealer_prefix}
+                          className={cn(
+                            "flex gap-3 group p-2 rounded-lg border transition-all",
+                            // Если замещение — синий фон и рамка, иначе прозрачная рамка
+                            isSubstituted
+                              ? "bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900"
+                              : "border-transparent hover:bg-muted/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+                            isSubstituted
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                          )}>
+                            <Store className="h-5 w-5" />
+                          </div>
+
+                          <div className="flex-1 space-y-1 overflow-hidden min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-medium text-sm truncate" title={dealer.name}>
+                                {dealer.name}
+                              </p>
+                              {/* Бейдж для замещаемого дилера */}
+                              {isSubstituted && (
+                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100 shrink-0">
+                                  <UserPlusIcon className="h-3 w-3 mr-1" />
+                                  Замена
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                              <span className="truncate">ИНН: {dealer.inn}</span>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3" />
+                                <span>Пользователей: {dealer.users.length}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-4 text-sm text-muted-foreground">

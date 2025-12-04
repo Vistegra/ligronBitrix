@@ -12,36 +12,35 @@ class WebFillingRepository
 {
   /**
    * Найти менеджеров, которые сейчас в отпуске и которых замещает текущий сотрудник.
-   * Возвращает массив данных пользователей
+   * Возвращает массив данных пользователей.
    *
-   * @param string $managerCode Код текущего менеджера (code_user), который работает
+   * @param string $managerCode Код текущего менеджера (code_user), который работает (заместитель)
    * @return array<int, array> Массив данных менеджеров из WebUserTable
    */
-  public static function getManagersInHolidayDetailed(string $managerCode): array
+  public static function getManagersOnVacation(string $managerCode): array
   {
     $today = new Date();
 
-    // Список кодов тех, кто в отпуске
     $rows = WebFillingTable::getList([
       'select' => ['code_user'],
       'filter' => [
-        '=code_user_filling' => $managerCode, // Кто замещает
+        '=code_user_filling' => $managerCode,
         '<=date_from' => $today,
         '>=date_to' => $today,
       ]
     ])->fetchAll();
 
-    $absentCodes = array_column($rows, 'code_user');
+    $absentUserCodes = array_column($rows, 'code_user');
 
-    if (empty($absentCodes)) {
+    if (empty($absentUserCodes)) {
       return [];
     }
 
-    // Данные этих менеджеров
+    // Получаем детальные данные тех, кто в отпуске
     return WebUserTable::getList([
       'select' => ['code_user', 'name', 'email', 'phone', 'manager'],
       'filter' => [
-        '=code_user' => $absentCodes,
+        '=code_user' => $absentUserCodes,
         '=active' => 1
       ]
     ])->fetchAll();
@@ -49,33 +48,32 @@ class WebFillingRepository
 
   /**
    * Найти менеджера, который замещает сотрудника $managerCode.
-   * Возвращает массив данных пользователя или null.
+   * (Если $managerCode сейчас в отпуске).
    *
-   * @param string $managerCode Код сотрудника, который в отпуске
+   * @param string $managerCode Код сотрудника, который (возможно) в отпуске
    * @return array|null Данные замещающего или null
    */
-  public static function getSubstituteManagerDetailed(string $managerCode): ?array
+  public static function getSubstituteManager(string $managerCode): ?array
   {
     $today = new Date();
 
-    // Код заместителя
     $row = WebFillingTable::getList([
       'select' => ['code_user_filling'],
       'filter' => [
-        '=code_user' => $managerCode, // Я в отпуске
+        '=code_user' => $managerCode,
         '<=date_from' => $today,
         '>=date_to' => $today,
       ],
       'limit' => 1
     ])->fetch();
 
-    $substituteCode = $row['code_user_filling'] ?? null;
-
-    if (!$substituteCode) {
+    if (!$row) {
       return null;
     }
 
-    // Данные заместителя
+    $substituteCode = $row['code_user_filling'];
+
+    // Получаем данные заместителя
     $user = WebUserTable::getList([
       'select' => ['code_user', 'name', 'email', 'phone', 'manager'],
       'filter' => [

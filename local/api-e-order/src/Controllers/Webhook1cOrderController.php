@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace OrderApi\Controllers;
 
 use Bitrix\Main\Type\DateTime;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 use OrderApi\Services\LogService;
 use OrderApi\Services\Order\Webhook1cOrderService;
 use Psr\Http\Message\ResponseInterface;

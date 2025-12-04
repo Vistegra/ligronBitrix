@@ -7,6 +7,7 @@ export interface ManagedDealer {
   name: string;
   dealer_prefix: string;
   users: Array<{ id: number; name: string }>;
+  is_substituted: boolean;
 }
 
 export interface ManagerDetailed {
@@ -27,6 +28,9 @@ export interface DealerDetailed {
     email: string;
     phone: string;
     role: "manager" | "office_manager";
+    is_on_vacation: boolean,
+    is_substitute: boolean,
+    substituting_for: string
   }>;
   session_id: string;
   validation_key: string;
