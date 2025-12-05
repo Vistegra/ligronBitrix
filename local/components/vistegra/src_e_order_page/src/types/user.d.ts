@@ -17,21 +17,23 @@ export interface ManagerDetailed {
   fetched_at: number; // timestamp
 }
 
+export interface ManagerOfDealer {
+  code_user: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "manager" | "office_manager";
+  is_on_vacation: boolean,
+  is_substitute: boolean,
+  substituting_for: string
+}
+
 export interface DealerDetailed {
   dealer_name: string;
   salon_name: string;
   salon_code: string;
   inn: string;
-  managers: Array<{
-    code_user: string;
-    name: string;
-    email: string;
-    phone: string;
-    role: "manager" | "office_manager";
-    is_on_vacation: boolean,
-    is_substitute: boolean,
-    substituting_for: string
-  }>;
+  managers: Array<ManagerOfDealer>;
   session_id: string;
   validation_key: string;
   fetched_at: number; // timestamp
@@ -54,9 +56,11 @@ type LigronUser = BaseUser & {
 type DealerUser = BaseUser & {
   dealer_id: number;
   dealer_prefix: string;
+  dealer_name: string;
   provider: 'dealer';
   role: 'dealer';
-  detailed?: DealerDetailed
+  detailed?: DealerDetailed,
+
 };
 
 type User = LigronUser | DealerUser;
