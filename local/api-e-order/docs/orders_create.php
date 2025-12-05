@@ -60,7 +60,7 @@
     <div class="security-note" style="background: #e2e3e5; border-color: #d6d8db; color: #383d41; margin-top: 10px;">
         <strong>Примечание для менеджеров:</strong>
         Пользователи с ролью <code>manager</code> также могут передавать поля:
-        <code>fabrication</code> (дней на производство) и <code>ready_date</code> (дата готовности).
+        <code>production_time</code> (дней на производство) и <code>ready_date</code> (дата готовности).
     </div>
 
     <h2>Пример запроса (cURL)</h2>

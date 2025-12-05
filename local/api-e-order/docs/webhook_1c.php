@@ -1,6 +1,6 @@
 <div class="api-doc-container">
     <h1>Webhook: Обновление статуса заказа из 1С</h1>
-    <p>Метод предназначен для обновления статуса заказа во внешней системе при изменении его состояния в 1С.</p>
+    <p>Метод предназначен для обновления статуса заказа во внешней системе.</p>
 
     <div class="api-endpoint">
         <span class="method post">POST</span>
@@ -25,6 +25,18 @@
         </tr>
         </thead>
         <tbody>
+        <tr>
+            <td><code>action</code></td>
+            <td>string</td>
+            <td><span class="required">Да</span></td>
+            <td>Действие. Для обновления статуса должно быть строго <code>"UPDATE"</code>.</td>
+        </tr>
+        <tr>
+            <td><code>type</code></td>
+            <td>string</td>
+            <td><span class="required">Да</span></td>
+            <td>Тип объекта. Для обновления статуса должно быть строго <code>"STATUS"</code>.</td>
+        </tr>
         <tr>
             <td><code>ligron_number</code></td>
             <td>string</td>
@@ -56,6 +68,8 @@
 curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
 --header 'Content-Type: application/json' \
 --data '{
+    "action": "UPDATE",
+    "type": "STATUS",
     "ligron_number": "72525161",
     "status_code": "104",
     "status_date": "04.12.2025 11:05:30"
@@ -68,19 +82,22 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
     <!-- Успешный ответ -->
     <h3>1. Успешное обновление</h3>
     <div class="status-badge status-success">HTTP 200 OK</div>
-    <p>Возвращается, когда статус найден, заказ найден и обновление прошло успешно.</p>
+    <p>Возвращается, когда параметры <code>action</code> и <code>type</code> верны, заказ найден и обновление прошло
+        успешно.</p>
 
     <details>
         <summary>Пример успешного ответа (JSON)</summary>
         <pre class="response-content">
 {
     "status": "success",
-    "message": "Данные получены, и обработаны. Статус заказа обновлен.",
+    "message": "Статус заказа успешно обновлен",
     "data": {
         "received_at": "2025-12-04T11:55:41+03:00",
         "method": "post",
         "query": [],
         "body": {
+            "action": "UPDATE",
+            "type": "STATUS",
             "ligron_number": "72525161",
             "status_code": "104",
             "status_date": "04.12.2025 11:05:30"
@@ -91,15 +108,6 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
             "name": "Test 14",
             "status_id": 4,
             "parent_id": null,
-            "created_by": 1,
-            "created_by_id": 3,
-            "dealer_prefix": "pro_",
-            "dealer_user_id": 3,
-            "manager_id": null,
-            "fabrication": null,
-            "ready_date": null,
-            "comment": null,
-            "children_count": 0,
             "status_history": [
                 {
                     "id": 4,
@@ -107,24 +115,40 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
                     "date": "04.12.2025 11:05:30"
                 },
                 {
-                    "id": 3,
-                    "code": "103",
-                    "date": "04.12.2025 11:05:30"
-                },
-
-                {
                     "id": 1,
                     "code": "101",
                     "date": "03.12.2025 17:09:06"
                 }
             ],
-            "created_at": 1764673858,
             "updated_at": 1764838541,
             "status_code": "104",
             "status_name": "Оплачен",
-            "status_color": "#9ACD32",
-            "parent_order_number": null,
-            "parent_order_id": null
+            "status_color": "#9ACD32"
+        }
+    }
+}
+</pre>
+    </details>
+
+    <!-- Не распознано -->
+    <h3>2. Действие не распознано</h3>
+    <div class="status-badge status-success">HTTP 200 OK</div>
+    <p>Возвращается, если <code>action</code> или <code>type</code> не соответствуют ожидаемым значениям. Система
+        принимает данные, но не выполняет обновление.</p>
+    <details>
+        <summary>Пример ответа</summary>
+        <pre class="response-content">
+{
+    "status": "success",
+    "message": "Данные получены, но действие не распознано или не требует обработки",
+    "data": {
+        "received_at": "2025-12-04T12:00:00+03:00",
+        "method": "post",
+        "query": [],
+        "body": {
+            "action": "UNKNOWN",
+            "type": "SOMETHING",
+            "ligron_number": "72525161"
         }
     }
 }
@@ -132,10 +156,9 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
     </details>
 
     <!-- Ошибки -->
-    <h3>2. Ошибки обработки</h3>
+    <h3>3. Ошибки обработки</h3>
     <div class="status-badge status-error">HTTP 400 / 500</div>
-    <p>В случае логических ошибок структура ответа будет содержать <code>status: "error"</code> и описание ошибки в поле
-        <code>message</code>.</p>
+    <p>В случае логических ошибок структура ответа будет содержать <code>status: "error"</code>.</p>
 
     <h4>Ошибка: Не передан номер заказа</h4>
     <details>
@@ -143,7 +166,7 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
         <pre class="response-content">
 {
   "status": "error",
-  "message": "Данные получены, но произошла ошибка: Не передан номер заказа!",
+  "message": "Ошибка обработки вебхука: Не передан номер заказа (ligron_number)!",
 }
 </pre>
     </details>
@@ -154,7 +177,7 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
         <pre class="response-content">
 {
   "status": "error",
-  "message": "Данные получены, но произошла ошибка: Заказ с номером 99999999 не найден в системе!",
+  "message": "Ошибка обработки вебхука: Заказ с номером 99999999 не найден в системе!",
 }
 </pre>
     </details>
@@ -165,21 +188,8 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
         <pre class="response-content">
 {
   "status": "error",
-  "message": "Данные получены, но произошла ошибка: Статус с кодом ERROR_CODE не найден в системе!",
+  "message": "Ошибка обработки вебхука: Статус с кодом ERROR_CODE не найден в системе!",
 }
 </pre>
     </details>
-
-    <h4>Ошибка: Статус уже установлен</h4>
-    <p>Возникает, если текущий статус заказа совпадает с передаваемым.</p>
-    <details>
-        <summary>Пример ответа</summary>
-        <pre class="response-content">
-{
-  "status": "error",
-  "message": "Данные получены, но произошла ошибка: Статус с кодом 104 уже установлен для заказа №72525161!",
-}
-</pre>
-    </details>
-
 </div>

@@ -17,10 +17,11 @@ final class Webhook1cOrderController extends AbstractController
   )
   {
   }
+
   private function logRequest(ServerRequestInterface $request, string $methodLabel): array
   {
     $query = $request->getQueryParams();
-    $body  = $request->getParsedBody();
+    $body = $request->getParsedBody();
 
     // Если стандартный парсер Slim не нашел данные (из-за BOM или отсутствия Content-Type)
     if (empty($body)) {
@@ -39,6 +40,7 @@ final class Webhook1cOrderController extends AbstractController
           LogService::warn("1C WEBHOOK [{$methodLabel}]: JSON Decode Fail", ['raw' => $rawContent], 'webhook_1c');
         }
       }
+
     }
 
     // Гарантируем, что body - массив
@@ -68,38 +70,29 @@ final class Webhook1cOrderController extends AbstractController
 
     [$query, $body] = $this->logRequest($request, 'POST');
 
-    return $this->success('Данные получены, но не обработаны', ['received_at' => date('c'), 'method' => 'post', 'query' => $query, 'body' => $body]);
-
     try {
-      //ToDo "action":"UPDATE","type":"STATUS"
-      $orderNumber = $body['ligron_number'];
+      $action = $body['action'] ?? null;
+      $type = $body['type'] ?? null;
 
-      if (!$orderNumber) {
-        throw new \RuntimeException('Не передан номер заказа!');
-      }
+      // Маршрутизация на основе action и type
+      return match (true) {
+        $action === 'UPDATE' && $type === 'STATUS' => $this->handleUpdateStatus($body, $query),
 
-      $statusCode = $body['status_code'];
-      $statusDate = $body['status_date'] ?? (new DateTime())->toString();
-
-      if (!$statusCode) {
-        throw new \RuntimeException('Не передан статус заказа!');
-      }
-
-      $updatedOrder = $this->webhook1cOrderService->updateStatusByNumber((string)$orderNumber, (string)$statusCode, $statusDate);
-
-      return $this->success('Данные получены, и обработаны. Статус заказа обновлен.',
-        [
+        default => $this->success('Данные получены, но действие не распознано или не требует обработки', [
           'received_at' => date('c'),
           'method' => 'post',
           'query' => $query,
           'body' => $body,
-          'order' => $updatedOrder,
-        ]
-      );
+        ])
+      };
 
     } catch (\Throwable $e) {
+      LogService::error($e, [
+        'query' => $query,
+        'body' => $body],
+        'webhook_1c');
 
-      return $this->error('Данные получены, но произошла ошибка: ' . $e->getMessage());
+      return $this->error('Ошибка обработки вебхука: ' . $e->getMessage());
     }
 
   }
@@ -115,6 +108,57 @@ final class Webhook1cOrderController extends AbstractController
     [$query, $body] = $this->logRequest($request, 'DELETE');
 
     return $this->success('Данные получены, но не обработаны', ['received_at' => date('c'), 'method' => 'delete', 'query' => $query, 'body' => $body]);
+  }
+
+  /**
+   * Обработка обновления статуса заказа
+   */
+  private function handleUpdateStatus(array $body, array $query): ResponseInterface
+  {
+    $orderNumber = $body['ligron_number'] ?? null;
+
+    if (!$orderNumber) {
+      throw new \RuntimeException('Не передан номер заказа (ligron_number)!');
+    }
+
+    $statusCode = $body['status_code'] ?? null;
+    $statusDate = $body['status_date'] ?? (new DateTime())->toString();
+
+    if (!$statusCode) {
+      throw new \RuntimeException('Не передан код статуса (status_code)!');
+    }
+
+
+    $extraData = [];
+
+    if (!empty($body['production_date'])) {
+      $extraData['ready_date'] = (string)$body['production_date'];
+    }
+
+    if (isset($body['production_time'])) {
+      $extraData['production_time'] = (int)$body['production_time'];
+    }
+
+    if (isset($body['percent_payment'])) {
+      $extraData['percent_payment'] = (int)$body['percent_payment'];
+    }
+
+    $updatedOrder = $this->webhook1cOrderService->updateStatusByNumber(
+      (string)$orderNumber,
+      (string)$statusCode,
+      (string)$statusDate,
+      $extraData
+    );
+
+    return $this->success('Статус заказа успешно обновлен',
+      [
+        'received_at' => date('c'),
+        'method' => 'post',
+        'query' => $query,
+        'body' => $body,
+        'order' => $updatedOrder,
+      ]
+    );
   }
 
 }

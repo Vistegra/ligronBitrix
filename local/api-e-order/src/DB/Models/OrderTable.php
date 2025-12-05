@@ -96,9 +96,10 @@ class OrderTable extends DataManager
         'fetch_data_modification' => F::toInt(),
       ]),
 
-      new Fields\IntegerField('fabrication', [
+      new Fields\IntegerField('production_time', [
         'nullable' => true,
         'comment' => 'дней на производство',
+        'fetch_data_modification' => F::toInt(),
       ]),
 
       new Fields\DateField('ready_date', [
@@ -131,6 +132,12 @@ class OrderTable extends DataManager
       new Fields\DatetimeField('updated_at', [
         'default_value' => F::now(),
         'fetch_data_modification' => F::toTimestamp(),
+      ]),
+
+      new Fields\IntegerField('percent_payment', [
+        'nullable' => true,
+        'default_value' => 0,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
     ];

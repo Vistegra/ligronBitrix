@@ -50,12 +50,13 @@ CREATE TABLE vs_e_order (
         COMMENT 'webcalc.user.id',
 
                             STATUS_HISTORY  JSON NULL DEFAULT NULL,
-                            FABRICATION     INT UNSIGNED NULL DEFAULT NULL COMMENT 'дней',
+                            PRODUCTION_TIME INT UNSIGNED NULL DEFAULT NULL COMMENT 'дней',
                             READY_DATE      DATE NULL DEFAULT NULL,
                             COMMENT         TEXT NULL DEFAULT NULL,
 
                             CHILDREN_COUNT  INT UNSIGNED NOT NULL DEFAULT 0
         COMMENT 'счётчик дочерних заказов',
+                            PERCENT_PAYMENT TINYINT UNSIGNED NULL DEFAULT 0 COMMENT 'Процент оплаты';
 
                             CREATED_AT      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             UPDATED_AT      DATETIME NOT NULL

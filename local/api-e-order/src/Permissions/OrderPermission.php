@@ -20,7 +20,7 @@ final readonly class OrderPermission
   public const  array ALLOWED_FIELDS_MANAGER = [
     'name',
     'comment',
-    'fabrication',
+    'production_time',
     'ready_date',
     'status_history'
   ];

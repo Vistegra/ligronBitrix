@@ -111,9 +111,10 @@ export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: 
       <div className="text-sm text-muted-foreground">{getUserName(order.dealer_prefix, order.dealer_user_id)}</div>
     ),
 
-    fabrication: (order) => (order.fabrication ? `${order.fabrication} дн.` : "—"),
+    production_time: (order) => (order.production_time ? `${order.production_time} дн.` : "—"),
     ready_date: (order) =>
       order.ready_date ? format(new Date(order.ready_date), "dd.MM.yyyy") : "—",
+    percent_payment: (order) => (order.percent_payment !== null ? `${order.percent_payment}%` : "—"),
     created_at: (order) => formatDate(order.created_at),
     updated_at: (order) => formatDate(order.updated_at),
   };

@@ -39,7 +39,7 @@
         <h3>👮‍♂️ Права доступа к полям</h3>
         <ul>
             <li><strong>Дилеры</strong> могут обновлять: <code>name</code>, <code>comment</code>.</li>
-            <li><strong>Менеджеры</strong> могут обновлять: <code>name</code>, <code>comment</code>, <code>fabrication</code>, <code>ready_date</code>.</li>
+            <li><strong>Менеджеры</strong> могут обновлять: <code>name</code>, <code>comment</code>, <code>production_time</code>, <code>ready_date</code>.</li>
         </ul>
         <p><em>Попытка обновить недоступное поле приведет к ошибке 400.</em></p>
     </div>
@@ -64,7 +64,7 @@
             <td>Комментарий к заказу.</td>
         </tr>
         <tr>
-            <td><code>fabrication</code></td>
+            <td><code>production_time</code></td>
             <td>int</td>
             <td>
                 <span class="tag" style="background:#fff3cd; color:#856404;">Manager Only</span><br>

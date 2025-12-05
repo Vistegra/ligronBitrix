@@ -45,7 +45,7 @@ export type Order = {
   dealer_prefix: string | null;
   dealer_user_id: number | null;
   manager_id: number | null;
-  fabrication: string | null;
+  production_time: string | null;
   ready_date: number | null;
   comment: string | null;
   children_count: number;
@@ -57,6 +57,7 @@ export type Order = {
   status_color: string | null;
   parent_order_number: string | null;
   parent_order_id: number | null;
+  percent_payment: number | null;
 };
 
 export type OrdersResponse = {
