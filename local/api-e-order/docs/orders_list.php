@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Список заказов</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Получение списка заказов</h1>
     <p>Метод возвращает список заказов с поддержкой пагинации и сложной фильтрации.</p>
@@ -160,6 +150,3 @@ curl --location 'https://ligron.ru/local/api-e-order/orders?limit=10&filter=stat
     </details>
 
 </div>
-
-</body>
-</html>

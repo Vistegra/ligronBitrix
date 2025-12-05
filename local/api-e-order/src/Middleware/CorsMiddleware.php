@@ -1,6 +1,7 @@
 <?php
 namespace OrderApi\Middleware;
 
+use OrderApi\Services\LogService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -22,6 +23,10 @@ final class CorsMiddleware implements MiddlewareInterface
   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
   {
     $origin = $request->getHeaderLine('Origin');
+
+    // Логируем все заголовки запроса
+    $allHeaders = $request->getHeaders();
+    LogService::info('Request Headers', $allHeaders, 'cors_headers');
 
     // Проверяем, пришёл ли Origin и разрешён ли он
     $isAllowedOrigin = $origin !== '' && in_array($origin, $this->allowedOrigins, true);

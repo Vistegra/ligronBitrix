@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Получение заказа по номеру</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Получение заказа по номеру</h1>
     <p>Метод позволяет получить детальную информацию о заказе, используя его уникальный номер (например, номер из 1С или дилерский номер).</p>
@@ -125,6 +115,3 @@ curl --location 'https://ligron.ru/local/api-e-order/orders/number/72525161' \
     </details>
 
 </div>
-
-</body>
-</html>

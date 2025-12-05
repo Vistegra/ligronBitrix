@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Удаление файла</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Удаление файла</h1>
     <p>Метод удаляет конкретный файл, прикрепленный к заказу. Файл удаляется физически с диска и из базы данных. Действие необратимо.</p>
@@ -102,6 +92,3 @@ curl --location --request DELETE 'https://ligron.ru/local/api-e-order/orders/65/
     </details>
 
 </div>
-
-</body>
-</html>

@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Создание заказа</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Создание заказа</h1>
     <p>Метод создает новый заказ в системе, загружает прикрепленные файлы и (если не черновик) отправляет данные в 1С Ligron для регистрации.</p>
@@ -174,6 +164,3 @@ curl --location 'https://ваш-сайт.ru/local/api-e-order/orders' \
     </details>
 
 </div>
-
-</body>
-</html>

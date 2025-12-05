@@ -20,15 +20,35 @@ final class Webhook1cOrderController extends AbstractController
   private function logRequest(ServerRequestInterface $request, string $methodLabel): array
   {
     $query = $request->getQueryParams();
-    $body  = $request->getParsedBody() ?? [];
-    $origin = $request->getHeaderLine('Origin');
+    $body  = $request->getParsedBody();
+
+    // Если стандартный парсер Slim не нашел данные (из-за BOM или отсутствия Content-Type)
+    if (empty($body)) {
+      $rawContent = (string)$request->getBody();
+
+      if ($rawContent !== '') {
+        // удаляем BOM (Byte Order Mark)
+        $cleanContent = preg_replace('/^\xEF\xBB\xBF/', '', $rawContent);
+
+        $decoded = json_decode($cleanContent, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+          $body = $decoded;
+        } else {
+          // Логируем ошибку парсинга JSON
+          LogService::warn("1C WEBHOOK [{$methodLabel}]: JSON Decode Fail", ['raw' => $rawContent], 'webhook_1c');
+        }
+      }
+    }
+
+    // Гарантируем, что body - массив
+    $body = is_array($body) ? $body : [];
 
     LogService::info(
       "1C WEBHOOK [{$methodLabel}]",
       [
         'DATA_GET' => $query,
         'DATA_POST' => $body,
-        'ORIGIN' => $origin,
       ],
       'webhook_1c'
     );
@@ -47,6 +67,8 @@ final class Webhook1cOrderController extends AbstractController
   {
 
     [$query, $body] = $this->logRequest($request, 'POST');
+
+    return $this->success('Данные получены, но не обработаны', ['received_at' => date('c'), 'method' => 'post', 'query' => $query, 'body' => $body]);
 
     try {
       //ToDo "action":"UPDATE","type":"STATUS"
@@ -76,6 +98,7 @@ final class Webhook1cOrderController extends AbstractController
       );
 
     } catch (\Throwable $e) {
+
       return $this->error('Данные получены, но произошла ошибка: ' . $e->getMessage());
     }
 

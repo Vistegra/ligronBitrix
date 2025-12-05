@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Загрузка файлов</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Загрузка файлов к заказу</h1>
     <p>Метод позволяет прикрепить дополнительные файлы к уже созданному заказу. Поддерживается одновременная загрузка нескольких файлов.</p>
@@ -161,6 +151,3 @@ curl --location 'https://ligron.ru/local/api-e-order/orders/65/files' \
     </details>
 
 </div>
-
-</body>
-</html>

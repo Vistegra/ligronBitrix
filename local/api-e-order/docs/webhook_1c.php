@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Обновление статусов (Webhook 1C)</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Webhook: Обновление статуса заказа из 1С</h1>
     <p>Метод предназначен для обновления статуса заказа во внешней системе при изменении его состояния в 1С.</p>
@@ -193,6 +183,3 @@ curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
     </details>
 
 </div>
-
-</body>
-</html>

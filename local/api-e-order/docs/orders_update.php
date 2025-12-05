@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация API: Обновление заказа</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
 <div class="api-doc-container">
     <h1>Обновление заказа</h1>
     <p>Метод позволяет изменить параметры существующего заказа. Набор доступных для изменения полей зависит от роли текущего пользователя.</p>
@@ -162,6 +152,3 @@ curl --location --request PUT 'https://ligron.ru/local/api-e-order/orders/65' \
     </details>
 
 </div>
-
-</body>
-</html>

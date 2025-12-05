@@ -6,7 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_be
 require __DIR__ . '/vendor/autoload.php';
 
 use DI\Container;
-use OrderApi\Controllers\{AuthController, OrderController, Webhook1cOrderController};
+use OrderApi\Controllers\{AuthController, DocsController, OrderController, Webhook1cOrderController};
 use OrderApi\DTO\Auth\UserDTO;
 
 use OrderApi\Middleware\{AuthMiddleware,
@@ -126,49 +126,14 @@ $app->delete( '/webhook/1c/orders', Webhook1cOrderController::class . ':delete')
 
 // Документация
 $app->group('/docs', function (RouteCollectorProxy $group) {
-
   // Главная страница документации
-  $group->get('', function ($request, $response) {
-    $file = __DIR__ . '/docs/index.html';
-    if (!file_exists($file)) {
-      $response->getBody()->write("Index file not found.");
-      return $response->withStatus(404);
-    }
-    $html = file_get_contents($file);
-    $response->getBody()->write($html);
-    return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
-  });
+  $group->get('/', [DocsController::class, 'index']);
+  $group->get('', [DocsController::class, 'index']);
 
-  //  Раздача CSS файла
-  $group->get('/styles.css', function ($request, $response) {
-    $file = __DIR__ . '/docs/styles.css';
-    if (!file_exists($file)) {
-      return $response->withStatus(404);
-    }
-    $css = file_get_contents($file);
-    $response->getBody()->write($css);
-    return $response->withHeader('Content-Type', 'text/css');
-  });
-
-  // Конкретные HTML страницы
-  $group->get('/{id}', function ($request, $response, $args) {
-    $pageId = $args['id'];
-    // Разрешаем только буквы, цифры, тире и подчеркивания
-    $safePageId = preg_replace('/[^a-zA-Z0-9_-]/', '', $pageId);
-
-    $file = __DIR__ . "/docs/{$safePageId}.html";
-
-    if (!file_exists($file)) {
-      $response->getBody()->write("Doc page not found.");
-      return $response->withStatus(404);
-    }
-
-    $html = file_get_contents($file);
-    $response->getBody()->write($html);
-    return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
-  });
-
+  // Конкретная страница
+  $group->get('/{page}', [DocsController::class, 'page']);
 });
+
 
 /** ТЕСТОВЫЕ ЭНДПОИНТЫ */
 $app->post('/fake-1c-webhook', \OrderApi\Controllers\Fake1CWebhookController::class . ':post');
