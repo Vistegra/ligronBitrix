@@ -46,7 +46,7 @@ export type Order = {
   dealer_user_id: number | null;
   manager_id: number | null;
   production_time: string | null;
-  ready_date: number | null;
+  ready_date: string | null;
   comment: string | null;
   children_count: number;
   status_history: StatusHistoryItem[];

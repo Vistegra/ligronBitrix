@@ -4,102 +4,71 @@ declare(strict_types=1);
 
 namespace OrderApi\Services\Order;
 
-use Bitrix\Main\ArgumentException;
-use Bitrix\Main\ObjectPropertyException;
-use Bitrix\Main\SystemException;
-use Bitrix\Main\Type\DateTime;
 use OrderApi\DB\Repositories\OrderRepository;
 use OrderApi\DB\Repositories\OrderStatusRepository;
 
 final readonly class Webhook1cOrderService
 {
   /**
-   * @throws ObjectPropertyException
-   * @throws SystemException
-   * @throws ArgumentException
-   * @throws \Exception
+   * Обновляет статус заказа и дополнительные поля по номеру заказа.
+   *
+   * @param string $orderNumber Номер заказа из 1С.
+   * @param string $statusCode Код нового статуса.
+   * @param string $statusDate Дата установки статуса.
+   * @param array $extraData Массив дополнительных полей для обновления (ключ => значение).
+   *
+   * @return array|null Обновленный массив заказа или null.
+   * @throws \RuntimeException Если заказ или статус не найдены, или нет данных для обновления.
+   * @throws \Exception Произошла ошибка обновления в БД
    */
-  function updateStatusByNumber(string $orderNumber, string $statusCode, string $statusDate): ?array
-  {
-    $order = OrderRepository::getByNumber($orderNumber);
+  public function updateStatusByNumber(
+    string $orderNumber,
+    string $statusCode,
+    string $statusDate,
+    array $extraData = []
+  ): ?array {
 
+    $order = OrderRepository::getByNumber($orderNumber);
     if (!$order) {
-      throw new \RuntimeException("Заказ с номером $orderNumber не найден в системе!");
+      throw new \RuntimeException("Заказ с номером {$orderNumber} не найден в системе!");
     }
 
     $status = OrderStatusRepository::findByCode($statusCode);
-
     if (!$status) {
-      throw new \RuntimeException("Статус с кодом $statusCode не найден в системе!");
+      throw new \RuntimeException("Статус с кодом {$statusCode} не найден в системе!");
     }
 
-    if ($status['id'] === $order['status_id']) {
-      throw new \RuntimeException("Статус с кодом $statusCode уже установлен для заказа №$orderNumber!");
+    $fieldsToUpdate = [];
+
+    // Проверяем, изменился ли статус
+    if ((int)$order['status_id'] !== (int)$status['id']) {
+      $fieldsToUpdate['status_id'] = $status['id'];
+      $fieldsToUpdate['status_history'] = array_merge(
+        [ //новый статус добавляется в начало
+          [
+            'id'   => $status['id'],
+            'code' => $statusCode,
+            'date' => $statusDate,
+          ]
+        ],
+        $order['status_history'] ?? []
+      );
     }
 
-    $orderId = $order['id'];
-    $currentHistory = $order['status_history'] ?? [];
+    // Добавляем дополнительные данные (если есть)
+    if (!empty($extraData)) {
+      $fieldsToUpdate = array_merge($fieldsToUpdate, $extraData);
+    }
 
-    $newHistoryItem = [[
-      'id' => $status['id'],
-      'code' => $status['code'],
-      'date' => $statusDate,
-    ]];
+    // Финальная проверка: есть ли что обновлять?
+    if (empty($fieldsToUpdate)) {
+      throw new \RuntimeException(
+        "Для заказа №{$orderNumber} статус '{$statusCode}' уже установлен, и нет дополнительных данных для обновления."
+      );
+    }
 
-    $newHistory = array_merge($newHistoryItem, $currentHistory);
-
-    $updateData = [
-      'status_id' => $status['id'],
-      'status_history' => $newHistory
-    ];
-
-    return OrderRepository::update($orderId, $updateData);
+    // Сохранение в БД
+    return OrderRepository::update((int)$order['id'], $fieldsToUpdate);
   }
 
-  /*public function updateStatusByNumber(string $orderNumber, string $statusCode, string $statusDate, array $extraData = []): ?array
-  {
-    $order = OrderRepository::getByNumber($orderNumber);
-
-    if (!$order) {
-      throw new \RuntimeException("Заказ с номером $orderNumber не найден в системе!");
-    }
-
-    $status = OrderStatusRepository::findByCode($statusCode);
-
-    if (!$status) {
-      throw new \RuntimeException("Статус с кодом $statusCode не найден в системе!");
-    }
-
-    $updateData = [];
-
-    // 1. Логика смены статуса
-    // Если статус отличается от текущего - обновляем его и историю
-    if ($status['id'] !== $order['status_id']) {
-      $currentHistory = $order['status_history'] ?? [];
-
-      $newHistoryItem = [[
-        'id' => $status['id'],
-        'code' => $status['code'],
-        'date' => $statusDate,
-      ]];
-
-      $updateData['status_id'] = $status['id'];
-      $updateData['status_history'] = array_merge($newHistoryItem, $currentHistory);
-    }
-    // Если статус тот же, и нет дополнительных полей - выбрасываем ошибку
-    elseif (empty($extraData)) {
-      throw new \RuntimeException("Статус с кодом $statusCode уже установлен для заказа №$orderNumber, и нет данных для обновления.");
-    }
-
-    // 2. Обработка дополнительных полей
-    if (!empty($extraData)) {
-
-    }
-
-    if (empty($updateData)) {
-      return $order;
-    }
-
-    return OrderRepository::update($order['id'], $updateData);
-  }*/
 }

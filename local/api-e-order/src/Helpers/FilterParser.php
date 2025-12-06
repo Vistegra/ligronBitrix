@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OrderApi\DB\Helpers;
+namespace OrderApi\Helpers;
 
 /**
  * Простейший парсер фильтра: key=value1,value2 → ['=key' => [value1, value2]]

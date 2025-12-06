@@ -8,8 +8,7 @@ use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
 use Bitrix\Main\SystemException;
-use Bitrix\Main\Type\DateTime;
-use OrderApi\DB\Helpers\ModelFieldHelper as F;
+use OrderApi\Helpers\ModelFieldHelper as F;
 
 class OrderTable extends DataManager
 {
@@ -101,9 +100,9 @@ class OrderTable extends DataManager
         'comment' => 'дней на производство',
         'fetch_data_modification' => F::toInt(),
       ]),
-
       new Fields\DateField('ready_date', [
-        'nullable' => true, //ToDo add fetch format
+        'nullable' => true,
+        'fetch_data_modification' => F::dateToString(),
       ]),
 
       new Fields\TextField('comment', [

@@ -3,15 +3,10 @@ declare(strict_types=1);
 
 namespace OrderApi\Controllers;
 
-use OrderApi\DB\Helpers\FilterParser;
-use OrderApi\DB\Repositories\OrderRepository;
-use OrderApi\DTO\Order\FileUploadResult;
-use OrderApi\DTO\Order\OrderCreateResult;
+use OrderApi\Helpers\FilterParser;
 use OrderApi\Services\Order\OrderService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Slim\Psr7\Response;
-use OrderApi\DTO\Auth\UserDTO;
 
 /**
  * Контроллер для работы с заказами

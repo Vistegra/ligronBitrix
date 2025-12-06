@@ -46,7 +46,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     status: true,
     production_time: true,
     ready_date: false,
-    percent_payment: true,
+    percent_payment: false,
     created_at: true,
     updated_at: true,
   },

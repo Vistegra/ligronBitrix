@@ -1,9 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace OrderApi\DB\Helpers;
+namespace OrderApi\Helpers;
 
 use Bitrix\Main\DB\SqlExpression;
+use Bitrix\Main\Type\Date;
 use Bitrix\Main\Type\DateTime;
+use OrderApi\Services\LogService;
 
 /**
  * Хелпер для модификаторов полей ORM.
@@ -113,6 +115,26 @@ final class ModelFieldHelper
         if ($value instanceof DateTime) {
           return $value->getTimestamp(); // секунды
         }
+        return $value;
+      }
+    ];
+  }
+
+  /**
+   * Преобразует объект Date в строку при выборке из БД.
+   * По умолчанию формат 'd.m.Y' (например, 15.12.2025).
+   *
+   * @param string $format Формат даты (PHP date format)
+   * @return callable(): array<int, callable>
+   */
+  public static function dateToString(string $format = 'd.m.Y'): callable
+  {
+    return fn() => [
+      function ($value) use ($format) {
+        if ($value instanceof Date) {
+          return $value->format($format);
+        }
+
         return $value;
       }
     ];

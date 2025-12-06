@@ -6,7 +6,7 @@ namespace OrderApi\DB\Models;
 
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields;
-use OrderApi\DB\Helpers\ModelFieldHelper as F;
+use OrderApi\Helpers\ModelFieldHelper as F;
 
 class OrderStatusTable extends DataManager
 {

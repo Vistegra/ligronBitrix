@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OrderApi\Controllers;
 
+use Bitrix\Main\Type\Date;
 use Bitrix\Main\Type\DateTime;
+use OrderApi\Helpers\BodyParser;
 use OrderApi\Services\LogService;
 use OrderApi\Services\Order\Webhook1cOrderService;
 use Psr\Http\Message\ResponseInterface;
@@ -18,33 +20,13 @@ final class Webhook1cOrderController extends AbstractController
   {
   }
 
+  /**
+   * @throws \JsonException ошибка парсинга тела запроса
+   */
   private function logRequest(ServerRequestInterface $request, string $methodLabel): array
   {
     $query = $request->getQueryParams();
-    $body = $request->getParsedBody();
-
-    // Если стандартный парсер Slim не нашел данные (из-за BOM или отсутствия Content-Type)
-    if (empty($body)) {
-      $rawContent = (string)$request->getBody();
-
-      if ($rawContent !== '') {
-        // удаляем BOM (Byte Order Mark)
-        $cleanContent = preg_replace('/^\xEF\xBB\xBF/', '', $rawContent);
-
-        $decoded = json_decode($cleanContent, true);
-
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-          $body = $decoded;
-        } else {
-          // Логируем ошибку парсинга JSON
-          LogService::warn("1C WEBHOOK [{$methodLabel}]: JSON Decode Fail", ['raw' => $rawContent], 'webhook_1c');
-        }
-      }
-
-    }
-
-    // Гарантируем, что body - массив
-    $body = is_array($body) ? $body : [];
+    $body = BodyParser::parse($request);
 
     LogService::info(
       "1C WEBHOOK [{$methodLabel}]",
@@ -65,6 +47,9 @@ final class Webhook1cOrderController extends AbstractController
     return $this->success('Данные получены, но не обработаны', ['received_at' => date('c'), 'method' => 'get', 'query' => $query, 'body' => $body]);
   }
 
+  /**
+   * @throws \JsonException
+   */
   public function post(ServerRequestInterface $request): ResponseInterface
   {
 
@@ -112,6 +97,7 @@ final class Webhook1cOrderController extends AbstractController
 
   /**
    * Обработка обновления статуса заказа
+   * @throws \Exception
    */
   private function handleUpdateStatus(array $body, array $query): ResponseInterface
   {
@@ -128,11 +114,10 @@ final class Webhook1cOrderController extends AbstractController
       throw new \RuntimeException('Не передан код статуса (status_code)!');
     }
 
-
     $extraData = [];
 
-    if (!empty($body['production_date'])) {
-      $extraData['ready_date'] = (string)$body['production_date'];
+    if (isset($body['production_date'])) {
+      $extraData['ready_date'] = new Date($body['production_date']);
     }
 
     if (isset($body['production_time'])) {
@@ -159,6 +144,7 @@ final class Webhook1cOrderController extends AbstractController
         'order' => $updatedOrder,
       ]
     );
+
   }
 
 }
