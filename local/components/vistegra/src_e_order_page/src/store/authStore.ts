@@ -29,7 +29,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: userWithoutDetailed, token });
   },
 
-
   updateUserDetailed: (detailed) => {
     set((state) => {
       if (!state.user) return state;

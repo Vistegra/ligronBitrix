@@ -7,7 +7,7 @@ import fs from "fs";
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
 
-  base: mode === 'development' ? '/' : '/e-order/',
+  base: mode === 'development' ? '/' : '/dev-e-order/',
 
   resolve: {
     alias: {

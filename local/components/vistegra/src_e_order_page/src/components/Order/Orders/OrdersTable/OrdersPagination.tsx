@@ -15,8 +15,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import type {Pagination as PaginationType, PageSize} from "./types";
-import {PAGE_SIZES} from "./types";
+import type {Pagination as PaginationType, PageSize} from "../types.ts";
+import {PAGE_SIZES} from "../types.ts";
 
 interface OrdersPaginationProps {
   pagination: PaginationType;

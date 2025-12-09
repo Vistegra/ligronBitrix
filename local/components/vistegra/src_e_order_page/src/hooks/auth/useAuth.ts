@@ -20,7 +20,6 @@ export function useAuth() {
   // 4. Логика ручного входа
   const { login, loginError, resetError } = useAuthLogin();
 
-
   const { user } = useAuthStore();
 
   const isLoading = isTokenProcessing || isGuardLoading || isProfileLoading;

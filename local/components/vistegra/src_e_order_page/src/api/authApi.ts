@@ -2,7 +2,6 @@ import api, {makeRequest} from "./client";
 import {ENDPOINT} from "./constants";
 import type {ProviderType, User, ManagerDetailed, DealerDetailed} from "@/types/user";
 
-
 export interface LoginResponse {
   user: User;
   token: string;

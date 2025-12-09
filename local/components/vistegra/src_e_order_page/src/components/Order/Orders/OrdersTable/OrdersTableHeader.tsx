@@ -1,10 +1,10 @@
 "use client";
 
 import {TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {OrdersTableStatusFilters} from "./OrdersTableStatusFilters.tsx";
-import {OrdersTableDealerFilters} from "./OrdersTableDealerFilters.tsx";
-import {OrdersTableUserFilters} from "./OrdersTableUserFilters.tsx";
-import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "./types";
+import {OrdersTableStatusFilters} from "./OrdersTableStatusFilters";
+import {OrdersTableDealerFilters} from "./OrdersTableDealerFilters";
+import {OrdersTableUserFilters} from "./OrdersTableUserFilters";
+import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "../types.ts";
 
 import type {OrderStatus} from "@/api/orderApi.ts";
 

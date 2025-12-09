@@ -2,7 +2,7 @@
 
 import {Skeleton} from "@/components/ui/skeleton";
 import {TableRow, TableCell} from "@/components/ui/table";
-import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "./types";
+import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "../types.ts";
 
 interface OrdersTableSkeletonProps {
   visibleColumns: PartVisibleColumns;

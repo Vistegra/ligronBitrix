@@ -23,8 +23,6 @@ export function OrdersTableActions({order, basePage}: OrdersTableActionsProps) {
   const handleOpen = () => {
     const newParams = new URLSearchParams(searchParams);
 
-    // Принудительно добавляем контекст этого конкретного заказа
-    // для хлебных крошек Дилер -> Пользователь -> Заказ
     if (order.dealer_prefix) {
       newParams.set("dealer_prefix", order.dealer_prefix);
     }

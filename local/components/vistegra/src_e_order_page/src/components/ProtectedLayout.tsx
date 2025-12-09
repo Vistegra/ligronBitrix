@@ -3,19 +3,20 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { Outlet } from "react-router-dom"
+import {Separator} from "@/components/ui/separator"
+import {Outlet} from "react-router-dom"
 
-import { AppSidebar } from "@/components/Sidebar/AppSidebar.tsx";
-import { useAuth } from "@/hooks/auth/useAuth.ts";
-import FullscreenLoader from "@/components/ui/FullscreenLoader.tsx";
-import {AppBreadcrumbs} from "@/components/Sidebar/AppBreadcrumbs.tsx";
-
+import {AppSidebar} from "@/components/Sidebar/AppSidebar";
+import {useAuth} from "@/hooks/auth/useAuth.ts";
+import FullscreenLoader from "@/components/ui/custom/FullscreenLoader";
+import {AppBreadcrumbs} from "@/components/Sidebar/AppBreadcrumbs";
+import {useIsMobile} from "@/hooks/use-mobile";
+import {MobileBottomNav} from "@/components/MobileBottomNav";
 
 export function ProtectedLayout() {
   const {isLoading} = useAuth()
+  const isMobile = useIsMobile();
 
-  // Показываем лоадер во время инициализации
   if (isLoading) {
     return <FullscreenLoader title="Проверка авторизации..." description="Подождите немного"/>;
   }
@@ -32,9 +33,12 @@ export function ProtectedLayout() {
           <AppBreadcrumbs/>
         </header>
 
-        <main className="p-6">
+        {/* padding-bottom чтобы контент не перекрывался меню на мобиле */}
+        <section className={`p-4 h-full ${isMobile ? "pb-24" : ""}`}>
           <Outlet/>
-        </main>
+        </section>
+
+        {isMobile && <MobileBottomNav/>}
       </SidebarInset>
     </SidebarProvider>
   )

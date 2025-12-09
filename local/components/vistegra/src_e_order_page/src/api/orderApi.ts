@@ -80,6 +80,7 @@ export type UploadFilesResponse = {
 
 export interface OrdersRequest {
   filter?: string;
+  search?: string;
   limit?: number;
   offset?: number;
   is_draft: number

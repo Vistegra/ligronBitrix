@@ -1,6 +1,6 @@
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import {toast} from "sonner";
+import {Button} from "@/components/ui/button";
+import {Trash2} from "lucide-react";
 
 interface DeleteConfirmToastProps {
   title?: string;
@@ -16,13 +16,16 @@ export function showDeleteConfirmToast({
                                          onCancel,
                                        }: DeleteConfirmToastProps) {
   const toastId = toast(
-    <div className="flex flex-col gap-3 p-1 w-80">
+    <div className="flex flex-col gap-3 w-full sm:w-80">
       <div className="flex items-center gap-2">
-        <Trash2 className="h-4 w-4 text-destructive" />
+
+        <Trash2 className="h-4 w-4 text-destructive shrink-0"/>
         <span className="font-medium">{title}</span>
       </div>
       <p className="text-sm text-muted-foreground">{description}</p>
-      <div className="flex gap-2 justify-end">
+
+      {/* Кнопки */}
+      <div className="flex gap-2 justify-end mt-1">
         <Button
           size="sm"
           variant="outline"
@@ -30,6 +33,7 @@ export function showDeleteConfirmToast({
             toast.dismiss(toastId);
             onCancel?.();
           }}
+          className="flex-1 sm:flex-none"
         >
           Отмена
         </Button>
@@ -41,9 +45,10 @@ export function showDeleteConfirmToast({
             try {
               await onConfirm();
             } catch (err) {
-              // Ошибка уже обработана в onConfirm
+              // Ошибка уже обработана
             }
           }}
+          className="flex-1 sm:flex-none"
         >
           Удалить
         </Button>

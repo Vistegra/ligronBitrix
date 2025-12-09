@@ -21,7 +21,6 @@ const queryClient = new QueryClient({
   },
 });
 
-
 // Ждём, пока Bitrix создаст #root
 const timerId = setInterval(() => {
   const rootElem = document.getElementById("root");
@@ -49,5 +48,4 @@ const timerId = setInterval(() => {
     </StrictMode>
   );
 }, 100)
-
 

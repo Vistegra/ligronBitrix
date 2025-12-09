@@ -1,10 +1,12 @@
+"use client";
+
 import {Button} from "@/components/ui/button";
 import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
 import {Item, ItemActions, ItemContent, ItemTitle, ItemDescription} from "@/components/ui/item";
 import {Trash2, UploadIcon, Loader2, Download} from "lucide-react";
 import {toast} from "sonner";
 
-import {ConfirmPopover} from "@/components/ui/popups/ConfirmPopover.tsx";
+import {ConfirmPopover} from "@/components/ui/popups/ConfirmPopover";
 import type {OrderFile} from "@/api/orderApi.ts";
 import {URL_BASE} from "@/api/constants.ts";
 import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
@@ -22,7 +24,7 @@ type Props = {
 
 export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
 
-  const { onDropRejected, onDropError } = useFileDropzone();
+  const {onDropRejected, onDropError} = useFileDropzone();
 
   const handleDrop = async (accepted: File[]) => {
     if (accepted.length === 0) return;
@@ -32,7 +34,6 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
   const handleDelete = async (id: number) => {
     await onDelete(id);
   };
-
 
   const handleDownload = async (file: OrderFile) => {
     const url = URL_BASE + file.path + file.name

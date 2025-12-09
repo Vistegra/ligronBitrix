@@ -3,7 +3,6 @@ import {Store, Users, UserPlusIcon} from "lucide-react"
 import {cn} from "@/lib/utils"
 import type {ManagedDealer} from "@/types/user"
 
-
 interface DealerItemProps {
   dealer: ManagedDealer;
 }

@@ -2,7 +2,6 @@ import axios, {type AxiosResponse} from "axios";
 import {API_BASE} from "./constants";
 import {useAuthStore} from "@/store/authStore";
 
-
 export type ApiResponseStatus = 'success' | 'error' | 'partial';
 
 export interface BaseApiResponse {
@@ -30,7 +29,6 @@ export type ApiResponse<T = any> =
   | SuccessApiResponse<T>
   | ErrorApiResponse
   | PartialApiResponse<T>;
-
 
 const api = axios.create({
   baseURL: API_BASE,

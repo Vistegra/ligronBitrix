@@ -16,7 +16,7 @@ export function ManagerItem({manager}: ManagerItemProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-3 rounded-lg transition-all relative overflow-hidden border",
+        "flex gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg transition-all relative overflow-hidden border",
         isOnVacation
           ? "bg-muted/30 opacity-70 grayscale-[0.8]"
           : "bg-muted/50 border-transparent",
@@ -25,9 +25,9 @@ export function ManagerItem({manager}: ManagerItemProps) {
           : ""
       )}
     >
-      <Avatar className="h-12 w-12 shrink-0">
+      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
         <AvatarFallback className={cn(
-          "text-sm font-bold",
+          "text-xs sm:text-sm font-bold",
           isSubstitute ? "bg-blue-100 text-blue-700" : "bg-primary/20"
         )}>
           {getInitials(manager.name)}
@@ -35,24 +35,26 @@ export function ManagerItem({manager}: ManagerItemProps) {
       </Avatar>
 
       <div className="flex-1 space-y-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className={cn(
-            "font-medium text-sm truncate",
+            "font-medium text-sm truncate max-w-full",
             isOnVacation && "line-through decoration-slate-400"
           )} title={manager.name}>
             {manager.name}
           </p>
 
+          {/* Бейджи */}
           {isOnVacation && (
             <Badge variant="outline"
-                   className="h-5 px-1.5 text-[10px] text-orange-600 border-orange-200 bg-orange-50/50">
+                   className="h-5 px-1.5 text-[10px] text-orange-600 border-orange-200 bg-orange-50/50 whitespace-nowrap">
               <PalmtreeIcon className="h-3 w-3 mr-1"/>
               В отпуске
             </Badge>
           )}
 
           {isSubstitute && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100">
+            <Badge variant="secondary"
+                   className="h-5 px-1.5 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100 whitespace-nowrap">
               <UserPlusIcon className="h-3 w-3 mr-1"/>
               Заменяет
             </Badge>

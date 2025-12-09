@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {FilterIcon} from "lucide-react";
-import {useAuthStore} from "@/store/authStore";
+import {useAuthStore} from "@/store/authStore.ts";
 import type {ManagerDetailed} from "@/types/user";
 
 interface OrdersTableDealerFiltersProps {

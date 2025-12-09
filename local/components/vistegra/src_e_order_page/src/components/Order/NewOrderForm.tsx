@@ -4,7 +4,7 @@ import {useState} from "react";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
-import {Loader2, Trash2, UploadIcon, AlertCircle, CheckCircle2} from "lucide-react";
+import {Loader2, Trash2, UploadIcon, AlertCircle, CheckCircle2, SendIcon, SaveIcon} from "lucide-react";
 import {useSearchParams} from "react-router-dom";
 
 import {
@@ -161,7 +161,7 @@ export default function NewOrderForm() {
               </Alert>
             )}
 
-            {/*  Успеха из хука (показывается перед редиректом) */}
+            {/*  Успех из хука (показывается перед редиректом) */}
             {isSuccess && (
               <Alert className="border-green-500 bg-green-50 text-green-900">
                 <CheckCircle2 className="h-4 w-4 text-green-600"/>
@@ -170,23 +170,36 @@ export default function NewOrderForm() {
               </Alert>
             )}
 
-            <div className="flex justify-end space-x-4">
-              {isDealer &&
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              {isDealer && (
                 <Button
-                type="submit"
-                variant="outline"
-                disabled={isPending || isSuccess}
-                onClick={() => setIsDraft(true)}
-              >
-                {isPending && isDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Сохранить как черновик"}
-              </Button>}
+                  type="submit"
+                  variant="outline"
+                  disabled={isPending || isSuccess}
+                  onClick={() => setIsDraft(true)}
+                  className="w-full sm:w-auto"
+                >
+                  {isPending && isDraft ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                  ) : (
+                    <SaveIcon className="mr-2 h-4 w-4"/>
+                  )}
+                  Сохранить черновик
+                </Button>
+              )}
 
               <Button
                 type="submit"
                 disabled={isPending || isSuccess}
                 onClick={() => setIsDraft(false)}
+                className="w-full sm:w-auto"
               >
-                {isPending && !isDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Отправить в Лигрон"}
+                {isPending && !isDraft ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                ) : (
+                  <SendIcon className="mr-2 h-4 w-4"/>
+                )}
+                Отправить в Лигрон
               </Button>
             </div>
           </form>

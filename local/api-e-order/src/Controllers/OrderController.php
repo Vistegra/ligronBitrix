@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace OrderApi\Controllers;
 
 use OrderApi\Helpers\FilterParser;
+use OrderApi\Helpers\SearchParser;
 use OrderApi\Services\Order\OrderService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -281,15 +282,23 @@ final class OrderController extends AbstractController
   {
     $data = $request->getQueryParams();
     $filterString = $data['filter'] ?? '';
+    $searchString = $data['search'] ?? '';
+
     $limit = (int)($data['limit'] ?? 20);
     $offset = (int)($data['offset'] ?? 0);
     $isDraft = (bool)$data['is_draft']; // '0', '1'
 
+    $searchFilter = SearchParser::parse($searchString);
+    $filter = FilterParser::parse($filterString);
+
+    $filter = array_merge($filter, $searchFilter);
+
     if ($isDraft) {
       $filter['=status_id'] = null;
     } else {
-      $filter = FilterParser::parse($filterString);
-      $filter['!=status_id'] = null;
+      if (!isset($filter['=status_id']) && !isset($filter['status_id'])) {
+        $filter['!=status_id'] = null;
+      }
     }
 
     try {
@@ -298,7 +307,8 @@ final class OrderController extends AbstractController
       return $this->json([
         'status' => 'success',
         'message' => 'Orders list',
-        'data' => $result
+        'data' => $result,
+        'filter' => $filter,
 
       ]);
     } catch (\Exception $e) {
