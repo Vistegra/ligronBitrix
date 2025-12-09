@@ -61,6 +61,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   } = useOrders(10, isDraft);
 
   const {statuses, loading: statusesLoading} = useOrderStatuses();
+  const totalColumns = 1 + Object.values(visibleColumns).filter(Boolean).length + 1;
 
   const handleStatusToggle = (statusIds: number[]) => {
     updateFilters({status_id: statusIds});
@@ -127,7 +128,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
             {loading ? (
               <OrdersTableSkeleton visibleColumns={visibleColumns}/>
             ) : orders.length === 0 ? (
-              <OrdersTableEmpty/>
+              <OrdersTableEmpty colSpan={totalColumns}/>
             ) : (
               <OrdersTableBody
                 orders={orders}
