@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /e-order/
+
+   # Виртуальный путь для Service Worker
+    RewriteRule ^sw\.js$ /local/components/vistegra/e.order.page/templates/.default/sw.js [L]
+
+    # Разрешаем прямой доступ к статическим файлам
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d [OR]
+    RewriteCond %{REQUEST_FILENAME} -l
+    RewriteRule ^ - [L]
+
+    # Все остальные запросы перенаправляем на index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Настройки для SPA (Single Page Application)
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</IfModule>

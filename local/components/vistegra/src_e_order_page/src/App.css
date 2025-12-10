@@ -1,7 +1,30 @@
+
 #root {
   font-family: ui-sans-serif, system-ui, sans-serif;
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
 }
 
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+
+  /* Сбрасываем отступы у главного контейнера */
+  #root {
+    padding: 0 !important;
+    max-width: 100% !important; /* Разрешаем растягиваться на всю ширину */
+  }
+
+  /* внутренний контейнер приложения */
+  #app-container-e-order {
+    width: 100%;
+    min-height: 100vh;
+
+    /* Безопасные отступы для iPhone (челка и полоска снизу) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
