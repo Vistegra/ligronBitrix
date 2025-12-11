@@ -96,6 +96,7 @@ $app->get('', function ($request, $response) {
 $app->post('/auth/login', AuthController::class . ':login');
 $app->post('/auth/login-by-token', AuthController::class . ':loginByToken');
 $app->get('/auth/me', AuthController::class . ':me')->add(AuthMiddleware::class);
+$app->get('/auth/sso', AuthController::class . ':sso')->add(AuthMiddleware::class);
 $app->post('/auth/crypt', AuthController::class . ':crypt');
 
 $app->group('', function (RouteCollectorProxy $group) {

@@ -39,4 +39,11 @@ export const authApi = {
       api.post('/auth/login-by-token', { user_token })
     );
   },
+
+  /** Получение SSO ссылки для калькулятора */
+  getCalculatorLink() {
+    return makeRequest<{ url: string }>(() =>
+      api.get(ENDPOINT.AUTH_SSO)
+    );
+  },
 };

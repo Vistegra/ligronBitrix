@@ -90,7 +90,7 @@ export function useOrderMutations(orderId: number, isDraft: boolean) {
     onSuccess: () => {
       toast.success("Заказ удалён");
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      navigate(PAGE.ORDERS);
+      navigate(isDraft ? PAGE.DRAFTS : PAGE.ORDERS);
     },
     onError: (err) => toast.error(err.message)
   });

@@ -101,7 +101,7 @@ export default function LoginPage() {
                 <Label htmlFor="login" className="text-sm font-medium">Логин</Label>
                 <Input
                   id="login"
-                  placeholder="m@example.com"
+                  placeholder=""
                   {...register("login")}
                   disabled={isFormSubmitting}
                   className="bg-muted/40 border-transparent focus:bg-background focus:border-primary h-11"
