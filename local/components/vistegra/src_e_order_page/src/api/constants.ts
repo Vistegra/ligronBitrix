@@ -17,7 +17,8 @@ export const PAGE = {
 export const ENDPOINT = {
   AUTH_LOGIN: '/auth/login',
   AUTH_DETAILED: '/auth/me',
+  AUTH_SSO: '/auth/sso',
   ORDERS: '/orders',
-  STATUSES: '/statuses'
+  STATUSES: '/statuses',
 }
 

@@ -82,4 +82,26 @@ class AuthService
     $provider = new LigronUserAuthProvider();
     return $provider->loginByToken($token);
   }
+
+  /**
+   * Генерация SSO ссылки для перехода в калькулятор
+   * Доступно только для дилеров
+   */
+  public function getSsoLink(UserDTO $user): string
+  {
+    // Проверяем, является ли пользователь дилером
+    if (!$user->isDealer()) {
+      throw new \RuntimeException('Переход в калькулятор разрешен только для дилеров.', 403);
+    }
+
+    if (empty($user->login)) {
+      throw new \RuntimeException('У пользователя отсутствует логин для авторизации.', 400);
+    }
+
+    $ssoLinkService = new SsoLinkGeneratorService($user);
+
+    return $ssoLinkService->generateLink();
+  }
+
+
 }

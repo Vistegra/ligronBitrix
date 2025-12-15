@@ -4,6 +4,7 @@ import {SidebarMenuButton, SidebarMenuItem} from "@/components/ui/sidebar";
 import {MonitorDotIcon, UserPenIcon} from "lucide-react";
 import {Link, useLocation} from "react-router-dom";
 import {PAGE} from "@/api/constants";
+import {CalculatorButton} from "@/components/Sidebar/CalculatorButton.tsx";
 
 export function DealerOrdersMenu() {
   const location = useLocation();
@@ -41,6 +42,8 @@ export function DealerOrdersMenu() {
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
+
+      <CalculatorButton />
     </>
   );
 }

@@ -23,7 +23,7 @@ final class FilterParser
 
     $result = [];
 
-    // FIX: Заменяем амперсанды на точки с запятой, чтобы поддерживать оба формата разделителей
+    // Поддержка и ; и & в качестве разделителей
     $filterString = str_replace('&', ';', $filterString);
 
     $parts = array_filter(array_map('trim', explode(';', $filterString)));

@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {FilterIcon} from "lucide-react";
-import {useAuthStore} from "@/store/authStore";
+import {useAuthStore} from "@/store/authStore.ts";
 import {useMemo} from "react";
 import type {ManagerDetailed} from "@/types/user";
 
@@ -41,14 +41,14 @@ export function OrdersTableUserFilters({
       dealer.users.map((u) => ({
         id: u.id,
         name: u.name,
-        dealerPrefix: dealer.dealer_prefix, // Запоминаем префикс
+        dealerPrefix: dealer.dealer_prefix,
       }))
     );
   }, [user, selectedDealerPrefix]);
 
   const handleSelect = (userId: number, prefix: string) => {
     if (userId === selectedUserId) {
-      // Если снимаем выделение — просто сбрасываем юзера (префикс можно оставить или нет, зависит от логики, пока оставляем как есть)
+      // Если снимаем выделение — просто сбрасываем юзера
       onSelect(null);
     } else {
       // Если выбираем — передаем и ID, и Префикс этого юзера

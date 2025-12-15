@@ -10,10 +10,13 @@
 *::after {
   box-sizing: border-box;
 
-  -webkit-tap-highlight-color: transparent; /* Убираем цвет выделения при тапе на мобильных устройствах */
-  -webkit-touch-callout: none; /* Запрещаем вызов контекстного меню на iOS */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 
+  // Добавьте это, чтобы отключить зум по двойному тапу (если meta viewport не сработает)
+  touch-action: manipulation;
 }
+
 
 /* Выставляем основные настройки по-умолчанию для body */
 body {

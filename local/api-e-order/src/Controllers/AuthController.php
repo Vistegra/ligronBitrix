@@ -1,18 +1,22 @@
 <?php
+
 namespace OrderApi\Controllers;
 
 
 use OrderApi\Services\Auth\Session\AuthSession;
 use OrderApi\Services\Auth\Token\AuthCrypto;
 use OrderApi\Services\Auth\Token\AuthService;
+use OrderApi\Services\Auth\Token\SsoLinkGeneratorService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class AuthController extends AbstractController
 {
-  public function __construct(private readonly AuthService $auth) {}
+  public function __construct(private readonly AuthService $auth)
+  {
+  }
 
-   // POST /auth/login-by-token
+  // POST /auth/login-by-token
   public function loginByToken(ServerRequestInterface $request): ResponseInterface
   {
     $input = $request->getParsedBody() ?? [];
@@ -40,7 +44,7 @@ final class AuthController extends AbstractController
     $provider = $input['providerType'] ?? '';
 
     if (!$login || !$password) {
-      return $this->error('Логин и пароль обязательны',400);
+      return $this->error('Логин и пароль обязательны', 400);
     }
 
     if (!$provider) {
@@ -56,8 +60,8 @@ final class AuthController extends AbstractController
   // вызывать с AuthMiddleware
   public function me(ServerRequestInterface $request): ResponseInterface
   {
-    AuthSession::clear();
-    AuthSession::load($request->getAttribute('user'));
+    // AuthSession::clear();
+    // AuthSession::load($request->getAttribute('user'));
     // вызывать с AuthMiddleware
     $data = AuthSession::publicData();
     return $this->success('Детальные данные пользователя', ['detailed' => $data]);
@@ -84,7 +88,19 @@ final class AuthController extends AbstractController
     }
 
     return $this->error('Не переданы все параметеры ', 400);
+  }
 
+  // GET /auth/sso
+  public function sso(ServerRequestInterface $request): ResponseInterface
+  {
+    try {
+      $link = $this->auth->getSsoLink($request->getAttribute('user'));
+
+      return $this->success('Ссылка сформирована', ['url' => $link]);
+    } catch (\Throwable $e) {
+
+      return $this->error('Ошибка генерации ссылки: ' . $e->getMessage(), 500);
+    }
   }
 
 }

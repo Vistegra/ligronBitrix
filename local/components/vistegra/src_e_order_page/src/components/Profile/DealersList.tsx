@@ -11,9 +11,9 @@ interface DealersListProps {
 export function DealersList({dealers}: DealersListProps) {
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Building2 className="h-5 w-5"/>
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <Building2 className="h-4 w-4 sm:h-5 sm:w-5"/>
           Закрепленные дилеры
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
@@ -21,7 +21,7 @@ export function DealersList({dealers}: DealersListProps) {
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-4 sm:p-6 pt-0">
         {dealers && dealers.length > 0 ? (
           <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
             {dealers.map((dealer) => (

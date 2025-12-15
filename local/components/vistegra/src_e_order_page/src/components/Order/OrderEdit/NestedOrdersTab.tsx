@@ -9,29 +9,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { format, fromUnixTime } from "date-fns";
-import { ru } from "date-fns/locale";
-import { Link } from "react-router-dom";
+import {Skeleton} from "@/components/ui/skeleton";
+import {format, fromUnixTime} from "date-fns";
+import {ru} from "date-fns/locale";
+import {Link} from "react-router-dom";
 
-import type { Order } from "@/api/orderApi";
-import StatusBadge from "@/components/Order/StatusBage.tsx";
+import type {Order} from "@/api/orderApi";
+import StatusBadge from "@/components/Order/StatusBage";
 
 type Props = {
   orders: Order[];
   loading: boolean;
 };
 
-export function NestedOrdersTab({ orders, loading }: Props) {
+export function NestedOrdersTab({orders, loading}: Props) {
   if (loading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
+        {Array.from({length: 3}).map((_, i) => (
           <div key={i} className="flex items-center gap-4 p-2">
-            <Skeleton className="h-4 w-8" />
-            <Skeleton className="h-4 flex-1" />
-            <Skeleton className="h-6 w-20 rounded-full" />
-            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-8"/>
+            <Skeleton className="h-4 flex-1"/>
+            <Skeleton className="h-6 w-20 rounded-full"/>
+            <Skeleton className="h-4 w-32"/>
           </div>
         ))}
       </div>
@@ -75,7 +75,7 @@ export function NestedOrdersTab({ orders, loading }: Props) {
             </TableCell>
             <TableCell>
               {order.status_name ? (
-                <StatusBadge name={order.status_name} color={order.status_color} />
+                <StatusBadge name={order.status_name} color={order.status_color}/>
               ) : (
                 "—"
               )}

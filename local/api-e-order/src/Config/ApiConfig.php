@@ -8,6 +8,8 @@ final class ApiConfig
 {
   public const string JWT_SECRET = 'ghSiBVUEWx5FZcK6BzFHDTrbdQjexAck';
   public const string MANAGER_SECRET = 'h74zh2yLsQsKbwsarnfLANuFUBMziYeX'; //Нельзя изменять!
+  public const string SSO_CALC_ENCRYPT_KEY = 'eKey';
+  public const string SSO_CALC_ALGO = 'aes-256-cbc';
   public const string JWT_ALGO = 'HS256';
   public const int    JWT_EXPIRE = 36000; // 10 часов
 
@@ -17,10 +19,14 @@ final class ApiConfig
   public const string API_DATE_VERSION = '03.12.2025';
   public const string SITE_ROOT_URL = 'https://ligron.ru';
   public const string  APP_ORDERS_PAGE = 'https://ligron.ru/e-order/orders';
+  public const string CALC_URL = 'https://calculator.ligron.ru';
 
   //'https://ligron.ru/local/api-e-order/fake-1c-webhook'
   public const string  INTEGRATION_1C_ORDER_URL = 'http://193.43.248.24:8989/transitDB/hs/transit1c/get_d';
 
   public const string API_MODE = 'dev';
-  private function __construct() {}
+
+  private function __construct()
+  {
+  }
 }

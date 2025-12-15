@@ -17,8 +17,8 @@ import {ROLE_NAMES} from "@/constants/constants.ts";
 import {PAGE} from "@/api/constants.ts";
 import {Button} from "@/components/ui/button";
 
-import {DealerOrdersMenu} from "@/components/Sidebar/DealerOrdersMenu.tsx";
-import {ManagerDealersTree} from "@/components/Sidebar/ManagerDealersTree.tsx";
+import {DealerOrdersMenu} from "@/components/Sidebar/DealerOrdersMenu";
+import {ManagerDealersTree} from "@/components/Sidebar/ManagerDealersTree";
 
 export function AppSidebar() {
   const {user, logout} = useAuthStore();

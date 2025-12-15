@@ -4,7 +4,6 @@ import { orderApi, type CreateOrderData } from "@/api/orderApi.ts";
 import { PAGE } from "@/api/constants.ts";
 import {toast} from "sonner";
 
-
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();

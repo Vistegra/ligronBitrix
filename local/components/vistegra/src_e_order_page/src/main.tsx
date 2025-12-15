@@ -6,6 +6,22 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 import './index.css'
 
+// Импорт регистрации PWA
+// @ts-ignore
+import { registerSW } from 'virtual:pwa-register'
+
+// Интервал проверки обновлений (например, каждый час)
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (confirm('Доступна новая версия приложения. Обновить?')) {
+      updateSW(true);
+    }
+  },
+  onOfflineReady() {
+    console.log('Приложение готово к работе офлайн');
+  },
+})
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,7 +36,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
 
 // Ждём, пока Bitrix создаст #root
 const timerId = setInterval(() => {
@@ -49,5 +64,4 @@ const timerId = setInterval(() => {
     </StrictMode>
   );
 }, 100)
-
 

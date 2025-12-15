@@ -7,7 +7,7 @@ import {AlertCircle, Loader2Icon} from "lucide-react";
 
 import {useOrders} from "@/hooks/order/useOrders.ts";
 import {useOrderStatuses} from "@/hooks/order/useOrderStatuses.ts";
-import {useAuthStore} from "@/store/authStore";
+import {useAuthStore} from "@/store/authStore.ts";
 
 import {OrdersTableBody} from "./OrdersTableBody";
 import {OrdersTableSkeleton} from "./OrdersTableSkeleton";
@@ -16,7 +16,7 @@ import {OrdersPagination} from "./OrdersPagination";
 import {OrdersTablePanel} from "./OrderTablePanel";
 import {OrdersTableHeader} from "./OrdersTableHeader";
 
-import {COLUMNS_VISIBILITY_PRESETS, type PartVisibleColumns} from "./types";
+import {COLUMNS_VISIBILITY_PRESETS, type PartVisibleColumns} from "../types.ts";
 import {PAGE} from "@/api/constants.ts";
 
 interface OrdersTableProps {
@@ -42,7 +42,6 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
 
   }, [isDraft, isManager]);
 
-
   const [visibleColumns, setVisibleColumns] = useState<PartVisibleColumns>(initialVisibility);
 
   useEffect(() => {
@@ -62,6 +61,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   } = useOrders(10, isDraft);
 
   const {statuses, loading: statusesLoading} = useOrderStatuses();
+  const totalColumns = 1 + Object.values(visibleColumns).filter(Boolean).length + 1;
 
   const handleStatusToggle = (statusIds: number[]) => {
     updateFilters({status_id: statusIds});
@@ -86,7 +86,6 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     }
   };
 
-
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   if (error) {
@@ -106,11 +105,11 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
         selectedUserId={activeFilters.dealer_user_id}
       />
 
-      <div className="rounded-md border relative">
+      <div className="rounded-md border relative min-h-[300px]">
 
         {isFetching && !loading && (
-          <div className="absolute top-2 right-2 z-10">
-            <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground"/>
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+            <Loader2Icon className="h-10 w-10 animate-spin text-primary"/>
           </div>
         )}
 
@@ -129,7 +128,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
             {loading ? (
               <OrdersTableSkeleton visibleColumns={visibleColumns}/>
             ) : orders.length === 0 ? (
-              <OrdersTableEmpty/>
+              <OrdersTableEmpty colSpan={totalColumns}/>
             ) : (
               <OrdersTableBody
                 orders={orders}

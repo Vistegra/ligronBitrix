@@ -2,7 +2,6 @@ import api, {makeRequest} from "./client";
 import {ENDPOINT} from "./constants";
 import type {ProviderType, User, ManagerDetailed, DealerDetailed} from "@/types/user";
 
-
 export interface LoginResponse {
   user: User;
   token: string;
@@ -38,6 +37,13 @@ export const authApi = {
   loginByUt(user_token: string) {
     return makeRequest<LoginResponse>(() =>
       api.post('/auth/login-by-token', { user_token })
+    );
+  },
+
+  /** Получение SSO ссылки для калькулятора */
+  getCalculatorLink() {
+    return makeRequest<{ url: string }>(() =>
+      api.get(ENDPOINT.AUTH_SSO)
     );
   },
 };

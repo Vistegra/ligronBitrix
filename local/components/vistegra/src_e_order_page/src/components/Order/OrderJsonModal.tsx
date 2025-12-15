@@ -1,11 +1,11 @@
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {orderApi} from "@/api/orderApi.ts";
-import {Loader2, AlertCircle, Copy, Info, DownloadIcon} from "lucide-react";
-import {Button} from "@/components/ui/button.tsx";
+import {AlertCircle, Copy, DownloadIcon, Info, Loader2} from "lucide-react";
+import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
-import {Alert, AlertDescription} from "@/components/ui/alert.tsx";
-import {Modal} from "@/components/Modal.tsx";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {ResponsiveSheet} from "../ResponsiveSheet";
 
 interface OrderJsonModalProps {
   orderId: number;
@@ -68,7 +68,8 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
   };
 
   return (
-    <Modal
+
+    <ResponsiveSheet
       open={open}
       onOpenChange={setOpen}
       title="Данные для отправки в Лигрон"
@@ -85,16 +86,18 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
         </Button>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col h-full gap-4 pb-safe"> {/* pb-safe для iPhone */}
 
-        <div className="relative border rounded-md bg-muted/30 overflow-hidden">
+        {/* Контент: JSON превью */}
+        <div
+          className="relative border rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
           {isLoading ? (
-            <div className="flex h-[300px] items-center justify-center flex-col gap-2 text-muted-foreground">
+            <div className="flex h-full items-center justify-center flex-col gap-2 text-muted-foreground p-8">
               <Loader2 className="h-8 w-8 animate-spin"/>
               <span>Загрузка данных...</span>
             </div>
           ) : error ? (
-            <div className="p-4 h-[300px] flex items-center justify-center">
+            <div className="p-4 h-full flex items-center justify-center">
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4"/>
                 <AlertDescription>
@@ -103,14 +106,14 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
               </Alert>
             </div>
           ) : (
-            <div className="h-[50vh] overflow-auto p-4 text-xs font-mono">
+            <div className="h-full overflow-auto p-4 text-xs font-mono">
               <pre>{JSON.stringify(data?.data, null, 2)}</pre>
             </div>
           )}
         </div>
 
-
-        <div className="flex justify-end gap-2">
+        {/* Футер с кнопками */}
+        <div className="flex justify-end gap-2 pt-2 border-t mt-auto">
           <Button
             variant="default"
             size="sm"
@@ -130,12 +133,14 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
             <Copy className="h-4 w-4 mr-2"/>
             Копировать
           </Button>
+
           <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
             Закрыть
           </Button>
         </div>
 
       </div>
-    </Modal>
+
+    </ResponsiveSheet>
   );
 }

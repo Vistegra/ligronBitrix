@@ -36,7 +36,6 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
   updated_at: {key: 'updated_at', label: 'Обновлен', width: 'w-32'},
 };
 
-
 export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>> = {
   'default': {
     id: true,

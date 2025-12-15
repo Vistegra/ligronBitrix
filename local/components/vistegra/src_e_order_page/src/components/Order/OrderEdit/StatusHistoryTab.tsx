@@ -1,8 +1,8 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import StatusBadge from "@/components/Order/StatusBage.tsx";
-import { useOrderStatuses } from "@/hooks/order/useOrderStatuses.ts";
+import {Table, TableBody, TableCell, TableRow} from "@/components/ui/table";
+import StatusBadge from "@/components/Order/StatusBage";
+import {useOrderStatuses} from "@/hooks/order/useOrderStatuses.ts";
 
 type StatusHistoryItem = {
   id: number;
@@ -13,8 +13,8 @@ type Props = {
   history: StatusHistoryItem[];
 };
 
-export function StatusHistoryTab({ history }: Props) {
-  const { getStatusById, loading: statusesLoading } = useOrderStatuses();
+export function StatusHistoryTab({history}: Props) {
+  const {getStatusById, loading: statusesLoading} = useOrderStatuses();
 
   if (history.length === 0) {
     return (
@@ -26,12 +26,10 @@ export function StatusHistoryTab({ history }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Жирный подзаголовок 16px */}
       <h3 className="text-base font-semibold text-foreground">
         История изменения статусов
       </h3>
 
-      {/* Таблица с обводкой */}
       <div className="rounded-lg border bg-card">
         <Table>
           <TableBody>
@@ -52,7 +50,7 @@ export function StatusHistoryTab({ history }: Props) {
                 >
                   <TableCell className="py-3 pl-4 pr-2">
                     {statusesLoading ? (
-                      <div className="h-6 w-24 animate-pulse rounded-full bg-muted" />
+                      <div className="h-6 w-24 animate-pulse rounded-full bg-muted"/>
                     ) : (
                       <StatusBadge
                         name={status?.name || "Неизвестно"}
