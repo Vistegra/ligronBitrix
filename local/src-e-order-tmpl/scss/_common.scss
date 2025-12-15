@@ -1,13 +1,17 @@
 @use "mixins/functions" as *;
 @use "variables" as *;
 
+html {
+  // для PWA: запрет "пружинки" при скролле за пределы страницы
+  overscroll-behavior-y: none;
+}
 
 body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-
-  //font-family: 'Nunito Sans', "Open Sans", sans-serif;
+  /* Используем 100dvh для мобильных (учитывает адресную строку) */
+  min-height: 100dvh;
   overflow-x: hidden;
 
   font-style: normal;
@@ -21,33 +25,47 @@ body {
   }
 
   &::-webkit-scrollbar {
-    width: 0; //скрыть скролл
+    width: 0;
   }
 
   &.modal-mode {
     overflow: hidden;
   }
+}
 
+
+.base-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+
+  padding: 0;
+  margin: 0;
 }
 
 .workarea {
-  min-height: 30vh;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Стили для контейнера React приложения */
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 100%;
 }
 
 .header,
 .footer {
   flex-shrink: 0;
-}
-
-.base-container {
-  display: flex;
-  flex-direction: column;
-
-  flex-grow: 1;
-  max-width: 100vw;
-  width: 100vw;
-  overflow: hidden;
 }
 
 .content-container {
@@ -59,22 +77,7 @@ body {
     width: calc(100vw - 46px);
   }
 
-}
-
-
-@include respond(xl) {
-
-
-}
-
-@include respond(lg) {
-
-}
-
-@include respond(md) {
-
-}
-
-@include respond(sm) {
-
+  @include respond(sm) {
+    width: 100%;
+  }
 }
