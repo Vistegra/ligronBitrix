@@ -3,9 +3,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import {AlertCircle, Loader2} from "lucide-react";
-import { useState } from "react";
+import {useState} from "react";
 import * as React from "react";
 
 interface ConfirmPopoverProps {
@@ -25,6 +25,8 @@ interface ConfirmPopoverProps {
   children: React.ReactNode;
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
+  sideOffset?: number;
+  alignOffset?: number;
 }
 
 export function ConfirmPopover({
@@ -33,11 +35,13 @@ export function ConfirmPopover({
                                  confirmText = "Подтвердить",
                                  cancelText = "Отмена",
                                  confirmVariant = "destructive",
-                                 icon = <AlertCircle className="h-8 w-8 text-destructive" />,
+                                 icon = <AlertCircle className="h-8 w-8 text-destructive"/>,
                                  onConfirm,
                                  children,
                                  side = "top",
                                  align = "center",
+                                 sideOffset = 8,
+                                 alignOffset = 0
                                }: ConfirmPopoverProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,7 +66,8 @@ export function ConfirmPopover({
         align={align}
         className="w-80 p-4 space-y-3"
         onClick={(e) => e.stopPropagation()}
-        sideOffset={8}
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
       >
         {/* Заголовок с иконкой */}
         <div className="flex items-center gap-2">
@@ -91,7 +96,7 @@ export function ConfirmPopover({
             onClick={handleConfirm}
             disabled={loading}
           >
-            {loading && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
+            {loading && <Loader2 className="h-3 w-3 animate-spin mr-1.5"/>}
             {confirmText}
           </Button>
         </div>

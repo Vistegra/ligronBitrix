@@ -29,27 +29,31 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:w-14">
       {/* Логотип */}
-      <SidebarHeader className="border-b border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" className="py-6">
-              <Link to="/" className="flex items-center gap-3">
-                <div className="rounded-lg overflow-hidden flex-shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="42" height="44" viewBox="0 0 49 51" fill="none">
-                    <path d="M48.2023 0H0V50.8276H48.2023V0Z" fill="#229E35"/>
-                    <path
-                      d="M31.4627 28.1771V34.6543H16V31.8412L18.0773 31.402V17.9399L16 17.5008V14.6738H25.4372V17.5008L22.906 17.9399V30.9628H27.6658L27.7759 28.1771H31.4627Z"
-                      fill="white"/>
-                  </svg>
-                </div>
-                <div className="flex flex-col gap-0 data-[sidebar=collapsed]:hidden">
-                  <span className="font-bold text-lg leading-none">LIGRON</span>
-                  <span className="text-xs text-muted-foreground">Электронный заказ</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className="h-16 border-b border-sidebar-border flex items-center px-4 md:justify-center">
+        <SidebarMenuButton asChild size="lg" className="p-0">
+          <Link to="/" className="flex items-center gap-3">
+            {/* SVG-логотип */}
+            <div className="flex-shrink-0 w-10 h-10 rounded-md overflow-hidden md:w-8 md:h-8 md:rounded-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 49 51"
+                fill="none"
+                className="w-full h-full object-contain"
+              >
+                <path d="M48.2023 0H0V50.8276H48.2023V0Z" fill="#229E35"/>
+                <path
+                  d="M31.4627 28.1771V34.6543H16V31.8412L18.0773 31.402V17.9399L16 17.5008V14.6738H25.4372V17.5008L22.906 17.9399V30.9628H27.6658L27.7759 28.1771H31.4627Z"
+                  fill="white"/>
+              </svg>
+            </div>
+
+            {/* Текстовая часть */}
+            <div className="flex flex-col gap-0 data-[state=collapsed]:hidden">
+              <span className="font-bold text-lg leading-none">LIGRON</span>
+              <span className="text-xs text-muted-foreground">Электронный заказ</span>
+            </div>
+          </Link>
+        </SidebarMenuButton>
       </SidebarHeader>
 
       <SidebarContent>
@@ -57,7 +61,7 @@ export function AppSidebar() {
 
           {/* 1. Мой профиль (для всех) */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive(PAGE.PROFILE)}>
+            <SidebarMenuButton asChild isActive={isActive(PAGE.PROFILE)} tooltip="Профиль">
               <Link to={PAGE.PROFILE}>
                 <User className="h-4 w-4"/>
                 <span>Мой профиль</span>
