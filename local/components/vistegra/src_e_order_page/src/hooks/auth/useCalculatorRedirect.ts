@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { authApi } from "@/api/authApi";
@@ -5,13 +6,13 @@ import { authApi } from "@/api/authApi";
 export function useCalculatorRedirect() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const openCalculator = async () => {
+  const openCalculatorWithConfirm = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await authApi.getCalculatorLink();
 
       if (response.data?.url) {
-        window.open(response.data.url, "_blank");
+        window.open(response.data.url, "_blank", "noopener,noreferrer");
       } else {
         toast.error("Не удалось получить ссылку для входа");
       }
@@ -23,5 +24,8 @@ export function useCalculatorRedirect() {
     }
   };
 
-  return { openCalculator, isLoading };
+  return {
+    isLoading,
+    onConfirm: openCalculatorWithConfirm,
+  };
 }
