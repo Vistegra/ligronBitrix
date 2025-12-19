@@ -6,7 +6,7 @@ $APPLICATION->SetTitle("ЛИГРОН | Электронный заказ");
 
 <div class="">
   <?php $APPLICATION->IncludeComponent(
-    "vistegra:e.order.page.stable",
+    "vistegra:e.order.page",
    ".default",
     array(),
     false
