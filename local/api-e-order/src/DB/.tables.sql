@@ -58,6 +58,9 @@ CREATE TABLE vs_e_order (
         COMMENT 'счётчик дочерних заказов',
                             PERCENT_PAYMENT TINYINT UNSIGNED NULL DEFAULT 0 COMMENT 'Процент оплаты';
 
+                            -- тип происхождения заказа
+                            ORIGIN_TYPE     TINYINT UNSIGNED DEFAULT 0 COMMENT '0=APP, 1=1C, 2=CALC',
+
                             CREATED_AT      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             UPDATED_AT      DATETIME NOT NULL
                                                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -73,6 +76,7 @@ CREATE TABLE vs_e_order (
                             INDEX ix_ready_date (READY_DATE),
                             INDEX ix_created (CREATED_AT),
                             INDEX ix_created_by (CREATED_BY, CREATED_BY_ID),
+                            INDEX ix_origin_type (ORIGIN_TYPE),
 
                             CONSTRAINT fk_vs_e_order_status
                                 FOREIGN KEY (STATUS_ID) REFERENCES vs_e_order_status(ID)
