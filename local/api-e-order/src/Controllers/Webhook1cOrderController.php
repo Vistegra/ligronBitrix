@@ -68,7 +68,9 @@ final class Webhook1cOrderController extends AbstractController
         'body' => $body],
         'webhook_1c');
 
-      return $this->error('Ошибка обработки вебхука: ' . $e->getMessage());
+      $code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 400;
+
+      return $this->error('Ошибка обработки вебхука: ' . $e->getMessage(), $code);
     }
 
   }

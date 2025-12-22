@@ -26,8 +26,12 @@ final class DocsController extends AbstractController
       'title' => 'Справочник статусов',
       'category' => 'Reference'
     ],
-    'webhook_1c' => [
-      'title' => 'Webhook 1C',
+    'webhook_1c_create' => [
+      'title' => 'Webhook 1C: Создание заказа',
+      'category' => 'Integration'
+    ],
+    'webhook_1c_update_status' => [
+      'title' => 'Webhook 1C: Обновление статуса',
       'category' => 'Integration'
     ],
     'orders_list' => [
