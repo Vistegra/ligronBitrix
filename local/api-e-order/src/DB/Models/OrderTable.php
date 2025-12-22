@@ -12,8 +12,14 @@ use OrderApi\Helpers\ModelFieldHelper as F;
 
 class OrderTable extends DataManager
 {
+  // Типы создателей
   public const int CREATED_BY_DEALER = 1;
   public const int CREATED_BY_MANAGER = 2;
+
+  // Типы заказов
+  public const int ORIGIN_TYPE_APP = 0;
+  public const int ORIGIN_TYPE_1C = 1;
+  public const int ORIGIN_TYPE_CALC = 2;
 
   public static function getTableName(): string
   {
@@ -122,6 +128,21 @@ class OrderTable extends DataManager
         'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
+
+
+      new Fields\IntegerField('percent_payment', [
+        'nullable' => true,
+        'default_value' => 0,
+        'fetch_data_modification' => F::toInt(),
+      ]),
+
+      // Тип происхождения заказа (0=APP, 1=1C, 2=CALC)
+      new Fields\IntegerField('origin_type', [
+        'nullable' => true,
+        'default_value' => 0,
+        'fetch_data_modification' => F::toInt(),
+      ]),
+
       // Системные
       new Fields\DatetimeField('created_at', [
         'default_value' => F::now(),
@@ -131,12 +152,6 @@ class OrderTable extends DataManager
       new Fields\DatetimeField('updated_at', [
         'default_value' => F::now(),
         'fetch_data_modification' => F::toTimestamp(),
-      ]),
-
-      new Fields\IntegerField('percent_payment', [
-        'nullable' => true,
-        'default_value' => 0,
-        'fetch_data_modification' => F::toInt(),
       ]),
 
     ];

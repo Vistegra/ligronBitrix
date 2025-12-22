@@ -6,12 +6,21 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/tests/autoload.php';
 
 use Tests\Core\TestRunner;
+use OrderApi\Services\LogService;
 
 global $USER;
 if (!$USER->IsAdmin()) {
     header('HTTP/1.0 403 Forbidden');
     die('Access Denied: Administrators only.');
 }
+
+
+$logDir = __DIR__ . '/storage/logs/tests/';
+if (!file_exists($logDir)) {
+    mkdir($logDir, 0775, true);
+}
+LogService::setLogDir($logDir);
+
 
 $suites = [
         /*'all' => [
@@ -39,10 +48,13 @@ $suites = [
 $currentSuiteKey = $_GET['suite'] ?? null;
 $output = '';
 
+// Включение/Отключение режима транзакций
+$isSafeMode = !isset($_GET['safe']) || $_GET['safe'] == '1';
+
 if ($currentSuiteKey && isset($suites[$currentSuiteKey])) {
     ob_start();
     try {
-        $runner = new TestRunner();
+        $runner = new TestRunner($isSafeMode);
         foreach ($suites[$currentSuiteKey]['classes'] as $class) {
             $runner->addTest($class);
         }

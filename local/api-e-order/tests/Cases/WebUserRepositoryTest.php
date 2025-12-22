@@ -16,7 +16,7 @@ class WebUserRepositoryTest extends TestCase
   const string TEST_MANAGER_LOGIN = '9250826792';
 
   // 2. ОФИС-МЕНЕДЖЕР (Вход по токену)
-  const int TEST_OFFICE_MANAGER_ID = 8;    // Оськина Наталья
+  const int TEST_OFFICE_MANAGER_ID = 6;    // Оськина Наталья
   const string TEST_OFFICE_TOKEN = 'YPi4AGITL09hUYpoY3AvqQ'; // Токен
 
   // 3. СВЯЗИ
