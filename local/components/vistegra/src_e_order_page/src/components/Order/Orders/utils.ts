@@ -116,3 +116,14 @@ export const buildOrderLink = (
   const queryString = params.toString();
   return `${basePage}/${order.id}${queryString ? `?${queryString}` : ""}`;
 };
+
+export const getOriginLabel = (type: number): { label: string; color: string } => {
+  switch (type) {
+    case 1:
+      return { label: "1C", color: "bg-yellow-100 text-yellow-800 border-yellow-200" };
+    case 2:
+      return { label: "Калькулятор", color: "bg-green-100 text-green-800 border-green-200" };
+    default:
+      return { label: "Сайт", color: "bg-gray-100 text-gray-800 border-gray-200" };
+  }
+};

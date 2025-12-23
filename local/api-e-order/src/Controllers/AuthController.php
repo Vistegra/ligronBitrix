@@ -94,13 +94,26 @@ final class AuthController extends AbstractController
   public function sso(ServerRequestInterface $request): ResponseInterface
   {
     try {
-      $link = $this->auth->getSsoLink($request->getAttribute('user'));
+      $queryParams = $request->getQueryParams();
+      $ligronNumber = $queryParams['ligron_number'] ?? null;
+
+      $user = $request->getAttribute('user');
+
+      $ssoService = new SsoLinkGeneratorService($user);
+
+      if ($ligronNumber) {
+        // Если передан номер -> генерируем ссылку на заказ
+        $link = $ssoService->generateOrderLink((string)$ligronNumber);
+      } else {
+        // Иначе -> ссылка в корень
+        $link = $ssoService->generateLink();
+      }
 
       return $this->success('Ссылка сформирована', ['url' => $link]);
     } catch (\Throwable $e) {
-
       return $this->error('Ошибка генерации ссылки: ' . $e->getMessage(), 500);
     }
   }
+
 
 }

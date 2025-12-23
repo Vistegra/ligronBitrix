@@ -6,10 +6,10 @@ import { authApi } from "@/api/authApi";
 export function useCalculatorRedirect() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const openCalculatorWithConfirm = async () => {
+  const openCalculatorWithConfirm = async (ligron_number: string | null = null) => {
     setIsLoading(true);
     try {
-      const response = await authApi.getCalculatorLink();
+      const response = await authApi.getCalculatorLink(ligron_number);
 
       if (response.data?.url) {
         window.open(response.data.url, "_blank", "noopener,noreferrer");

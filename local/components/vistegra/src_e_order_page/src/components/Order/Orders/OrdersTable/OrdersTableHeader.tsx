@@ -7,6 +7,7 @@ import {OrdersTableUserFilters} from "./OrdersTableUserFilters";
 import {COLUMN_DEFINITIONS, type ColumnKey, type PartVisibleColumns} from "../types.ts";
 
 import type {OrderStatus} from "@/api/orderApi.ts";
+import {OrdersTableOriginFilters} from "@/components/Order/Orders/OrdersTable/OrdersTableOriginFilters.tsx";
 
 interface OrdersTableHeaderProps {
   visibleColumns: PartVisibleColumns;
@@ -14,6 +15,7 @@ interface OrdersTableHeaderProps {
     status_id: number[];
     dealer_prefix: string | null;
     dealer_user_id: number | null;
+    origin_type: number[],
   };
   statuses: OrderStatus[];
   statusesLoading: boolean;
@@ -21,6 +23,7 @@ interface OrdersTableHeaderProps {
   onDealerSelect: (prefix: string | null) => void;
 
   onUserSelect: (userId: number | null, dealerPrefix?: string | null) => void;
+  onOriginToggle: (ids: number[]) => void;
 }
 
 export function OrdersTableHeader({
@@ -31,6 +34,7 @@ export function OrdersTableHeader({
                                     onStatusToggle,
                                     onDealerSelect,
                                     onUserSelect,
+                                    onOriginToggle
                                   }: OrdersTableHeaderProps) {
   return (
     <TableHeader className="bg-muted [&_th]:text-foreground">
@@ -61,6 +65,11 @@ export function OrdersTableHeader({
                   selectedDealerPrefix={activeFilters.dealer_prefix}
                   selectedUserId={activeFilters.dealer_user_id}
                   onSelect={onUserSelect}
+                />
+              ) : key === "origin" ? (
+                <OrdersTableOriginFilters
+                  selectedOrigins={activeFilters.origin_type}
+                  onToggle={onOriginToggle}
                 />
               ) : (
                 column.label

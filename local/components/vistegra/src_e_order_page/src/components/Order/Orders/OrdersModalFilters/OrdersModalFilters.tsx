@@ -12,6 +12,7 @@ import {useOrderUrlState} from "@/hooks/order/useOrderUrlState";
 
 import {FilterStatuses} from "./FilterStatuses";
 import {FilterDealers} from "./FilterDealers/FilterDealers";
+import {FilterOrigin} from "@/components/Order/Orders/OrdersModalFilters/FilterOrigin.tsx";
 
 export function OrdersModalFilters() {
   const {activeFilters, updateFilters} = useOrderUrlState();
@@ -22,6 +23,8 @@ export function OrdersModalFilters() {
   const [selectedStatuses, setSelectedStatuses] = useState<number[]>([]);
   const [selectedDealer, setSelectedDealer] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [selectedOrigins, setSelectedOrigins] = useState<number[]>([]);
+
   const [open, setOpen] = useState(false);
 
 
@@ -30,6 +33,7 @@ export function OrdersModalFilters() {
       setSelectedStatuses(activeFilters.status_id);
       setSelectedDealer(activeFilters.dealer_prefix);
       setSelectedUser(activeFilters.dealer_user_id);
+      setSelectedOrigins(activeFilters.origin_type);
     }
   }, [open, activeFilters]);
 
@@ -39,6 +43,7 @@ export function OrdersModalFilters() {
       status_id: selectedStatuses,
       dealer_prefix: selectedDealer,
       dealer_user_id: selectedUser,
+      origin_type: selectedOrigins,
     });
 
     setOpen(false);
@@ -48,7 +53,15 @@ export function OrdersModalFilters() {
     setSelectedStatuses([]);
     setSelectedDealer(null);
     setSelectedUser(null);
+    setSelectedOrigins([]);
   };
+
+  const toggleOrigin = (id: number) => {
+    setSelectedOrigins((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
 
   const handleDealerChange = (prefix: string | null) => {
     if (selectedDealer === prefix) return;
@@ -66,6 +79,7 @@ export function OrdersModalFilters() {
   const activeCount =
     (activeFilters.status_id.length > 0 ? 1 : 0) +
     (activeFilters.dealer_prefix ? 1 : 0) +
+    (activeFilters.origin_type.length > 0 ? 1 : 0) +
     (activeFilters.dealer_user_id ? 1 : 0);
 
   const dealers = (user?.detailed as ManagerDetailed)?.managed_dealers || [];
@@ -110,6 +124,11 @@ export function OrdersModalFilters() {
             statuses={statuses}
             selectedIds={selectedStatuses}
             onToggle={toggleStatus}
+          />
+
+          <FilterOrigin
+            selectedOrigins={selectedOrigins}
+            onToggle={toggleOrigin}
           />
 
           <FilterDealers

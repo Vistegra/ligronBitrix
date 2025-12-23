@@ -42,7 +42,10 @@ final class FilterParser
       }
 
       // Множественные значения
-      $values = array_filter(array_map('trim', explode(',', $valueStr)));
+      $values = array_filter(
+        array_map('trim', explode(',', $valueStr)),
+        fn($v) => $v !== ''
+      );
 
       if (empty($values)) {
         continue;

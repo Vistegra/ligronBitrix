@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OrderApi\Services\Auth\Token;
 
 use OrderApi\Config\ApiConfig;
+use OrderApi\DB\Repositories\DealerUserRepository;
 use OrderApi\DTO\Auth\UserDTO;
 
 final readonly class SsoLinkGeneratorService
@@ -12,34 +13,72 @@ final readonly class SsoLinkGeneratorService
 
   public function __construct(
     private UserDTO $user
-  ) {}
-
-  /**
-   * Генерирует ссылку для SSO авторизации в калькуляторе
-   */
-  public function generateLink(): string
+  )
   {
-    // Формат: LOGIN | PREFIX | DEALER_ID | TIMESTAMP
-    $payload = sprintf(
-      '%s|%s|%d|%d',
-      $this->user->login,
-      $this->user->dealer_prefix,
-      $this->user->dealer_id,
-      time()
-    );
-
-    $encryptedParam = $this->encrypt($payload);
-
-    return sprintf(
-      '%s/?mode=auth&cmsAction=sso&param=%s',
-      rtrim(ApiConfig::CALC_URL, '/'),
-      urlencode($encryptedParam)
-    );
   }
 
   /**
-   * Шифрует данные особым алгоритмом
+   * Генерирует ссылку на корень раздела дилера
    */
+  public function generateLink(): string
+  {
+    $this->ensureIsDealer();
+
+    // /dealer/{id}
+    return $this->buildSsoUrl('');
+  }
+
+  /**
+   * Генерирует ссылку на конкретный заказ
+   */
+  public function generateOrderLink(string $ligronNumber): string
+  {
+    $this->ensureIsDealer();
+
+    // Формируем "хвост" ссылки
+    $redirectSuffix = '?ligron_number=' . $ligronNumber;
+
+    return $this->buildSsoUrl($redirectSuffix);
+  }
+
+  /**
+   * URL для входа
+   */
+  private function buildSsoUrl(string $redirectSuffix): string
+  {
+    // Базовый URL авторизации (всегда в корень, параметры передаем в payload)
+    $baseUrl = rtrim(ApiConfig::CALC_URL, '/');
+
+    // Формируем зашифрованный параметр
+    $encryptedParam = $this->buildEncryptedPayload($redirectSuffix);
+
+    return $baseUrl . '/?mode=auth&cmsAction=sso&param=' . urlencode($encryptedParam);
+  }
+
+  /**
+   * Создает зашифрованный payload с 5 параметрами
+   */
+  private function buildEncryptedPayload(string $redirectSuffix): string
+  {
+    // Формат: LOGIN | PREFIX | DEALER_ID | REDIRECT_SUFFIX | TIMESTAMP
+    $payload = sprintf(
+      '%s|%s|%d|%s|%d',
+      $this->user->login,
+      $this->user->dealer_prefix,
+      $this->user->dealer_id,
+      $redirectSuffix, // Например: "?ligron_number=123" или ""
+      time()
+    );
+
+    return $this->encrypt($payload);
+  }
+
+  private function ensureIsDealer(): void
+  {
+    if (!$this->user->isDealer() || empty($this->user->dealer_id)) {
+      throw new \RuntimeException('Переход в калькулятор разрешен только для пользователей дилера.', 403);
+    }
+  }
 
   private function encrypt(string $value): string
   {

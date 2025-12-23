@@ -16,7 +16,7 @@ import {
   formatDateTime,
   getDealerNameByOrder,
   getOrderType,
-  getOrderTypeLabel, getUserNameByOrder
+  getOrderTypeLabel, getOriginLabel, getUserNameByOrder
 } from "@/components/Order/Orders/utils.ts";
 
 
@@ -54,6 +54,15 @@ export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: 
         {getOrderTypeLabel(getOrderType(order))}
       </Badge>
     ),
+
+    origin: (order) => {
+      const { label, color } = getOriginLabel(order.origin_type);
+      return (
+        <Badge variant="outline" className={`font-normal ${color}`}>
+          {label}
+        </Badge>
+      );
+    },
 
     dealer: (order) => (
       <div className="text-sm">{getDealerNameByOrder(user, order) || "—"}</div>

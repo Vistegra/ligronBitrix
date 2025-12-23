@@ -23,6 +23,7 @@ import {useBreadcrumbStore} from "@/store/breadcrumbStore";
 import {cn} from "@/lib/utils";
 import {PAGE} from "@/api/constants.ts";
 import {formatDate} from "@/components/Order/Orders/utils.ts";
+import {OpenInCalculatorButton} from "@/components/Order/OrderEdit/OpenInCalculatorButton.tsx";
 
 interface OrderEditProps {
   className?: string;
@@ -42,6 +43,7 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
   const navigate = useNavigate();
   const location = useLocation();
 
+
   const {
     update,
     uploadFiles,
@@ -55,6 +57,8 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
     setOrderNumber(order?.number || null);
     return () => setOrderNumber(null);
   }, [order?.number, setOrderNumber]);
+
+  const isCalcOrder = order?.origin_type === 2;
 
   const handleBack = () => {
     if (location.key !== "default") {
@@ -99,7 +103,6 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
                 onSave={(newName) => update.mutateAsync({name: newName})}
               />
             </div>
-
             <div className="text-xs text-muted-foreground whitespace-nowrap shrink-0 justify-self-end">
               {formatDate(order.created_at)}
             </div>
@@ -154,10 +157,14 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
           </Tabs>
         </CardContent>
+        <CardFooter className="shrink-0 p-3 border-t bg-background z-10 flex justify-end items-center gap-2">
+          <div className="flex justify-end items-center gap-2 md:gap-3">
 
-        {isDraft && (
-          <CardFooter className="shrink-0 p-3 border-t bg-background z-10 flex justify-end items-center gap-2">
-            <div className="flex justify-end items-center gap-2 md:gap-3">
+            {isCalcOrder && !isDraft && (
+              <OpenInCalculatorButton orderNumber={order?.number || null}/>
+            )}
+
+            {isDraft && (<>
               <Button
                 variant="ghost"
                 onClick={() => showDeleteConfirmToast({
@@ -192,9 +199,12 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
                 orderId={orderId}
                 className="rounded-lg w-10 h-10 hover:bg-muted text-muted-foreground"
               />
-            </div>
-          </CardFooter>
-        )}
+            </>)}
+
+
+          </div>
+        </CardFooter>
+
       </Card>
     </div>
   );

@@ -6,6 +6,7 @@ const ALLOWED_FILTERS = [
   "dealer_prefix",
   "dealer_user_id",
   "parent_id",
+  "origin_type",
   // "date_from",
   // "date_to",
 ];
@@ -37,7 +38,8 @@ export function useOrderUrlState(defaultLimit = 20) {
   const activeFilters = useMemo(() => ({
     dealer_prefix: searchParams.get("dealer_prefix"),
     dealer_user_id: Number(searchParams.get("dealer_user_id")) || null,
-    status_id: searchParams.get("status_id")?.split(",").map(Number) || []
+    status_id: searchParams.get("status_id")?.split(",").map(Number) || [],
+    origin_type: searchParams.get("origin_type")?.split(",").map(Number) || []
   }), [searchParams]);
 
   const setPage = useCallback((newOffset: number) => {

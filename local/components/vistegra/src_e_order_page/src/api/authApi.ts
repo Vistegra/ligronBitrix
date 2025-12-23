@@ -40,10 +40,17 @@ export const authApi = {
     );
   },
 
-  /** Получение SSO ссылки для калькулятора */
-  getCalculatorLink() {
+  /**
+   * Получение SSO ссылки для калькулятора
+   * Если передан ligron_number, генерируется ссылка на конкретный заказ
+   */
+  getCalculatorLink(ligron_number: string | null = null) {
+    const url = ligron_number
+      ? `${ENDPOINT.AUTH_SSO}?ligron_number=${ligron_number}`
+      : ENDPOINT.AUTH_SSO;
+
     return makeRequest<{ url: string }>(() =>
-      api.get(ENDPOINT.AUTH_SSO)
+      api.get(url)
     );
   },
 };

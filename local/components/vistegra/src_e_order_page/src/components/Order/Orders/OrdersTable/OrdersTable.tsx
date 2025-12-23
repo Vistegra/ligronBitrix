@@ -86,6 +86,10 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     }
   };
 
+  const handleOriginToggle = (ids: number[]) => {
+    updateFilters({ origin_type: ids });
+  };
+
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   if (error) {
@@ -122,6 +126,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
             onStatusToggle={handleStatusToggle}
             onDealerSelect={handleDealerSelect}
             onUserSelect={handleUserSelect}
+            onOriginToggle={handleOriginToggle}
           />
 
           <TableBody>

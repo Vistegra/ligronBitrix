@@ -8,7 +8,7 @@ export interface Pagination {
 }
 
 export type ColumnKey =
-  | 'id' | 'number' | 'status' | 'name' | 'type'
+  | 'id' | 'number' | 'status' | 'name' | 'type' | 'origin'
   | 'dealer' | 'user' | 'production_time' | 'ready_date' | 'percent_payment'
   | 'created_at' | 'updated_at';
 
@@ -26,6 +26,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
   number: {key: 'number', label: 'Номер', width: 'w-24'},
   name: {key: 'name', label: 'Наименование заказа', width: ''}, //резиновая
   type: {key: 'type', label: 'Тип заказа', width: 'w-32'},
+  origin: {key: 'origin', label: 'Источник', width: 'w-24'},
   dealer: {key: 'dealer', label: 'Дилер', width: 'w-40'},
   user: {key: 'user', label: 'Пользователь', width: 'w-40'},
   status: {key: 'status', label: 'Статус', width: 'w-48'},
@@ -42,6 +43,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     number: true,
     name: true,
     type: true,
+    origin: true,
     status: true,
     production_time: true,
     ready_date: false,
@@ -60,6 +62,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     number: true,
     name: true,
     type: true,
+    origin: true,
     dealer: true,
     user: true,
     status: true,
