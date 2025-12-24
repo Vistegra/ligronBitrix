@@ -24,12 +24,14 @@ interface OrdersTablePanelProps {
     cols: PartVisibleColumns | ((prev: PartVisibleColumns) => PartVisibleColumns)
   ) => void;
   selectedUserId: number | null;
+  isDraft: boolean;
 }
 
 export function OrdersTablePanel({
                                    visibleColumns,
                                    setVisibleColumns,
                                    selectedUserId,
+                                   isDraft
                                  }: OrdersTablePanelProps) {
   const {user} = useAuthStore();
 
@@ -47,7 +49,8 @@ export function OrdersTablePanel({
 
         {/* Правая часть: Фильтры, Колонки, Создание */}
         <div className="flex flex-row flex-wrap items-center gap-2">
-          <OrdersModalFilters/>
+
+          {!isDraft && <OrdersModalFilters/>}
 
           {/* Выбор колонок */}
           <DropdownMenu>

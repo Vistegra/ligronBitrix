@@ -107,6 +107,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
         visibleColumns={visibleColumns}
         setVisibleColumns={setVisibleColumns}
         selectedUserId={activeFilters.dealer_user_id}
+        isDraft={isDraft}
       />
 
       <div className="rounded-md border relative min-h-[300px]">
