@@ -25,6 +25,8 @@ final class ApiConfig
   public const string  INTEGRATION_1C_ORDER_URL = 'http://193.43.248.24:8989/transitDB/hs/transit1c/get_d';
 
   public const string API_MODE = 'dev';
+  public const string APP_PATH = '/local/api-e-order';
+  public const string APP_STORAGE_PATH = '/storage/logs/';
 
   private function __construct()
   {
