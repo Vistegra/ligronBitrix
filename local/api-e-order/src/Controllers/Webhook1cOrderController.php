@@ -49,7 +49,7 @@ final class Webhook1cOrderController extends AbstractController
         $type === 'ORDER' && $action === 'CREATE' => $this->handleCreateOrder($body, $query),
 
         // 2. Обновление статуса (и заказа)
-        $type === 'STATUS' && $action === 'UPDATE' => $this->handleUpdateStatus($body, $query),
+        in_array($type, ['STATUS', 'ORDER'], true) && $action === 'UPDATE' => $this->handleUpdateOrder($body, $query),
 
         // 3. Неизвестное действие
         default => $this->success('Данные получены, но действие не распознано', [
@@ -100,7 +100,7 @@ final class Webhook1cOrderController extends AbstractController
    * Обработка обновления статуса заказа
    * @throws \Exception
    */
-  private function handleUpdateStatus(array $body, array $query): ResponseInterface
+  private function handleUpdateOrder(array $body, array $query): ResponseInterface
   {
     $updatedOrder = $this->webhook1cOrderService->updateOrderFrom1C($body);
 

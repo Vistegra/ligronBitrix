@@ -65,6 +65,11 @@ final readonly class Webhook1cOrderService
     }
 
     // Дополнительные поля
+    if (!empty($data['name'])) {
+      $newName = trim((string)$data['name']);
+      $fieldsToUpdate['name'] = $newName;
+    }
+
     if (!empty($data['production_date'])) {
       $fieldsToUpdate['ready_date'] = $this->parseDate($data['production_date']);
     }

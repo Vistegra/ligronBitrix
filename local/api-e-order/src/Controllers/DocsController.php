@@ -30,8 +30,8 @@ final class DocsController extends AbstractController
       'title' => 'Webhook 1C: Создание заказа',
       'category' => 'Integration'
     ],
-    'webhook_1c_update_status' => [
-      'title' => 'Webhook 1C: Обновление статуса',
+    'webhook_1c_update_order' => [
+      'title' => 'Webhook 1C: Обновление заказа',
       'category' => 'Integration'
     ],
     'orders_list' => [
