@@ -1,152 +1,134 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {Filter} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {useOrderStatuses} from "@/hooks/order/useOrderStatuses.ts";
-import {useAuthStore} from "@/store/authStore.ts";
-import type {ManagerDetailed} from "@/types/user";
-import {ResponsiveSheet} from "@/components/ResponsiveSheet";
-import {useOrderUrlState} from "@/hooks/order/useOrderUrlState";
+import { useState, useEffect, useCallback } from "react";
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ResponsiveSheet } from "@/components/ResponsiveSheet";
+import { useOrderUrlState } from "@/hooks/order/useOrderUrlState";
+import { useOrderStatuses } from "@/hooks/order/useOrderStatuses";
+import { useAuthStore } from "@/store/authStore";
 
-import {FilterStatuses} from "./FilterStatuses";
-import {FilterDealers} from "./FilterDealers/FilterDealers";
-import {FilterOrigin} from "@/components/Order/Orders/OrdersModalFilters/FilterOrigin.tsx";
+import { FilterSection } from "./FilterSection";
+import { FilterStatuses } from "./FilterStatuses";
+import { FilterOrigin } from "./FilterOrigin";
+import { FilterDealers } from "./FilterDealers/FilterDealers";
+import { FilterDateSection } from "./FilterDate/FilterDateSection";
+import type { OrderFilterState } from "@/components/Order/Orders/types.ts";
 
 export function OrdersModalFilters() {
-  const {activeFilters, updateFilters} = useOrderUrlState();
+  const { activeFilters, updateFilters } = useOrderUrlState();
+  const { statuses } = useOrderStatuses();
+  const { user } = useAuthStore();
 
-  const {statuses} = useOrderStatuses();
-  const {user} = useAuthStore();
-
-  const [selectedStatuses, setSelectedStatuses] = useState<number[]>([]);
-  const [selectedDealer, setSelectedDealer] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<number | null>(null);
-  const [selectedOrigins, setSelectedOrigins] = useState<number[]>([]);
-
+  // pendingFilters — состояние фильтров, ожидающих применения
+  const [pendingFilters, setPendingFilters] = useState<OrderFilterState>(activeFilters as OrderFilterState);
   const [open, setOpen] = useState(false);
 
-
+  // Синхронизация локального состояния с URL при открытии модалки
   useEffect(() => {
-    if (open) {
-      setSelectedStatuses(activeFilters.status_id);
-      setSelectedDealer(activeFilters.dealer_prefix);
-      setSelectedUser(activeFilters.dealer_user_id);
-      setSelectedOrigins(activeFilters.origin_type);
-    }
+    if (open) setPendingFilters(activeFilters as OrderFilterState);
   }, [open, activeFilters]);
 
+  // Универсальный хелпер для обновления полей в "ожидающих" фильтрах
+  const updatePendingFilters = useCallback((patch: Partial<OrderFilterState>) => {
+    setPendingFilters(prev => ({ ...prev, ...patch }));
+  }, []);
+
   const handleApply = () => {
-
-    updateFilters({
-      status_id: selectedStatuses,
-      dealer_prefix: selectedDealer,
-      dealer_user_id: selectedUser,
-      origin_type: selectedOrigins,
-    });
-
+    updateFilters(pendingFilters);
     setOpen(false);
   };
 
   const handleClear = () => {
-    setSelectedStatuses([]);
-    setSelectedDealer(null);
-    setSelectedUser(null);
-    setSelectedOrigins([]);
+    const emptyFilters: OrderFilterState = {
+      status_id: [],
+      dealer_prefix: null,
+      dealer_user_id: null,
+      origin_type: [],
+      created_at_from: "",
+      created_at_to: "",
+      updated_at_from: "",
+      updated_at_to: "",
+    };
+    setPendingFilters(emptyFilters);
   };
 
-  const toggleOrigin = (id: number) => {
-    setSelectedOrigins((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  };
-
-
-  const handleDealerChange = (prefix: string | null) => {
-    if (selectedDealer === prefix) return;
-    setSelectedDealer(prefix);
-    setSelectedUser(null);
-  };
-
-  const toggleStatus = (id: number) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  };
-
-  // Счетчик активных фильтров можно считать
-  const activeCount =
-    (activeFilters.status_id.length > 0 ? 1 : 0) +
-    (activeFilters.dealer_prefix ? 1 : 0) +
-    (activeFilters.origin_type.length > 0 ? 1 : 0) +
-    (activeFilters.dealer_user_id ? 1 : 0);
-
-  const dealers = (user?.detailed as ManagerDetailed)?.managed_dealers || [];
-
-  // Кнопка сброса внутри модалки
-  const showReset = selectedStatuses.length > 0 || selectedDealer !== null;
+  const dealers = (user?.detailed as any)?.managed_dealers || [];
 
   return (
     <ResponsiveSheet
       open={open}
       onOpenChange={setOpen}
       title="Фильтры"
-      description="Настройте параметры отображения"
-      headerAction={
-        showReset && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="h-auto p-0 text-muted-foreground hover:text-destructive font-normal"
-          >
-            Сбросить
-          </Button>
-        )
-      }
       trigger={
         <Button variant="outline" size="icon" className="relative shrink-0">
-          <Filter className="h-5 w-5"/>
-          {activeCount > 0 && (
-            <Badge
-              className="absolute -top-2 -right-2 h-5 w-5 p-0 flex justify-center items-center rounded-full text-[10px]">
-              {activeCount}
-            </Badge>
-          )}
+          <Filter className="h-5 w-5" />
+          <FilterCounter filters={activeFilters} />
+        </Button>
+      }
+      headerAction={
+        <Button variant="ghost" size="sm" onClick={handleClear} className="text-muted-foreground">
+          Сбросить
         </Button>
       }
     >
-      <div className="flex flex-col h-full">
-        <div className="space-y-8 pb-20">
-
+      <div className="flex flex-col h-full space-y-2 pb-20">
+        <FilterSection title="Статусы" value="statuses">
           <FilterStatuses
             statuses={statuses}
-            selectedIds={selectedStatuses}
-            onToggle={toggleStatus}
+            values={pendingFilters.status_id}
+            onChange={(val) => updatePendingFilters({ status_id: val })}
           />
+        </FilterSection>
 
+        <FilterSection title="Даты" value="dates" defaultOpen={false}>
+          <FilterDateSection
+            values={pendingFilters}
+            onChange={updatePendingFilters}
+          />
+        </FilterSection>
+
+        <FilterSection title="Источник заказа" value="origin" defaultOpen={false}>
           <FilterOrigin
-            selectedOrigins={selectedOrigins}
-            onToggle={toggleOrigin}
+            values={pendingFilters.origin_type}
+            onChange={(val) => updatePendingFilters({ origin_type: val })}
           />
+        </FilterSection>
 
-          <FilterDealers
-            dealers={dealers}
-            selectedDealer={selectedDealer}
-            selectedUser={selectedUser}
-            onDealerChange={handleDealerChange}
-            onUserChange={setSelectedUser}
-          />
+        {dealers.length > 0 && (
+          <FilterSection title="Дилеры и пользователи" value="dealers" defaultOpen={false}>
+            <FilterDealers
+              dealers={dealers}
+              values={pendingFilters}
+              onChange={updatePendingFilters}
+            />
+          </FilterSection>
+        )}
+      </div>
 
-        </div>
-
-        <div className="mt-auto pt-4 border-t sticky bottom-0 bg-background pb-safe">
-          <Button className="w-full h-12 text-base" onClick={handleApply}>
-            Показать результаты
-          </Button>
-        </div>
+      <div className="mt-auto pt-4 border-t sticky bottom-0 bg-background pb-safe">
+        <Button className="w-full h-12 text-base" onClick={handleApply}>
+          Показать результаты
+        </Button>
       </div>
     </ResponsiveSheet>
+  );
+}
+
+function FilterCounter({ filters }: { filters: OrderFilterState }) {
+  const count = [
+    filters.status_id.length > 0,
+    !!filters.dealer_prefix,
+    filters.origin_type.length > 0,
+    !!filters.created_at_from || !!filters.created_at_to,
+    !!filters.updated_at_from || !!filters.updated_at_to
+  ].filter(Boolean).length;
+
+  if (count === 0) return null;
+  return (
+    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex justify-center items-center rounded-full text-[10px]">
+      {count}
+    </Badge>
   );
 }

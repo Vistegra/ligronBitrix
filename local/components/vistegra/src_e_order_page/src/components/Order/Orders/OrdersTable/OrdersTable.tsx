@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import {useMemo} from "react";
 import {Table, TableBody} from "@/components/ui/table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {AlertCircle, Loader2Icon} from "lucide-react";
@@ -16,8 +16,9 @@ import {OrdersPagination} from "./OrdersPagination";
 import {OrdersTablePanel} from "./OrderTablePanel";
 import {OrdersTableHeader} from "./OrdersTableHeader";
 
-import {COLUMNS_VISIBILITY_PRESETS, type PartVisibleColumns} from "../types.ts";
+import {COLUMNS_VISIBILITY_PRESETS, type PageSize} from "../types.ts";
 import {PAGE} from "@/api/constants.ts";
+import {useTableSettings} from "@/hooks/order/useTableSettings.ts";
 
 interface OrdersTableProps {
   isDraft: boolean
@@ -42,11 +43,18 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
 
   }, [isDraft, isManager]);
 
-  const [visibleColumns, setVisibleColumns] = useState<PartVisibleColumns>(initialVisibility);
+  //Хук для настроек
+  const {
+    visibleColumns,
+    setVisibleColumns,
+    pageSize,
+    setPageSize
+  } = useTableSettings({
+    storageKey: isDraft ? "drafts" : "orders",
+    initialVisibleColumns: initialVisibility,
+    initialPageSize: 10,
+  });
 
-  useEffect(() => {
-    setVisibleColumns(initialVisibility);
-  }, [initialVisibility]);
 
   const {
     orders,
@@ -58,7 +66,13 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     updateFilters,
     setPage,
     setLimit,
-  } = useOrders(10, isDraft);
+  } = useOrders(pageSize, isDraft);
+
+  // Обертка для изменения размера страницы (и в URL, и в localStorage)
+  const handlePageSizeChange = (size: PageSize) => {
+    setPageSize(size); // сохраняем в localStorage
+    setLimit(size);    // обновляем URL параметр ?limit=...
+  };
 
   const {statuses, loading: statusesLoading} = useOrderStatuses();
   const totalColumns = 1 + Object.values(visibleColumns).filter(Boolean).length + 1;
@@ -87,7 +101,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   };
 
   const handleOriginToggle = (ids: number[]) => {
-    updateFilters({ origin_type: ids });
+    updateFilters({origin_type: ids});
   };
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
@@ -152,7 +166,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
           pagination={pagination}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={(size) => setLimit(size)}
+          onPageSizeChange={(size) => handlePageSizeChange(size)}
         />
       )}
     </div>

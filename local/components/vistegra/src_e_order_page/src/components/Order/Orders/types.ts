@@ -74,3 +74,16 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
   }
 }
 
+export interface OrderFilterState {
+  status_id: number[];
+  dealer_prefix: string | null;
+  dealer_user_id: number | null;
+  origin_type: number[];
+  created_at_from: string;
+  created_at_to: string;
+  updated_at_from: string;
+  updated_at_to: string;
+  // percent_payment: number[] и т.д.
+}
+
+

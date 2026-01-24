@@ -1,16 +1,16 @@
 "use client";
 
-import {Check} from "lucide-react";
-import {cn} from "@/lib/utils.ts";
-import type {ManagedDealer} from "@/types/user";
-import {UserSelectionRow} from "./UserSelectionRow";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils.ts";
+import type { ManagedDealer } from "@/types/user";
+import { UserSelectionRow } from "./UserSelectionRow";
 
 interface DealerAccordionItemProps {
-  dealer: ManagedDealer;                         // Объект дилера с данными и списком пользователей
-  isDealerSelected: boolean;                     // Флаг выбора текущего дилера
-  selectedUserId: number | null;                 // ID выбранного пользователя (null = "Все пользователи")
-  onSelectDealer: () => void;                    // Колбэк при клике на дилера
-  onSelectUser: (userId: number | null) => void; // Колбэк при выборе пользователя
+  dealer: ManagedDealer;
+  isDealerSelected: boolean;
+  selectedUserId: number | null;
+  onSelectDealer: () => void;
+  onSelectUser: (userId: number | null) => void;
 }
 
 export function DealerAccordionItem({
@@ -29,35 +29,29 @@ export function DealerAccordionItem({
           : "border-transparent bg-muted/30"
       )}
     >
-      {/* Заголовок дилера */}
       <div
-        className="p-3 flex justify-between items-center active:bg-black/5 cursor-pointer"
+        className="p-3 flex justify-between items-center active:bg-black/5 cursor-pointer select-none"
         onClick={onSelectDealer}
       >
         <div className="flex flex-col">
           <span className="text-sm font-medium">{dealer.name}</span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground uppercase">
             {dealer.dealer_prefix}
           </span>
         </div>
         {isDealerSelected && !selectedUserId && (
-          <Check className="h-4 w-4 text-primary"/>
+          <Check className="h-4 w-4 text-primary" />
         )}
       </div>
 
-      {/* Список пользователей */}
       {isDealerSelected && dealer.users.length > 0 && (
-        <div
-          className="bg-background/50 border-t border-primary/10 animate-in slide-in-from-top-2 fade-in duration-300">
-
-          {/* Пункт "Все пользователи" */}
+        <div className="bg-background/50 border-t border-primary/10 animate-in slide-in-from-top-2 fade-in duration-300">
           <UserSelectionRow
             label="Все пользователи"
             isSelected={selectedUserId === null}
             onClick={() => onSelectUser(null)}
           />
 
-          {/* Конкретные пользователи */}
           {dealer.users.map((u) => (
             <UserSelectionRow
               key={u.id}

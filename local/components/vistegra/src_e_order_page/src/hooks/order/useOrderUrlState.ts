@@ -1,5 +1,6 @@
-import {useSearchParams} from "react-router-dom";
-import {useCallback, useMemo} from "react";
+import { useSearchParams } from "react-router-dom";
+import { useCallback, useMemo } from "react";
+import type { OrderFilterState } from "@/components/Order/Orders/types.ts";
 
 const ALLOWED_FILTERS = [
   "status_id",
@@ -7,8 +8,10 @@ const ALLOWED_FILTERS = [
   "dealer_user_id",
   "parent_id",
   "origin_type",
-  // "date_from",
-  // "date_to",
+  "created_at_from",
+  "created_at_to",
+  "updated_at_from",
+  "updated_at_to",
 ];
 
 export function useOrderUrlState(defaultLimit = 20) {
@@ -39,7 +42,11 @@ export function useOrderUrlState(defaultLimit = 20) {
     dealer_prefix: searchParams.get("dealer_prefix"),
     dealer_user_id: Number(searchParams.get("dealer_user_id")) || null,
     status_id: searchParams.get("status_id")?.split(",").map(Number) || [],
-    origin_type: searchParams.get("origin_type")?.split(",").map(Number) || []
+    origin_type: searchParams.get("origin_type")?.split(",").map(Number) || [],
+    created_at_from: searchParams.get("created_at_from") || "",
+    created_at_to: searchParams.get("created_at_to") || "",
+    updated_at_from: searchParams.get("updated_at_from") || "",
+    updated_at_to: searchParams.get("updated_at_to") || "",
   }), [searchParams]);
 
   const setPage = useCallback((newOffset: number) => {
@@ -59,7 +66,7 @@ export function useOrderUrlState(defaultLimit = 20) {
     });
   }, [setSearchParams]);
 
-  const updateFilters = useCallback((newFilters: Record<string, string | number | null | number[]>) => {
+  const updateFilters = useCallback((newFilters: Partial<OrderFilterState>) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
 
@@ -70,7 +77,8 @@ export function useOrderUrlState(defaultLimit = 20) {
           } else {
             p.delete(key);
           }
-        } else if (value !== null && value !== undefined && value !== "") {
+        }
+        else if (value !== null && value !== undefined && value !== "") {
           p.set(key, String(value));
         } else {
           p.delete(key);
@@ -89,7 +97,6 @@ export function useOrderUrlState(defaultLimit = 20) {
     searchQuery: rawSearch,
     filterString,
     activeFilters,
-
     setPage,
     setLimit,
     updateFilters,

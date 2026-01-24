@@ -1,57 +1,65 @@
 "use client";
 
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils.ts";
 import type { ManagedDealer } from "@/types/user";
 import { DealerAccordionItem } from "./DealerAccordionItem";
 
 interface FilterDealersProps {
-  dealers: ManagedDealer[];                         // Список дилеров для отображения в фильтре
-  selectedDealer: string | null;                    // Префикс выбранного дилера (null = "Все дилеры")
-  selectedUser: number | null;                      // ID выбранного пользователя (null = "Все пользователи")
-  onDealerChange: (prefix: string | null) => void;  // Колбэк при изменении выбора дилера
-  onUserChange: (userId: number | null) => void;    // Колбэк при изменении выбора пользователя
+  dealers: ManagedDealer[];
+  values: {
+    dealer_prefix: string | null;
+    dealer_user_id: number | null;
+  };
+  // Передаем Partial от всего стейта фильтров или конкретно эти два поля
+  onChange: (patch: { dealer_prefix: string | null; dealer_user_id: number | null }) => void;
 }
+
 export function FilterDealers({
                                 dealers,
-                                selectedDealer,
-                                selectedUser,
-                                onDealerChange,
-                                onUserChange,
+                                values,
+                                onChange,
                               }: FilterDealersProps) {
   if (dealers.length === 0) return null;
 
+  const handleAllDealers = () => {
+    onChange({ dealer_prefix: null, dealer_user_id: null });
+  };
+
+  const handleDealerChange = (prefix: string) => {
+    // При смене дилера всегда сбрасываем конкретного пользователя
+    onChange({ dealer_prefix: prefix, dealer_user_id: null });
+  };
+
+  const handleUserChange = (userId: number | null) => {
+    onChange({ ...values, dealer_user_id: userId });
+  };
+
   return (
-    <div className="space-y-4">
-      <Label className="text-base font-semibold">Дилеры и пользователи</Label>
-      <div className="space-y-2">
-
-        {/* Кнопка "Все дилеры" */}
-        <div
-          className={cn(
-            "p-3 rounded-md border transition-all active:scale-[0.98] cursor-pointer",
-            !selectedDealer
-              ? "border-primary bg-primary/5"
-              : "border-transparent bg-muted/30"
-          )}
-          onClick={() => onDealerChange(null)}
-        >
-          <span className="text-sm font-medium">Все дилеры</span>
-        </div>
-
-        {/* Список дилеров */}
-        {dealers.map((d) => (
-          <DealerAccordionItem
-            key={d.dealer_prefix}
-            dealer={d}
-            isDealerSelected={selectedDealer === d.dealer_prefix}
-            selectedUserId={selectedUser}
-            onSelectDealer={() => onDealerChange(d.dealer_prefix)}
-            onSelectUser={onUserChange}
-          />
-        ))}
-
+    <div className="space-y-2">
+      {/* Кнопка "Все дилеры" */}
+      <div
+        className={cn(
+          "p-3 rounded-md border transition-all active:scale-[0.98] cursor-pointer",
+          !values.dealer_prefix
+            ? "border-primary bg-primary/5"
+            : "border-transparent bg-muted/30"
+        )}
+        onClick={handleAllDealers}
+      >
+        <span className="text-sm font-medium">Все дилеры</span>
       </div>
+
+      {/* Список дилеров */}
+      {dealers.map((d) => (
+        <DealerAccordionItem
+          key={d.dealer_prefix}
+          dealer={d}
+          isDealerSelected={values.dealer_prefix === d.dealer_prefix}
+          selectedUserId={values.dealer_user_id}
+          onSelectDealer={() => handleDealerChange(d.dealer_prefix)}
+          onSelectUser={handleUserChange}
+        />
+      ))}
     </div>
   );
 }
