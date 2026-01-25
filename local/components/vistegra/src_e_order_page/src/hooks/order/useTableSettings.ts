@@ -1,7 +1,6 @@
-
-import {useState, useCallback} from "react";
-import {safeStorage} from "@/helpers/storage";
-import type {PartVisibleColumns, PageSize} from "@/components/Order/Orders/types";
+import { useState, useCallback, useEffect } from "react";
+import { safeStorage } from "@/helpers/storage";
+import type { PartVisibleColumns, PageSize, ColumnKey } from "@/components/Order/Orders/types";
 
 interface UseTableSettingsProps {
   storageKey: string;
@@ -14,34 +13,78 @@ export function useTableSettings({
                                    initialVisibleColumns,
                                    initialPageSize,
                                  }: UseTableSettingsProps) {
-  // Ключи для localStorage
   const COLUMNS_KEY = `table_cols_${storageKey}`;
   const PAGE_SIZE_KEY = `table_size_${storageKey}`;
 
-  // Инициализация состояния из localStorage или значений по умолчанию
+  /**
+   * Очищает и фильтрует данные из хранилища.
+   */
+  const getFilteredColumns = useCallback(
+    (saved: unknown): PartVisibleColumns => {
+      // Проверяем, что saved — это объект и не null
+      if (!saved || typeof saved !== "object") {
+        return initialVisibleColumns;
+      }
+
+      // Приводим к типу записи, чтобы можно было обращаться по ключам
+      const savedData = saved as Record<string, boolean>;
+      const filtered: PartVisibleColumns = {};
+
+      // Итерируемся строго по ключам ПРЕСЕТА (initialVisibleColumns)
+      (Object.keys(initialVisibleColumns) as ColumnKey[]).forEach((key) => {
+        // Если в сохраненных есть значение — берем его, иначе — дефолт из пресета
+        filtered[key] = savedData[key] !== undefined ? savedData[key] : initialVisibleColumns[key];
+      });
+
+      return filtered;
+    },
+    [initialVisibleColumns]
+  );
+
+  // Инициализация колонок
   const [visibleColumns, setVisibleColumnsState] = useState<PartVisibleColumns>(() => {
     const saved = safeStorage.get(COLUMNS_KEY);
-    return saved ? {...initialVisibleColumns, ...saved} : initialVisibleColumns;
+    return getFilteredColumns(saved);
   });
 
+  // Инициализация размера страницы
   const [pageSize, setPageSizeState] = useState<PageSize>(() => {
     const saved = safeStorage.get(PAGE_SIZE_KEY);
-    return saved ? (saved as PageSize) : initialPageSize;
+    // Проверяем, что сохраненное значение является валидным PageSize (числом)
+    return typeof saved === "number" ? (saved as PageSize) : initialPageSize;
   });
 
-  // Метод для обновления колонок
+  // Синхронизация при смене storageKey или пресета
+  useEffect(() => {
+    const saved = safeStorage.get(COLUMNS_KEY);
+    setVisibleColumnsState(getFilteredColumns(saved));
+
+    const savedSize = safeStorage.get(PAGE_SIZE_KEY);
+    if (typeof savedSize === "number") {
+      setPageSizeState(savedSize as PageSize);
+    }
+  }, [storageKey, getFilteredColumns, COLUMNS_KEY, PAGE_SIZE_KEY]);
+
   const setVisibleColumns = useCallback(
     (updater: PartVisibleColumns | ((prev: PartVisibleColumns) => PartVisibleColumns)) => {
       setVisibleColumnsState((prev) => {
         const next = typeof updater === "function" ? updater(prev) : updater;
-        safeStorage.set(COLUMNS_KEY, next);
+
+        // В localStorage сохраняем только те ключи, которые разрешены в начальном пресете
+        const toSave: PartVisibleColumns = {};
+        (Object.keys(initialVisibleColumns) as ColumnKey[]).forEach((key) => {
+          if (next[key] !== undefined) {
+            toSave[key] = next[key];
+          }
+        });
+
+        safeStorage.set(COLUMNS_KEY, toSave);
         return next;
       });
     },
-    [COLUMNS_KEY]
+    [COLUMNS_KEY, initialVisibleColumns]
   );
 
-  // Метод для обновления размера страницы
   const setPageSize = useCallback(
     (size: PageSize) => {
       setPageSizeState(size);
@@ -50,10 +93,5 @@ export function useTableSettings({
     [PAGE_SIZE_KEY]
   );
 
-  return {
-    visibleColumns,
-    setVisibleColumns,
-    pageSize,
-    setPageSize,
-  };
+  return { visibleColumns, setVisibleColumns, pageSize, setPageSize };
 }

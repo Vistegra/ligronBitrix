@@ -88,20 +88,22 @@ export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: 
     <>
       {orders.map((order, index) => (
         <TableRow key={order.id}>
-          <TableCell className="font-medium text-muted-foreground w-12 text-center">
+          <TableCell className="w-12 text-center text-muted-foreground">
             {pagination.offset + index + 1}
           </TableCell>
 
-          {Object.entries(visibleColumns).map(([key, isVisible]) => {
-            if (!isVisible) return null;
+          {(Object.keys(COLUMN_DEFINITIONS) as ColumnKey[]).map((key) => {
+            // Если ключа нет в visibleColumns (который отфильтрован хуком) — не рисуем
+            if (!visibleColumns[key]) return null;
 
-            const column = COLUMN_DEFINITIONS[key as ColumnKey];
+            const column = COLUMN_DEFINITIONS[key];
             return (
               <TableCell key={key} className={column.width}>
-                {columnRenderers[key as ColumnKey](order)}
+                {columnRenderers[key](order)}
               </TableCell>
             );
           })}
+
           <TableCell className="w-8 p-1">
             <OrdersTableActions order={order} basePage={basePage}/>
           </TableCell>

@@ -35,7 +35,7 @@ export function OrdersTablePanel({
                                  }: OrdersTablePanelProps) {
   const {user} = useAuthStore();
 
-   const canCreateOrder = checkCanCreateOrder(user, selectedUserId)
+  const canCreateOrder = checkCanCreateOrder(user, selectedUserId)
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,18 +62,24 @@ export function OrdersTablePanel({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {Object.entries(visibleColumns).map(([key, isVisible]) => {
-                const column = COLUMN_DEFINITIONS[key as ColumnKey];
+              {(Object.keys(COLUMN_DEFINITIONS) as ColumnKey[]).map((key) => {
+                // Если ключа нет в visibleColumns (который отфильтрован хуком по пресету),
+                // значит текущей роли эта колонка запрещена.
+                if (!(key in visibleColumns)) return null;
+
+                const column = COLUMN_DEFINITIONS[key];
+
                 return (
                   <DropdownMenuCheckboxItem
                     key={key}
-                    checked={isVisible}
+                    checked={!!visibleColumns[key]}
                     onCheckedChange={(checked) =>
                       setVisibleColumns((prev) => ({
                         ...prev,
                         [key]: checked,
                       }))
                     }
+                    // Чтобы меню не закрывалось при клике на чекбокс
                     onSelect={(e) => e.preventDefault()}
                   >
                     {column.label}

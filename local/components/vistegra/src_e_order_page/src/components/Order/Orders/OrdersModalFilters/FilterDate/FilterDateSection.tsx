@@ -7,15 +7,14 @@ interface FilterDateSectionProps {
     updated_at_from: string;
     updated_at_to: string;
   };
-
   onChange: (patch: Partial<FilterDateSectionProps["values"]>) => void;
 }
 
 export function FilterDateSection({ values, onChange }: FilterDateSectionProps) {
   return (
-    <div className="space-y-6 pt-2">
+    <div className="space-y-4 py-1">
       <FilterDateRange
-        label="Дата создания"
+        label="Создание заказа"
         fromValue={values.created_at_from}
         toValue={values.created_at_to}
         onFromChange={(val) => onChange({ created_at_from: val })}
@@ -23,7 +22,7 @@ export function FilterDateSection({ values, onChange }: FilterDateSectionProps) 
       />
 
       <FilterDateRange
-        label="Дата обновления"
+        label="Обновление заказа"
         fromValue={values.updated_at_from}
         toValue={values.updated_at_to}
         onFromChange={(val) => onChange({ updated_at_from: val })}

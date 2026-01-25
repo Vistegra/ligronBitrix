@@ -1,39 +1,55 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ResponsiveSheet } from "@/components/ResponsiveSheet";
-import { useOrderUrlState } from "@/hooks/order/useOrderUrlState";
-import { useOrderStatuses } from "@/hooks/order/useOrderStatuses";
-import { useAuthStore } from "@/store/authStore";
+import {useState, useEffect, useCallback, useMemo} from "react";
+import {Filter} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {ResponsiveSheet} from "@/components/ResponsiveSheet";
+import {useOrderUrlState} from "@/hooks/order/useOrderUrlState";
+import {useOrderStatuses} from "@/hooks/order/useOrderStatuses";
+import {useAuthStore} from "@/store/authStore";
 
-import { FilterSection } from "./FilterSection";
-import { FilterStatuses } from "./FilterStatuses";
-import { FilterOrigin } from "./FilterOrigin";
-import { FilterDealers } from "./FilterDealers/FilterDealers";
-import { FilterDateSection } from "./FilterDate/FilterDateSection";
-import type { OrderFilterState } from "@/components/Order/Orders/types.ts";
+import {FilterSection} from "./FilterSection";
+import {FilterStatuses} from "./FilterStatuses";
+import {FilterOrigin} from "./FilterOrigin";
+import {FilterDealers} from "./FilterDealers/FilterDealers";
+import {FilterDateSection} from "./FilterDate/FilterDateSection";
+import type {OrderFilterState} from "@/components/Order/Orders/types.ts";
+import type {ManagerDetailed} from "@/types/user";
+
+// Хелпер, который возвращает карту "активности" каждой группы
+const getFilterActivity = (f: OrderFilterState) => ({
+  statuses: f.status_id.length > 0,
+  dates: !!(f.created_at_from || f.created_at_to || f.updated_at_from || f.updated_at_to),
+  origin: f.origin_type.length > 0,
+  dealers: !!f.dealer_prefix, // или !!f.dealer_user_id
+});
 
 export function OrdersModalFilters() {
-  const { activeFilters, updateFilters } = useOrderUrlState();
-  const { statuses } = useOrderStatuses();
-  const { user } = useAuthStore();
+  const {activeFilters, updateFilters} = useOrderUrlState();
+  const {statuses} = useOrderStatuses();
+  const {user} = useAuthStore();
 
-  // pendingFilters — состояние фильтров, ожидающих применения
   const [pendingFilters, setPendingFilters] = useState<OrderFilterState>(activeFilters as OrderFilterState);
   const [open, setOpen] = useState(false);
 
-  // Синхронизация локального состояния с URL при открытии модалки
   useEffect(() => {
     if (open) setPendingFilters(activeFilters as OrderFilterState);
   }, [open, activeFilters]);
 
-  // Универсальный хелпер для обновления полей в "ожидающих" фильтрах
   const updatePendingFilters = useCallback((patch: Partial<OrderFilterState>) => {
-    setPendingFilters(prev => ({ ...prev, ...patch }));
+    setPendingFilters(prev => ({...prev, ...patch}));
   }, []);
+
+
+  // Для текущих выбранных в модалке (для подсветки и раскрытия групп)
+  const pendingActivity = useMemo(() => getFilterActivity(pendingFilters), [pendingFilters]);
+
+  // Для уже примененных в URL (для счетчика на кнопке открытия)
+  const activeCount = useMemo(() => {
+    const activity = getFilterActivity(activeFilters);
+    return Object.values(activity).filter(Boolean).length;
+  }, [activeFilters]);
 
   const handleApply = () => {
     updateFilters(pendingFilters);
@@ -41,7 +57,7 @@ export function OrdersModalFilters() {
   };
 
   const handleClear = () => {
-    const emptyFilters: OrderFilterState = {
+    setPendingFilters({
       status_id: [],
       dealer_prefix: null,
       dealer_user_id: null,
@@ -50,11 +66,10 @@ export function OrdersModalFilters() {
       created_at_to: "",
       updated_at_from: "",
       updated_at_to: "",
-    };
-    setPendingFilters(emptyFilters);
+    });
   };
 
-  const dealers = (user?.detailed as any)?.managed_dealers || [];
+  const dealers = (user?.detailed as ManagerDetailed )?.managed_dealers || [];
 
   return (
     <ResponsiveSheet
@@ -63,8 +78,13 @@ export function OrdersModalFilters() {
       title="Фильтры"
       trigger={
         <Button variant="outline" size="icon" className="relative shrink-0">
-          <Filter className="h-5 w-5" />
-          <FilterCounter filters={activeFilters} />
+          <Filter className="h-5 w-5"/>
+          {activeCount > 0 && (
+            <Badge
+              className="absolute -top-2 -right-2 h-5 w-5 p-0 flex justify-center items-center rounded-full text-[10px]">
+              {activeCount}
+            </Badge>
+          )}
         </Button>
       }
       headerAction={
@@ -74,30 +94,46 @@ export function OrdersModalFilters() {
       }
     >
       <div className="flex flex-col h-full space-y-2 pb-20">
-        <FilterSection title="Статусы" value="statuses">
+        <FilterSection
+          title="Статусы"
+          value="statuses"
+          isActive={pendingActivity.statuses}
+        >
           <FilterStatuses
             statuses={statuses}
             values={pendingFilters.status_id}
-            onChange={(val) => updatePendingFilters({ status_id: val })}
+            onChange={(val) => updatePendingFilters({status_id: val})}
           />
         </FilterSection>
 
-        <FilterSection title="Даты" value="dates" defaultOpen={false}>
+        <FilterSection
+          title="Даты"
+          value="dates"
+          isActive={pendingActivity.dates}
+        >
           <FilterDateSection
             values={pendingFilters}
             onChange={updatePendingFilters}
           />
         </FilterSection>
 
-        <FilterSection title="Источник заказа" value="origin" defaultOpen={false}>
+        <FilterSection
+          title="Источник заказа"
+          value="origin"
+          isActive={pendingActivity.origin}
+        >
           <FilterOrigin
             values={pendingFilters.origin_type}
-            onChange={(val) => updatePendingFilters({ origin_type: val })}
+            onChange={(val) => updatePendingFilters({origin_type: val})}
           />
         </FilterSection>
 
         {dealers.length > 0 && (
-          <FilterSection title="Дилеры и пользователи" value="dealers" defaultOpen={false}>
+          <FilterSection
+            title="Дилеры и пользователи"
+            value="dealers"
+            isActive={pendingActivity.dealers}
+          >
             <FilterDealers
               dealers={dealers}
               values={pendingFilters}
@@ -116,6 +152,7 @@ export function OrdersModalFilters() {
   );
 }
 
+/*
 function FilterCounter({ filters }: { filters: OrderFilterState }) {
   const count = [
     filters.status_id.length > 0,
@@ -131,4 +168,4 @@ function FilterCounter({ filters }: { filters: OrderFilterState }) {
       {count}
     </Badge>
   );
-}
+}*/

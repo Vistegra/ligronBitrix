@@ -50,7 +50,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     pageSize,
     setPageSize
   } = useTableSettings({
-    storageKey: isDraft ? "drafts" : "orders",
+    storageKey: `${user?.provider}_${isDraft ? "drafts" : "orders"}`,
     initialVisibleColumns: initialVisibility,
     initialPageSize: 10,
   });
