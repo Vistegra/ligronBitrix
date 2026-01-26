@@ -1,10 +1,10 @@
-import {useEffect, useState} from "react";
+import {useEffect, useState, type ChangeEvent} from "react";
 import {SearchIcon, XIcon} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {useDebounce} from "@/hooks/useDebounce";
 import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
-import {useOrderUrlState} from "@/hooks/order/useOrderUrlState"; // Импортируем хук
+import {useOrderUrlState} from "@/hooks/order/useOrderUrlState";
 
 interface OrdersSearchProps {
   className?: string;
@@ -15,22 +15,20 @@ export function OrdersSearch({
                                className,
                                placeholder = "Поиск..."
                              }: OrdersSearchProps) {
-
-  const {searchQuery, updateFilters} = useOrderUrlState();
-  const [value, setValue] = useState(searchQuery);
+  const {activeFilters, updateFilters} = useOrderUrlState();
+  const [value, setValue] = useState(activeFilters.search);
 
   // Синхронизация, если URL изменился извне
   useEffect(() => {
-    setValue(searchQuery);
-  }, [searchQuery]);
+    setValue(activeFilters.search);
+  }, [activeFilters.search]);
 
   // Дебаунс обновления URL
   const updateUrl = useDebounce((newValue: string) => {
-    // updateFilters сам сбросит offset в 0 и обновит параметр search
     updateFilters({search: newValue});
   }, 800);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setValue(newValue);
     updateUrl(newValue);
@@ -38,18 +36,19 @@ export function OrdersSearch({
 
   const handleClear = () => {
     setValue("");
-    updateUrl("");
+    updateFilters({search: ""});
   };
 
   return (
     <div className={cn("relative", className)}>
       <SearchIcon
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
+      />
       <Input
         value={value}
         onChange={handleChange}
         placeholder={placeholder}
-        className="pl-9 pr-8 bg-background h-9"
+        className="pl-9 pr-8 bg-background h-9 text-sm"
       />
       {value && (
         <Button

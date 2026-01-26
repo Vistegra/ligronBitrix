@@ -31,7 +31,7 @@ export function FilterSection({
     <Accordion
       type="multiple" // Меняем на multiple, чтобы несколько активных групп могли быть открыты одновременно
       defaultValue={initialValue ? [value] : []}
-      className={cn("border-none", className)}
+      className={cn("border-b border-border/60 last:border-none", className)}
     >
       <AccordionItem value={value} className="border-none">
         <AccordionTrigger

@@ -14,6 +14,12 @@ final class FilterParser
   private const array DATE_FIELDS = ['created_at', 'updated_at', 'ready_date'];
 
   /**
+   * Поля, которые мы игнорируем при парсинге фильтров БД,
+   * так как они обрабатываются отдельно.
+   */
+  private const array SPECIAL_KEYS = ['search'];
+
+  /**
    * Основной метод парсинга
    */
   public static function parse(string $filterString): array
@@ -28,6 +34,10 @@ final class FilterParser
     foreach ($pairs as $key => $value) {
       // 1. Извлекаем чистый код поля и тип операции (suffix)
       [$fieldName, $operator] = self::detectOperator($key);
+
+      if (in_array($fieldName, self::SPECIAL_KEYS, true)) {
+        continue;
+      }
 
       // 2. Форматируем значение в зависимости от типа поля и оператора
       $formattedValue = self::prepareValue($fieldName, $value, $operator);

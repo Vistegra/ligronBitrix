@@ -75,6 +75,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
 }
 
 export interface OrderFilterState {
+  search: string;
   status_id: number[];
   dealer_prefix: string | null;
   dealer_user_id: number | null;

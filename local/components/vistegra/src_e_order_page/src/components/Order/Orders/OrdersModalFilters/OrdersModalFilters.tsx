@@ -16,6 +16,7 @@ import {FilterDealers} from "./FilterDealers/FilterDealers";
 import {FilterDateSection} from "./FilterDate/FilterDateSection";
 import type {OrderFilterState} from "@/components/Order/Orders/types.ts";
 import type {ManagerDetailed} from "@/types/user";
+import {useIsMobile} from "@/hooks/use-mobile.tsx";
 
 // Хелпер, который возвращает карту "активности" каждой группы
 const getFilterActivity = (f: OrderFilterState) => ({
@@ -29,6 +30,7 @@ export function OrdersModalFilters() {
   const {activeFilters, updateFilters} = useOrderUrlState();
   const {statuses} = useOrderStatuses();
   const {user} = useAuthStore();
+  const isMobile = useIsMobile()
 
   const [pendingFilters, setPendingFilters] = useState<OrderFilterState>(activeFilters as OrderFilterState);
   const [open, setOpen] = useState(false);
@@ -58,6 +60,7 @@ export function OrdersModalFilters() {
 
   const handleClear = () => {
     setPendingFilters({
+      search: pendingFilters.search,
       status_id: [],
       dealer_prefix: null,
       dealer_user_id: null,
@@ -98,6 +101,7 @@ export function OrdersModalFilters() {
           title="Статусы"
           value="statuses"
           isActive={pendingActivity.statuses}
+          defaultOpen={!isMobile}
         >
           <FilterStatuses
             statuses={statuses}
@@ -143,7 +147,7 @@ export function OrdersModalFilters() {
         )}
       </div>
 
-      <div className="mt-auto pt-4 border-t sticky bottom-0 bg-background pb-safe">
+      <div className="mt-auto pt-4 sticky bottom-0 bg-background pb-safe">
         <Button className="w-full h-12 text-base" onClick={handleApply}>
           Показать результаты
         </Button>

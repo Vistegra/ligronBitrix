@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import type { OrderFilterState } from "@/components/Order/Orders/types.ts";
 
 const ALLOWED_FILTERS = [
+  "search",
   "status_id",
   "dealer_prefix",
   "dealer_user_id",
@@ -39,6 +40,7 @@ export function useOrderUrlState(defaultLimit = 20) {
 
   // 4. Активные фильтры (объект для UI)
   const activeFilters = useMemo(() => ({
+    search: searchParams.get("search") || "",
     dealer_prefix: searchParams.get("dealer_prefix"),
     dealer_user_id: Number(searchParams.get("dealer_user_id")) || null,
     status_id: searchParams.get("status_id")?.split(",").map(Number) || [],
