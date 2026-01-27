@@ -66,6 +66,8 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     updateFilters,
     setPage,
     setLimit,
+    sortConfig,
+    toggleSort,
   } = useOrders(pageSize, isDraft);
 
   // Обертка для изменения размера страницы (и в URL, и в localStorage)
@@ -142,6 +144,8 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
             onDealerSelect={handleDealerSelect}
             onUserSelect={handleUserSelect}
             onOriginToggle={handleOriginToggle}
+            sortConfig={sortConfig}
+            onSort={toggleSort}
           />
 
           <TableBody>

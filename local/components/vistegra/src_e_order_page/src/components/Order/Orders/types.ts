@@ -19,22 +19,23 @@ export interface ColumnDefinition {
   key: ColumnKey;
   label: string;
   width: string;
+  sortable?: boolean;
 }
 
 export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
-  id: {key: 'id', label: 'ID', width: 'w-16'},
-  number: {key: 'number', label: 'Номер', width: 'w-24'},
+  id: {key: 'id', label: 'ID', width: 'w-16', sortable: true},
+  number: {key: 'number', label: 'Номер', width: 'w-24', sortable: true},
   name: {key: 'name', label: 'Наименование заказа', width: ''}, //резиновая
   type: {key: 'type', label: 'Тип заказа', width: 'w-32'},
   origin: {key: 'origin', label: 'Источник', width: 'w-24'},
   dealer: {key: 'dealer', label: 'Дилер', width: 'w-40'},
   user: {key: 'user', label: 'Пользователь', width: 'w-40'},
   status: {key: 'status', label: 'Статус', width: 'w-48'},
-  production_time: {key: 'production_time', label: 'Изготовление', width: 'w-24'},
-  ready_date: {key: 'ready_date', label: 'Готовность', width: 'w-32'},
-  percent_payment: { key: 'percent_payment', label: 'Оплата',  width: 'w-24' },
-  created_at: {key: 'created_at', label: 'Создан', width: 'w-32'},
-  updated_at: {key: 'updated_at', label: 'Обновлен', width: 'w-32'},
+  production_time: {key: 'production_time', label: 'Изготовление', width: 'w-24', sortable: true},
+  ready_date: {key: 'ready_date', label: 'Готовность', width: 'w-32', sortable: true},
+  percent_payment: {key: 'percent_payment', label: 'Оплата', width: 'w-24', sortable: true},
+  created_at: {key: 'created_at', label: 'Создан', width: 'w-32', sortable: true},
+  updated_at: {key: 'updated_at', label: 'Обновлен', width: 'w-32', sortable: true},
 };
 
 export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>> = {

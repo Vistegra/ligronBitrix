@@ -12,18 +12,32 @@ export function useOrders(defaultLimit = 20, isDraft: boolean) {
     activeFilters,
     setPage,
     setLimit,
-    updateFilters
+    updateFilters,
+
+    sortParam,
+    sortConfig,
+    toggleSort,
   } = useOrderUrlState(defaultLimit);
 
   const {data, isLoading, isError, error, isFetching} = useQuery({
-    queryKey: ['orders', 'list', {isDraft: Number(isDraft), limit, offset, filter: filterString, search: searchString}],
+    queryKey: ['orders', 'list',
+      {
+        isDraft: Number(isDraft),
+        limit,
+        offset,
+        filter: filterString,
+        search: searchString,
+        sort: sortParam
+      }
+    ],
 
     queryFn: () => orderApi.getOrders({
       limit,
       offset,
       is_draft: Number(isDraft),
       filter: filterString,
-      search: searchString
+      search: searchString,
+      sort: sortParam
     }),
 
     placeholderData: keepPreviousData,
@@ -41,7 +55,8 @@ export function useOrders(defaultLimit = 20, isDraft: boolean) {
     activeFilters,
     setPage,
     setLimit,
-    updateFilters
-
+    updateFilters,
+    sortConfig,
+    toggleSort,
   };
 }

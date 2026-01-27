@@ -5,7 +5,7 @@ import fs from "fs";
 import {VitePWA} from 'vite-plugin-pwa';
 
 const BITRIX_TEMPLATE_PATH = '/local/components/vistegra/e.order.page/templates/.default/';
-const BASE_PATH = '/e-order/'
+const BASE_PATH = '/dev-e-order/'
 
 // https://vite.dev/config/
 export default defineConfig(({mode}) => ({

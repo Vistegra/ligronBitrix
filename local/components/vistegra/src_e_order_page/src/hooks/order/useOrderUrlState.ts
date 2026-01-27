@@ -18,6 +18,36 @@ const ALLOWED_FILTERS = [
 export function useOrderUrlState(defaultLimit = 20) {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const sortParam = searchParams.get("sort");
+
+  const sortConfig = useMemo(() => {
+    if (!sortParam) return { field: null, direction: null };
+    const [field, direction] = sortParam.split(":");
+    return { field, direction: direction as "asc" | "desc" };
+  }, [sortParam]);
+
+  const toggleSort = useCallback((key: string) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      const currentOrder = p.get("sort");
+
+      if (currentOrder && currentOrder.startsWith(`${key}:`)) {
+        const [, dir] = currentOrder.split(":");
+        if (dir === "asc") {
+          p.set("sort", `${key}:desc`); // Второй клик: desc
+        } else {
+          p.delete("sort"); // Третий клик: убираем сортировку
+        }
+      } else {
+        // Первый клик ИЛИ клик после другой колонки: всегда asc
+        p.set("sort", `${key}:asc`);
+      }
+
+      p.set("offset", "0"); // Сбрасываем страницу
+      return p;
+    });
+  }, [setSearchParams]);
+
   // 1. Пагинация
   const limit = Number(searchParams.get("limit")) || defaultLimit;
   const offset = Number(searchParams.get("offset")) || 0;
@@ -102,5 +132,9 @@ export function useOrderUrlState(defaultLimit = 20) {
     setPage,
     setLimit,
     updateFilters,
+
+    sortParam,
+    sortConfig,
+    toggleSort
   };
 }

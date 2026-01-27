@@ -84,7 +84,8 @@ export interface OrdersRequest {
   search?: string;
   limit?: number;
   offset?: number;
-  is_draft: number
+  is_draft: number;
+  sort?: string | null;
 }
 
 export const orderApi = {

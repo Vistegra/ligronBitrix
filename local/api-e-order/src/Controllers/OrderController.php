@@ -301,15 +301,25 @@ final class OrderController extends AbstractController
       }
     }
 
+    //Обработка порядка сортировки
+    $sortParam = $data['sort'] ?? '';
+    $sortArray = ['updated_at' => 'desc'];
+
+    if (!empty($sortParam) && str_contains($sortParam, ':')) {
+      [$field, $dir] = explode(':', $sortParam, 2);
+      $direction = strtolower(trim($dir)) === 'asc' ? 'asc' : 'desc';
+      $sortArray = [trim($field) => $direction];
+    }
+
     try {
-      $result = $this->orderService->getOrders($filter, $limit, $offset);
+      $result = $this->orderService->getOrders($filter, $limit, $offset, $sortArray);
 
       return $this->json([
         'status' => 'success',
         'message' => 'Orders list',
         'data' => $result,
         'filter' => $filter,
-
+        'sort' => $sortArray
       ]);
     } catch (\Exception $e) {
       return $this->handleError($e);

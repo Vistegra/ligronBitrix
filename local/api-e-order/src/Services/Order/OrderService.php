@@ -3,14 +3,8 @@ declare(strict_types=1);
 
 namespace OrderApi\Services\Order;
 
-use Bitrix\Bizproc\Api\Response\Error;
 use Bitrix\Main\Type\DateTime;
-use Bitrix\Rest\Event\Session;
-use Bitrix\Sale\Order;
-use MongoDB\Driver\Exception\RuntimeException;
 use OrderApi\Config\ApiConfig;
-use OrderApi\Constants\ProviderType;
-use OrderApi\Constants\UserRole;
 use OrderApi\DB\Models\OrderTable;
 use OrderApi\DB\Repositories\FileDiskRepository;
 use OrderApi\DB\Repositories\OrderFileRepository;
@@ -270,7 +264,7 @@ final readonly class OrderService
    * Получить заказы с пагинацией и фильтром
    * @throws \Exception
    */
-  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0): array
+  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0, array $sort = ['updated_at' => 'desc']): array
   {
     // Добавляем условия доступа
     if ($this->user->isDealer()) {
@@ -307,6 +301,7 @@ final readonly class OrderService
       'filter' => $filter,
       'limit' => $limit,
       'offset' => $offset,
+      'order' => $sort,
     ]);
 
     $pagination = [
