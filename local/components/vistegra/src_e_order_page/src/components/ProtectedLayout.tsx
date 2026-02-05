@@ -12,6 +12,7 @@ import FullscreenLoader from "@/components/ui/custom/FullscreenLoader";
 import {AppBreadcrumbs} from "@/components/Sidebar/AppBreadcrumbs";
 import {useIsMobile} from "@/hooks/use-mobile";
 import {MobileBottomNav} from "@/components/MobileBottomNav";
+import {cn} from "@/lib/utils.ts";
 
 export function ProtectedLayout() {
   const {isLoading} = useAuth()
@@ -22,7 +23,7 @@ export function ProtectedLayout() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true} className="min-w-0">
       <AppSidebar/>
 
       <SidebarInset>
@@ -34,7 +35,10 @@ export function ProtectedLayout() {
         </header>
 
         {/* padding-bottom чтобы контент не перекрывался меню на мобиле */}
-        <section className={`p-4 h-full ${isMobile ? "pb-24" : ""}`}>
+        <section className={cn(
+          "p-4 h-full min-w-0 overflow-hidden flex flex-col",
+          isMobile ? "pb-24" : ""
+        )}>
           <Outlet/>
         </section>
 

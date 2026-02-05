@@ -126,7 +126,7 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
         isDraft={isDraft}
       />
 
-      <div className="rounded-md border relative min-h-[300px]">
+      <div className="rounded-md border relative min-h-[300px] w-full overflow-hidden">
 
         {isFetching && !loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">

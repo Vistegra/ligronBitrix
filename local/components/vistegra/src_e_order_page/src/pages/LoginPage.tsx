@@ -14,6 +14,7 @@ import {Loader2, Eye, EyeOff} from "lucide-react";
 import type {ProviderType} from "@/types/user";
 import {useAuth} from "@/hooks/auth/useAuth.ts";
 import {Link} from "react-router-dom";
+import LigronLogo from "@/components/ui/custom/LigronLogo.tsx";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -22,19 +23,6 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const LigronLogo = () => (
-  <div className="flex items-center gap-1.5 select-none mb-8 sm:mb-10">
-    <div className="flex h-12 w-12 items-center justify-center bg-[#229E35] text-xl font-black text-white">
-      LI
-    </div>
-    <div className="flex h-12 w-12 items-center justify-center bg-[#229E35] text-xl font-black text-white">
-      GR
-    </div>
-    <div className="flex h-12 w-12 items-center justify-center bg-[#229E35] text-xl font-black text-white">
-      ON
-    </div>
-  </div>
-);
 
 export default function LoginPage() {
   const [providerType, setProviderType] = useState<ProviderType>('dealer');
