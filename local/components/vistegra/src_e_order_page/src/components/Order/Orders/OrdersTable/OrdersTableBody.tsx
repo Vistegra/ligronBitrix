@@ -31,7 +31,7 @@ export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: 
   const {user} = useAuthStore();
 
   const columnRenderers: Record<keyof PartVisibleColumns, (order: Order) => React.ReactNode> = {
-    id: (order) => <span className="font-medium">{order.id}</span>,
+    /*id: (order) => <span className="font-medium">{order.id}</span>,*/
 
     number: (order) => order.number ? <span className="font-medium">{order.number}</span> :
       <span className="text-muted-foreground">—</span>,

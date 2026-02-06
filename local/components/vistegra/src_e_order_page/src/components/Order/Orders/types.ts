@@ -8,7 +8,7 @@ export interface Pagination {
 }
 
 export type ColumnKey =
-  | 'id' | 'number' | 'status' | 'name' | 'type' | 'origin'
+  /*| 'id' |*/ 'number' | 'status' | 'name' | 'type' | 'origin'
   | 'dealer' | 'user' | 'production_time' | 'ready_date' | 'percent_payment'
   | 'created_at' | 'updated_at';
 
@@ -23,7 +23,7 @@ export interface ColumnDefinition {
 }
 
 export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
-  id: {key: 'id', label: 'ID', width: 'w-16', sortable: true},
+ /* id: {key: 'id', label: 'ID', width: 'w-16', sortable: true},*/
   number: {key: 'number', label: 'Номер', width: 'w-24', sortable: true},
   name: {key: 'name', label: 'Наименование заказа', width: ''}, //резиновая
   type: {key: 'type', label: 'Тип заказа', width: 'w-32'},
@@ -40,7 +40,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
 
 export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>> = {
   'default': {
-    id: true,
+    /*id: true,*/
     number: true,
     name: true,
     type: true,
@@ -53,13 +53,13 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     updated_at: true,
   },
   'draft': {
-    id: true,
+   /* id: true,*/
     name: true,
     created_at: true,
     updated_at: false,
   },
   'manager': {
-    id: true,
+  /*  id: true,*/
     number: true,
     name: true,
     type: true,
