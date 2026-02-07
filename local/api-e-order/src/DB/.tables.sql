@@ -88,6 +88,12 @@ CREATE TABLE vs_e_order (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+ALTER TABLE vs_e_order
+    ADD COLUMN DUE_PAYMENT DECIMAL(18, 2) NULL DEFAULT NULL
+COMMENT 'Остаток оплаты по заказу'
+AFTER PERCENT_PAYMENT;
+
+
 -- ==============================================================
 -- 3. Триггеры для CHILDREN_COUNT
 -- ==============================================================

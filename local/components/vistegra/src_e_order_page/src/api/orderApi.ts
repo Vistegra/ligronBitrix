@@ -59,6 +59,7 @@ export type Order = {
   parent_order_id: number | null;
   percent_payment: number | null;
   origin_type: number; // 0=APP, 1=1C, 2=CALC
+  due_payment: number | null;
 };
 
 export type OrdersResponse = {

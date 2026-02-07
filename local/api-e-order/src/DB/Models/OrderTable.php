@@ -143,6 +143,12 @@ class OrderTable extends DataManager
         'fetch_data_modification' => F::toInt(),
       ]),
 
+      // Остаток оплаты
+      new Fields\FloatField('due_payment', [
+        'nullable' => true,
+        'default_value' => null,
+      ]),
+
       // Системные
       new Fields\DatetimeField('created_at', [
         'default_value' => F::now(),

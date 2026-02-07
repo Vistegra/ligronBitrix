@@ -10,6 +10,7 @@ export interface Pagination {
 export type ColumnKey =
   /*| 'id' |*/ 'number' | 'status' | 'name' | 'type' | 'origin'
   | 'dealer' | 'user' | 'production_time' | 'ready_date' | 'percent_payment'
+  | 'due_payment'
   | 'created_at' | 'updated_at';
 
 type VisibleColumns = Record<ColumnKey, boolean>;
@@ -34,6 +35,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
   production_time: {key: 'production_time', label: 'Изготовление', width: 'w-24', sortable: true},
   ready_date: {key: 'ready_date', label: 'Готовность', width: 'w-32', sortable: true},
   percent_payment: {key: 'percent_payment', label: 'Оплата', width: 'w-24', sortable: true},
+  due_payment: {key: 'due_payment', label: 'Остаток', width: 'w-32', sortable: true},
   created_at: {key: 'created_at', label: 'Создан', width: 'w-32', sortable: true},
   updated_at: {key: 'updated_at', label: 'Обновлен', width: 'w-32', sortable: true},
 };
@@ -49,6 +51,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     production_time: true,
     ready_date: false,
     percent_payment: false,
+    due_payment: false,
     created_at: true,
     updated_at: true,
   },
@@ -70,6 +73,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     production_time: true,
     ready_date: false,
     percent_payment: false,
+    due_payment: true,
     created_at: true,
     updated_at: true,
   }

@@ -79,6 +79,12 @@ export function OrdersTableBody({orders, pagination, visibleColumns, basePage}: 
 
     percent_payment: (order) => (order.percent_payment !== null ? `${order.percent_payment}%` : "—"),
 
+    due_payment: (order) => (
+      order.due_payment !== null
+        ? `${order.due_payment.toLocaleString('ru-RU')} ₽`
+        : "—"
+    ),
+
     created_at: (order) => formatDateTime(order.created_at),
 
     updated_at: (order) => formatDateTime(order.updated_at),

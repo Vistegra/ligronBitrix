@@ -22,7 +22,8 @@ final readonly class OrderPermission
     'comment',
     'production_time',
     'ready_date',
-    'status_history'
+    'status_history',
+    'due_payment'
   ];
 
   public const  array ALLOWED_FIELDS_OFFICE_MANAGER = [

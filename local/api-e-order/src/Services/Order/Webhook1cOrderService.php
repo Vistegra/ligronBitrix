@@ -82,6 +82,10 @@ final readonly class Webhook1cOrderService
       $fieldsToUpdate['percent_payment'] = (int)$data['percent_payment'];
     }
 
+    if (isset($data['due_payment'])) {
+      $fieldsToUpdate['due_payment'] = (float)$data['due_payment'];
+    }
+
     // Проверка на наличие изменений
     if (empty($fieldsToUpdate)) {
       throw new \RuntimeException(
@@ -125,6 +129,7 @@ final readonly class Webhook1cOrderService
   private function map1CDataToInternal(array $data): array
   {
     $requiredFields = ['client', 'salon', 'name', 'origin_type', 'status_code', 'status_date', 'date'];
+
     foreach ($requiredFields as $field) {
       if (empty($data[$field])) {
         throw new \RuntimeException("Не передан обязательный параметр: {$field}", 400);
@@ -173,6 +178,9 @@ final readonly class Webhook1cOrderService
       // Место создания
       'origin_type' => $originType,
 
+      //Остаток оплаты
+      'due_payment' => isset($data['due_payment']) ? (float)$data['due_payment'] : 0.00,
+
       // Технические поля
       'created_by' => 0,
       'created_by_id' => 0,
@@ -180,7 +188,6 @@ final readonly class Webhook1cOrderService
   }
 
   // Хелперы
-
   private function resolveDealerAndUser(string $inn, string $salonCode): array
   {
     $dealerInfo = DealerUserRepository::getDealerByInn($inn);

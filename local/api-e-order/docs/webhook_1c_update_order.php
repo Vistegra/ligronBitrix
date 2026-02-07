@@ -93,6 +93,12 @@
             <td><span class="optional">Нет</span></td>
             <td>Процент оплаты (число от 0 до 100).</td>
         </tr>
+        <tr>
+            <td><code>due_payment</code></td>
+            <td>float</td>
+            <td><span class="optional">Нет</span></td>
+            <td>Остаток суммы оплаты по заказу.</td>
+        </tr>
         </tbody>
     </table>
 
