@@ -35,7 +35,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, ColumnDefinition> = {
   production_time: {key: 'production_time', label: 'Изготовление', width: 'w-24', sortable: true},
   ready_date: {key: 'ready_date', label: 'Готовность', width: 'w-32', sortable: true},
   percent_payment: {key: 'percent_payment', label: 'Оплата', width: 'w-24', sortable: true},
-  due_payment: {key: 'due_payment', label: 'Остаток', width: 'w-32', sortable: true},
+  due_payment: {key: 'due_payment', label: 'Осталось оплатить', width: 'w-32', sortable: true},
   created_at: {key: 'created_at', label: 'Создан', width: 'w-32', sortable: true},
   updated_at: {key: 'updated_at', label: 'Обновлен', width: 'w-32', sortable: true},
 };

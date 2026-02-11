@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
-use OrderApi\Controllers\{
-  AuthController,
+use OrderApi\Controllers\{AuthController,
   DocsController,
+  LogViewerController,
   NotificationController,
   OrderController,
-  Webhook1cOrderController,
-};
+  Webhook1cOrderController};
 use OrderApi\Middleware\AuthMiddleware;
 
 return function (App $app) {
@@ -67,14 +66,16 @@ return function (App $app) {
     });
 
     /** УВЕДОМЛЕНИЯ */
-    $api->group('/notifications', function (RouteCollectorProxy $notify) {
+    /*$api->group('/notifications', function (RouteCollectorProxy $notify) {
       $notify->get('', NotificationController::class . ':index');                        // Список
       $notify->get('/unread-count', NotificationController::class . ':getUnreadCount');  // Счетчик
       $notify->post('/read-all', NotificationController::class . ':readAll');            // Прочитать все
       $notify->post('/{id}/read', NotificationController::class . ':readOne');           // Прочитать одно
-    });
+    });*/
 
   })->add(AuthMiddleware::class);
+
+  $app->get('/logs/webhook', LogViewerController::class . ':index');
 
 
   /** ПУБЛИЧНЫЕ ВЕБХУКИ (1С) */
