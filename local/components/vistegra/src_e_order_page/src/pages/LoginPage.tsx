@@ -15,6 +15,7 @@ import type {ProviderType} from "@/types/user";
 import {useAuth} from "@/hooks/auth/useAuth.ts";
 import {Link} from "react-router-dom";
 import LigronLogo from "@/components/ui/custom/LigronLogo.tsx";
+import backgroundImage from "@/assets/ligron_cabinet_background.webp";
 
 const loginSchema = z.object({
   login: z.string().min(1, "Логин обязателен"),
@@ -58,9 +59,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col items-center justify-center p-6 sm:bg-muted/20">
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${backgroundImage})`
+      }}
+    >
+      {/* Контейнер формы */}
       <div
-        className="w-full max-w-[400px] sm:max-w-[460px] flex flex-col items-center sm:bg-white sm:p-10 sm:rounded-xl sm:shadow-sm sm:border transition-all">
+        className="w-full max-w-[400px] sm:max-w-[460px] flex flex-col items-center bg-white p-8 sm:p-10 rounded-xl shadow-2xl border transition-all">
+
         <LigronLogo/>
 
         <div className="text-center space-y-2 mb-8">
