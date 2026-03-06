@@ -54,8 +54,7 @@ export function useOrderUrlState(defaultLimit = 20) {
 
   // 2. Поиск
   const rawSearch = searchParams.get("search") ?? '';
-  // Превращаем "тест" в "name=тест" для API
-  const searchString = rawSearch ? `name=${rawSearch}` : undefined;
+  const searchString = rawSearch ? rawSearch : undefined;
 
   // 3. Фильтры
   const filterString = useMemo(() => {

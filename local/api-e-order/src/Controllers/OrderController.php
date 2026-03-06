@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace OrderApi\Controllers;
 
 use OrderApi\Helpers\FilterParser;
-use OrderApi\Helpers\SearchParser;
 use OrderApi\Services\Order\OrderService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -288,10 +287,17 @@ final class OrderController extends AbstractController
     $offset = (int)($data['offset'] ?? 0);
     $isDraft = (bool)$data['is_draft']; // '0', '1'
 
-    $searchFilter = SearchParser::parse($searchString);
     $filter = FilterParser::parse($filterString);
 
-    $filter = array_merge($filter, $searchFilter);
+     // Если есть строка поиска, добавляем условие "ИЛИ"
+    $searchString = trim($searchString);
+    if ($searchString !== '') {
+      $filter[] = [
+        'LOGIC' => 'OR',
+        ['%name' => $searchString],
+        ['%number' => $searchString]
+      ];
+    }
 
     if ($isDraft) {
       $filter['=status_id'] = null;

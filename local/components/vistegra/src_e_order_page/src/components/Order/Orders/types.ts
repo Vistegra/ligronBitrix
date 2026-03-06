@@ -45,7 +45,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
     /*id: true,*/
     number: true,
     name: true,
-    type: true,
+    /*type: true,*/
     origin: true,
     status: true,
     production_time: true,
@@ -65,7 +65,7 @@ export const COLUMNS_VISIBILITY_PRESETS: Record<string, Partial<VisibleColumns>>
   /*  id: true,*/
     number: true,
     name: true,
-    type: true,
+   /* type: true,*/
     origin: true,
     dealer: true,
     user: true,
