@@ -1,0 +1,19 @@
+{
+  "name": "vistegra/api-e-order",
+  "version": "1.0.0",
+  "autoload": {
+    "psr-4": {
+      "OrderApiV2\\": "src/"
+    }
+  },
+  "require": {
+    "firebase/php-jwt": "^7.0",
+    "nikic/fast-route": "^1.3",
+    "guzzlehttp/guzzle": "^7.10",
+    "php-di/php-di": "^7.1",
+    "slim/psr7": "^1.8",
+    "monolog/monolog": "^3.9",
+    "slim/slim": "^4.15",
+    "slim/http": "^1.4"
+  }
+}
