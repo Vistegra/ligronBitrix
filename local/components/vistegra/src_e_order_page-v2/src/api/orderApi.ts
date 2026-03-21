@@ -1,0 +1,199 @@
+import api, {makeRequest} from "./client";
+import {ENDPOINT} from "./constants";
+
+export type CreateOrderData = {
+  name: string;
+  comment?: string;
+  files?: File[];
+  is_draft: number;
+  inn_dealer?: string;
+  salon_code?: string;
+};
+
+export interface OrderStatus {
+  id: number;
+  name: string;
+  code: string;
+  color: string;
+}
+
+export interface StatusHistoryItem {
+  id: number;
+  date: string;
+}
+
+export interface OrderFile {
+  id: number;
+  order_id: number;
+  name: string;
+  path: string;
+  size?: number;
+  mime?: string;
+  created_at?: string;
+  uploaded_by?: number;
+  uploaded_by_id?: number;
+}
+
+export type Order = {
+  id: number;
+  number: string | null;
+  name: string;
+  status_id: number | null;
+  parent_id: number | null;
+  created_by: number;
+  created_by_id: number;
+
+  inn_dealer: string | null;
+  salon_code: string | null;
+
+  // Старые поля
+  dealer_prefix: string | null;
+  dealer_user_id: number | null;
+
+  manager_id: number | null;
+  production_time: string | null;
+  ready_date: string | null;
+  comment: string | null;
+  children_count: number;
+  status_history: StatusHistoryItem[];
+  created_at: number;
+  updated_at: number;
+  status_code: string | null;
+  status_name: string | null;
+  status_color: string | null;
+  parent_order_number: string | null;
+  parent_order_id: number | null;
+  percent_payment: number | null;
+  origin_type: number;
+  due_payment: number | null;
+};
+
+
+
+export type OrdersResponse = {
+  orders: Order[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+};
+
+export type OrderResponse = {
+  order: Order;
+  files: OrderFile[];
+};
+
+export type UploadFilesResponse = {
+  files: OrderFile[];
+};
+
+export interface OrdersRequest {
+  filter?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+  is_draft: number;
+  sort?: string | null;
+}
+
+export const orderApi = {
+  // Создание заказа
+  createOrder(data: CreateOrderData) {
+    const formData = new FormData();
+
+    formData.append("name", data.name);
+    if (data.comment) formData.append("comment", data.comment);
+    if (data.is_draft) formData.append("is_draft", "1");
+
+    if (data.inn_dealer) formData.append("inn_dealer", data.inn_dealer);
+    if (data.salon_code) formData.append("salon_code", data.salon_code);
+
+    data.files?.forEach((file) => {
+      formData.append("file[]", file);
+    });
+
+    return makeRequest<OrderResponse>(() =>
+      api.post(ENDPOINT.ORDERS, formData, {
+        headers: {"Content-Type": "multipart/form-data"},
+      })
+    );
+
+  },
+
+  // Получение списка заказов
+  getOrders(params?: OrdersRequest) {
+    return makeRequest<OrdersResponse>(() =>
+      api.get(ENDPOINT.ORDERS, {params})
+    );
+  },
+
+  // Получить один заказ
+  getOrder(id: number) {
+    return makeRequest<OrderResponse>(() =>
+      api.get(`${ENDPOINT.ORDERS}/${id}`)
+    );
+  },
+
+  // Обновление заказа
+  updateOrder(id: number, data: Partial<Pick<CreateOrderData, "name" | "comment">>) {
+    return makeRequest<{ order: Order }>(() =>
+      api.put(`${ENDPOINT.ORDERS}/${id}`, data)
+    );
+  },
+
+  // Удалить заказ
+  deleteOrder(id: number) {
+    return makeRequest<null>(() =>
+      api.delete(`${ENDPOINT.ORDERS}/${id}`)
+    );
+  },
+
+  // Загрузить файлы
+  uploadFiles(orderId: number, files: File[]) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("file[]", file));
+
+    return makeRequest<UploadFilesResponse>(() =>
+      api.post(`${ENDPOINT.ORDERS}/${orderId}/files`, formData, {
+        headers: {"Content-Type": "multipart/form-data"},
+      })
+    );
+  },
+
+  // Удалить файл
+  deleteFile(orderId: number, fileId: number) {
+    return makeRequest<null>(() =>
+      api.delete(`${ENDPOINT.ORDERS}/${orderId}/files/${fileId}`)
+    );
+  },
+
+  // Статусы
+  getStatuses() {
+    return makeRequest<OrderStatus[]>(() =>
+      api.get(ENDPOINT.STATUSES)
+    );
+  },
+
+  // Отправить черновик в Лигрон и создать заказ (получаем номерб статус)
+  sendToLigron(id: number) {
+    return makeRequest<{ order: Order }>(() =>
+      api.post(`${ENDPOINT.ORDERS}/${id}/send-to-ligron`)
+    );
+  },
+
+  // Получить заказ по номеру
+  getByNumber(number: string) {
+    return makeRequest<OrderResponse>(() =>
+      api.get(`${ENDPOINT.ORDERS}/number/${number}`)
+    );
+  },
+
+  // Получить JSON для отправки в Лигрон (для предпросмотра)
+  getLigronRequestData(id: number) {
+    return makeRequest<any>(() =>
+      api.get(`${ENDPOINT.ORDERS}/${id}/ligron-request-data`)
+    );
+  },
+
+};
