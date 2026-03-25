@@ -146,4 +146,5 @@ export const getOriginLabel = (type: number): { label: string; color: string } =
     default:
       return {label: "Сайт", color: "bg-gray-100 text-gray-800 border-gray-200"};
   }
+
 };

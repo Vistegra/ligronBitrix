@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo} from "react";
+import {useEffect, useMemo, useRef} from "react";
 import {Table, TableBody} from "@/components/ui/table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {AlertCircle, Loader2Icon} from "lucide-react";
@@ -19,6 +19,7 @@ import {OrdersTableHeader} from "./OrdersTableHeader";
 import {COLUMNS_VISIBILITY_PRESETS, type PageSize} from "../types.ts";
 import {PAGE} from "@/api/constants.ts";
 import {useTableSettings} from "@/hooks/order/useTableSettings.ts";
+import {useContextStore} from "@/store/contextStore.ts";
 
 interface OrdersTableProps {
   isDraft: boolean
@@ -26,6 +27,9 @@ interface OrdersTableProps {
 
 export default function OrdersTable({isDraft = false}: OrdersTableProps) {
   const {user} = useAuthStore();
+  const { inn, salonCode } = useContextStore();
+  const lastStoreContext = useRef({ inn, salonCode });
+
   const isManager = user?.provider === "ligron";
 
   const basePage = isDraft ? PAGE.DRAFTS : PAGE.ORDERS;
@@ -69,6 +73,20 @@ export default function OrdersTable({isDraft = false}: OrdersTableProps) {
     sortConfig,
     toggleSort,
   } = useOrders(pageSize, isDraft);
+
+  useEffect(() => {
+    const isSidebarAction =
+      inn !== lastStoreContext.current.inn ||
+      salonCode !== lastStoreContext.current.salonCode;
+
+    if (isSidebarAction) {
+      updateFilters({
+        inn_dealer: inn ?[inn] : [],
+        salon_code: salonCode ? [salonCode] :[]
+      });
+      lastStoreContext.current = { inn, salonCode };
+    }
+  },[inn, salonCode, updateFilters]);
 
   // Обертка для изменения размера страницы (и в URL, и в localStorage)
   const handlePageSizeChange = (size: PageSize) => {
