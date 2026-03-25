@@ -59,6 +59,7 @@ class OrderTable extends DataManager
         OrderStatusTable::class,
         ['=this.status_id' => 'ref.id']
       ),
+
       new Fields\IntegerField('status_id', [
         'nullable' => true,
         'fetch_data_modification' => F::toInt(),
@@ -70,42 +71,14 @@ class OrderTable extends DataManager
         __CLASS__,
         ['=this.parent_id' => 'ref.id']
       ),
+
       new Fields\IntegerField('parent_id', [
         'nullable' => true,
         'fetch_data_modification' => F::toInt(),
       ]),
 
-      //Роль создателя
+      // Провайдер создателя
       new Fields\IntegerField('created_by', [
-        'nullable' => true,
-        'fetch_data_modification' => F::toInt(),
-      ]),
-
-      //ИД пользователя
-      new Fields\IntegerField('created_by_id', [
-        'required' => true,
-        'fetch_data_modification' => F::toInt(),
-      ]),
-
-      /**
-       * @deprecated
-       */
-      new Fields\StringField('dealer_prefix', [
-        'size' => 10,
-        'nullable' => true,
-      ]),
-
-      /**
-       * @deprecated
-       */
-      new Fields\IntegerField('dealer_user_id', [
-        'nullable' => true,
-        'fetch_data_modification' => F::toInt(),
-      ]),
-
-      //ToDo! создать временное поле ID пользователя дилера
-
-      new Fields\IntegerField('manager_id', [
         'nullable' => true,
         'fetch_data_modification' => F::toInt(),
       ]),
@@ -115,6 +88,7 @@ class OrderTable extends DataManager
         'comment' => 'дней на производство',
         'fetch_data_modification' => F::toInt(),
       ]),
+
       new Fields\DateField('ready_date', [
         'nullable' => true,
         'fetch_data_modification' => F::dateToString(),
@@ -156,7 +130,7 @@ class OrderTable extends DataManager
         'default_value' => null,
       ]),
 
-
+      /** Поля для api V2 */
      new Fields\StringField('inn_dealer',[
         'size' => 20,
         'nullable' => true,
@@ -167,6 +141,13 @@ class OrderTable extends DataManager
         'nullable' => true,
       ]),
 
+      // ID пользователя (менеджера) Ligron или Dealer
+      new Fields\IntegerField('author_id',[
+        'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
+      ]),
+      /** _________________ */
+
       // Системные
       new Fields\DatetimeField('created_at', [
         'default_value' => F::now(),
@@ -176,6 +157,33 @@ class OrderTable extends DataManager
       new Fields\DatetimeField('updated_at', [
         'default_value' => F::now(),
         'fetch_data_modification' => F::toTimestamp(),
+      ]),
+
+
+      // ToDo DEPRECATED FIELDS (УДАЛИТЬ ЧЕРЕЗ 2 МЕСЯЦА)
+
+      /** @deprecated Заменяется на author_id (в связке с created_by) */
+      new Fields\IntegerField('created_by_id',[
+        'nullable' => true, // чтобы V2 мог писать заказы без него
+        'fetch_data_modification' => F::toInt(),
+      ]),
+
+      /** @deprecated Заменяется на inn_dealer */
+      new Fields\StringField('dealer_prefix',[
+        'size' => 10,
+        'nullable' => true,
+      ]),
+
+      /** @deprecated Заменяется на salon_code */
+      new Fields\IntegerField('dealer_user_id',[
+        'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
+      ]),
+
+      /** @deprecated Поле нигде не используется */
+      new Fields\IntegerField('manager_id',[
+        'nullable' => true,
+        'fetch_data_modification' => F::toInt(),
       ]),
 
     ];

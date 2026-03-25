@@ -36,13 +36,13 @@ final class Webhook1cOrderController extends AbstractController
 
       return match (true) {
         // Создание заказа
-        $type === 'ORDER' && $action === 'CREATE' => $this->handleCreateOrder($body, $query),
+        $type === 'ORDER' && $action === 'CREATE' => $this->handleCreateOrder($body),
 
         // Обновление статуса или данных заказа
-        in_array($type, ['STATUS', 'ORDER'], true) && $action === 'UPDATE' => $this->handleUpdateOrder($body, $query),
+        in_array($type,['STATUS', 'ORDER'], true) && $action === 'UPDATE' => $this->handleUpdateOrder($body),
 
         // Неизвестное действие
-        default => $this->success('Данные получены, но действие не распознано', [
+        default => $this->success('Данные получены, но действие не распознано',[
           'received_at' => date('c'),
           'action'      => $action,
           'type'        => $type,
@@ -51,7 +51,7 @@ final class Webhook1cOrderController extends AbstractController
       };
 
     } catch (\Throwable $e) {
-      LogService::error($e, [
+      LogService::error($e,[
         'query' => $query,
         'body'  => $body
       ], 'webhook_1c');
@@ -66,17 +66,16 @@ final class Webhook1cOrderController extends AbstractController
    * Обработка создания заказа
    * @throws \Exception
    */
-  private function handleCreateOrder(array $body, array $query): ResponseInterface
+  private function handleCreateOrder(array $body): ResponseInterface
   {
     $order = $this->webhook1cOrderService->createOrderFrom1C($body);
 
     return $this->success(
-      'Заказ успешно создан в API',
-      [
-        'received_at' => date('c'),
-        'order'       => $order,
-        'body'        => $body
-      ],
+      'Заказ успешно создан в API',[
+      'received_at' => date('c'),
+      'order'       => $order,
+      'body'        => $body
+    ],
       201
     );
   }
@@ -84,13 +83,12 @@ final class Webhook1cOrderController extends AbstractController
   /**
    * Обработка обновления статуса заказа
    */
-  private function handleUpdateOrder(array $body, array $query): ResponseInterface
+  private function handleUpdateOrder(array $body): ResponseInterface
   {
     $updatedOrder = $this->webhook1cOrderService->updateOrderFrom1C($body);
 
     return $this->success(
-      'Данные заказа обновлены',
-      [
+      'Данные заказа обновлены',[
         'received_at' => date('c'),
         'order'       => $updatedOrder
       ]
@@ -114,10 +112,23 @@ final class Webhook1cOrderController extends AbstractController
     return [$query, $body];
   }
 
-  // Методы GET, PUT, DELETE как заглушки
+  // ---------------------
+  // Заглушки для методов
+  // ---------------------
+
   public function get(ServerRequestInterface $request): ResponseInterface
   {
-    return $this->json(['message' => 'Only POST is supported for webhooks'], 405);
+    return $this->error('Only POST is supported for webhooks', 405);
+  }
+
+  public function put(ServerRequestInterface $request): ResponseInterface
+  {
+    return $this->error('Only POST is supported for webhooks', 405);
+  }
+
+  public function delete(ServerRequestInterface $request): ResponseInterface
+  {
+    return $this->error('Only POST is supported for webhooks', 405);
   }
 
 }

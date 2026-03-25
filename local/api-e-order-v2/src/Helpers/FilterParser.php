@@ -92,7 +92,7 @@ final class FilterParser
   private static function prepareValue(string $fieldName, string $value, string $operator): mixed
   {
     // Обработка дат
-    if (in_array($fieldName, self::DATE_FIELDS)) {
+    if (in_array($fieldName, self::DATE_FIELDS, true)) {
       return self::parseBitrixDate($value, $operator);
     }
 
@@ -101,7 +101,18 @@ final class FilterParser
       return array_filter(array_map('trim', explode(',', $value)), fn($v) => $v !== '');
     }
 
-    // if ($fieldName === 'id') return (int)$value;
+    // Обработка специальных строковых констант
+    $lowerValue = strtolower($value);
+
+    if ($lowerValue === 'null') {
+      return false; // Bitrix ORM использует false для IS NULL
+    }
+    if ($lowerValue === 'true') {
+      return true;
+    }
+    if ($lowerValue === 'false') {
+      return false; // Для булевых полей Bitrix
+    }
 
     return $value;
   }
@@ -122,6 +133,6 @@ final class FilterParser
     } catch (\Throwable) {
       return $value;
     }
-  }
 
+  }
 }

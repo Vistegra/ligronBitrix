@@ -11,10 +11,10 @@ use Bitrix\Main\Type\Date;
 use Exception;
 use OrderApiV2\DB\Models\OrderTable;
 use OrderApiV2\DB\Models\DealerUserTable;
+use OrderApiV2\DB\Models\LigronUserTable;
 use OrderApiV2\DB\Models\DealerSalonTable;
 use OrderApiV2\DB\Repositories\OrderRepository;
 use OrderApiV2\DB\Repositories\OrderStatusRepository;
-use OrderApiV2\DB\Repositories\DealerUserRepository;
 use OrderApiV2\Services\LogService;
 use RuntimeException;
 
@@ -44,7 +44,7 @@ final readonly class Webhook1cOrderService
 
       $fieldsToUpdate['status_history'] = array_merge(
         [['id' => (int)$status['id'], 'code' => $status['code'], 'date' => $statusDate]],
-        $order['status_history'] ?? []
+        $order['status_history'] ??[]
       );
     }
 
@@ -92,65 +92,104 @@ final readonly class Webhook1cOrderService
     $innDealer = (string)$data['client'];
     $salonCode = (string)$data['salon'];
 
+    // Проверяем, что связка Дилер-Салон существует в БД
     $this->verifyDealerSalonLink($innDealer, $salonCode);
 
-    // Получаем ID или null (если заказ общий для салона)
-    $dealerUserId = $this->resolveDealerUserId($salonCode, $data['manager_username'] ?? null);
+    // Определяем, кто является автором заказа, на основе переданного логина
+    $authorInfo = $this->resolveAuthorInfo($salonCode, $data['manager_username'] ?? null);
 
     $status = $this->findStatusOrThrow((string)$data['status_code']);
 
     return [
-      'name' => (string)$data['name'],
-      'comment' => (string)($data['comment'] ?? ''),
-      'inn_dealer' => $innDealer,
-      'salon_code' => $salonCode,
-      'dealer_user_id' => $dealerUserId, // Может быть null
-      'dealer_username' => $data['manager_username'] ?? null,
-      'status_id' => (int)$status['id'],
-      'status_history' => [['id' => (int)$status['id'], 'code' => $status['code'], 'date' => $data['status_date'] ?? date('d.m.Y H:i:s')]],
-      'origin_type' => (int)($data['origin_type'] ?? OrderTable::ORIGIN_TYPE_1C),
+      'name'            => (string)$data['name'],
+      'comment'         => (string)($data['comment'] ?? ''),
+      'inn_dealer'      => $innDealer,
+      'salon_code'      => $salonCode,
+      'author_id'       => $authorInfo['author_id'],
+      'created_by'      => $authorInfo['created_by'],
+      'status_id'       => (int)$status['id'],
+
+      'status_history'  => [
+        ['id' => (int)$status['id'],
+          'code' => $status['code'],
+          'date' => $data['status_date'] ?? date('d.m.Y H:i:s')]
+      ],
+
+      'origin_type'     => (int)($data['origin_type'] ?? OrderTable::ORIGIN_TYPE_1C),
       'production_time' => (int)($data['production_time'] ?? 0),
       'percent_payment' => (int)($data['percent_payment'] ?? 0),
-      'due_payment' => (float)($data['due_payment'] ?? 0.00),
-      'ready_date' => $this->parseDate($data['production_date'] ?? null),
-      'created_by' => OrderTable::CREATED_BY_MANAGER,
-      'created_by_id' => 0,
+      'due_payment'     => (float)($data['due_payment'] ?? 0.00),
+      'ready_date'      => $this->parseDate($data['production_date'] ?? null),
     ];
+
   }
 
   /**
-   * Находит ID пользователя дилера.
-   * Если логин не передан или пользователь не найден — возвращаем null.
-   * Все заказы с null считаются общими для салона.
+   * Находит информацию об авторе заказа (ID и тип) по логину, присланному из 1С.
+   * Если логин не передан или не найден, заказ считается общим (созданным Системой/Менеджером).
    */
-  private function resolveDealerUserId(string $salonCode, ?string $providedUsername): ?int
+  private function resolveAuthorInfo(string $salonCode, ?string $providedUsername): array
   {
+
+    $defaultAuthor =[
+      'author_id'  => null,
+      'created_by' => OrderTable::CREATED_BY_MANAGER,
+    ];
+
     if (empty($providedUsername)) {
-      return null;
+      return $defaultAuthor;
     }
 
-    $user = DealerUserTable::getList([
+    $username = trim($providedUsername);
+
+    // Ищем среди Дилеров с привязкой к указанному салону
+    $dealerUser = DealerUserTable::getList([
       'select' => ['id'],
-      'filter' => [
-        '=username' => trim($providedUsername),
+      'filter' =>[
+        '=username'   => $username,
         '=salon_code' => $salonCode,
-        '=active' => 1
+        '=active'     => 1
       ],
       'limit' => 1
     ])->fetch();
 
-    return $user ? (int)$user['id'] : null;
+    if ($dealerUser) {
+      return[
+        'author_id'  => (int)$dealerUser['id'],
+        'created_by' => OrderTable::CREATED_BY_DEALER,
+      ];
+    }
+
+    // Если это не дилер, ищем среди Менеджеров Лигрон
+    $ligronUser = LigronUserTable::getList([
+      'select' => ['id'],
+      'filter' =>[
+        '=username' => $username,
+        '=active'   => 1
+      ],
+      'limit' => 1
+    ])->fetch();
+
+    if ($ligronUser) {
+      return[
+        'author_id'  => (int)$ligronUser['id'],
+        'created_by' => OrderTable::CREATED_BY_MANAGER,
+      ];
+    }
+
+    // Если пользователь вообще не найден
+    return $defaultAuthor;
   }
 
   private function verifyDealerSalonLink(string $inn, string $salonCode): void
   {
     $link = DealerSalonTable::getList([
-      'filter' => ['=inn_dealer' => $inn, '=salon_code' => $salonCode],
+      'filter' =>['=inn_dealer' => $inn, '=salon_code' => $salonCode],
       'limit' => 1
     ])->fetch();
 
     if (!$link) {
-      throw new RuntimeException("Связка ИНН {$inn} и Салона {$salonCode} не найдена в V2", 400);
+      throw new RuntimeException("Связка ИНН {$inn} и Салона {$salonCode} не найдена", 400);
     }
   }
 

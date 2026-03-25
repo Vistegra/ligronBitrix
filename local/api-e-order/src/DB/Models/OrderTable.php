@@ -128,8 +128,6 @@ class OrderTable extends DataManager
         'fetch_data_modification' => F::toJsonDecode(),
       ]),
 
-
-
       new Fields\IntegerField('percent_payment', [
         'nullable' => true,
         'default_value' => 0,
@@ -163,19 +161,5 @@ class OrderTable extends DataManager
     ];
   }
 
-  //ToDo
- /* public static function onBeforeAdd(Event $event): void
-  {
-    $fields = $event->getParameter('fields');
-    $fields['UPDATED_AT'] = new DateTime();
-    $event->addResult(new EventResult(['fields' => $fields]));
-  }
-
-  public static function onBeforeUpdate(Event $event): void
-  {
-    $fields = $event->getParameter('fields');
-    $fields['UPDATED_AT'] = new DateTime();
-    $event->addResult(new EventResult(['fields' => $fields]));
-  }*/
 
 }

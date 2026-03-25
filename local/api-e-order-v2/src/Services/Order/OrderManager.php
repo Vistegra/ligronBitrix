@@ -14,7 +14,6 @@ use OrderApiV2\DB\Repositories\OrderStatusRepository;
 use OrderApiV2\DTO\Auth\UserDTO;
 use OrderApiV2\DTO\Order\OrderCreateResult;
 use OrderApiV2\Permissions\OrderPermission;
-use OrderApiV2\Services\Auth\Session\AuthSession;
 use OrderApiV2\Services\LogService;
 
 /**
@@ -27,10 +26,13 @@ final readonly class OrderManager
     private OrderPermission      $permission,
     private OrderFileManager     $fileManager,
     private Integration1CService $integration1c,
-  ) {}
+  )
+  {
+  }
 
-
+  // --------------------------------
   // CRUD операции (с проверкой прав)
+  // --------------------------------
 
   /**
    * Создать новый заказ
@@ -38,21 +40,15 @@ final readonly class OrderManager
    */
   public function createOrder(array $data, array $uploadedFiles = [], bool $isDraft = false): OrderCreateResult
   {
-    $data['created_by_id'] = $this->user->id;
-
-    if ($this->user->isDealer()) {
-      $data['created_by']      = OrderTable::CREATED_BY_DEALER;
-      $data['inn_dealer']      = AuthSession::getInn();
-      $data['salon_code']      = $this->user->salon_code;
-      $data['dealer_username'] = $this->user->login;
-
-      $data['dealer_user_id'] = $this->user->id;
-    } else {
-      $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
-      // Менеджеры Лигрон должны присылать inn_dealer и salon_code в $data
-    }
+    // Кто конкретно создает заказ
+    $data['author_id'] = $this->user->id;
+    $data['created_by'] = $this->user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
 
     try {
+      // Имеет ли этот author_id право
+      // создавать заказ на переданные в $data['inn_dealer'] и $data['salon_code']
+      $this->permission->verify(OrderAction::CREATE, [], $data);
+
       $order = OrderRepository::create($data);
     } catch (\Throwable $e) {
       return new OrderCreateResult(success: false, orderError: $e->getMessage());
@@ -71,13 +67,15 @@ final readonly class OrderManager
 
   /**
    * Получить заказ по ID
+   * @throws Exception
    */
   public function getOrder(int $id): array
   {
     $order = OrderRepository::getById($id);
-    if (!$order) throw new Exception("Заказ #{$id} не найден", 404);
+    if (!$order) throw new Exception("Заказ №{$id} не найден", 404);
 
-    $this->permission->verify('view', $order); //ToDo|| создать класс констанд для permission 'view', 'update', и т.д
+    $this->permission->verify(OrderAction::VIEW, $order);
+
     $order['files'] = OrderFileRepository::getByOrderId($id) ?: [];
 
     return $order;
@@ -92,7 +90,8 @@ final readonly class OrderManager
     $order = OrderRepository::getByNumber($number);
     if (!$order) throw new Exception("Заказ с номером {$number} не найден", 404);
 
-    $this->permission->verify('view', $order);
+    $this->permission->verify(OrderAction::VIEW, $order);
+
     $order['files'] = OrderFileRepository::getByOrderId((int)$order['id']) ?: [];
 
     return $order;
@@ -101,14 +100,15 @@ final readonly class OrderManager
   /**
    * Список заказов с ACL-фильтром
    */
-  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0, array $sort =['updated_at' => 'desc']): array
+  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0, array $sort = ['updated_at' => 'desc']): array
   {
     $accessFilter = $this->permission->getAccessFilter();
 
     // Защита от затирания фильтров URL фильтрами прав доступа
-    $finalFilter =[];
+    $finalFilter = [];
+
     if (!empty($filter) && !empty($accessFilter)) {
-      $finalFilter =[
+      $finalFilter = [
         'LOGIC' => 'AND',
         $filter,
         $accessFilter
@@ -120,16 +120,16 @@ final readonly class OrderManager
     }
 
     return [
-      'orders'     => OrderRepository::queryList([
+      'orders' => OrderRepository::queryList([
         'filter' => $finalFilter,
         'limit' => $limit,
         'offset' => $offset,
         'order' => $sort
       ]),
-      'pagination' =>[
-        'limit'  => $limit,
+      'pagination' => [
+        'limit' => $limit,
         'offset' => $offset,
-        'total'  => OrderRepository::getTotalCount($finalFilter)
+        'total' => OrderRepository::getTotalCount($finalFilter)
       ],
     ];
   }
@@ -140,8 +140,9 @@ final readonly class OrderManager
    */
   public function updateOrder(int $id, array $data): array
   {
-    $order = $this->getOrder($id); // Внутри встроен verify('view')
-    $this->permission->verify('update', $order, $data);
+    $order = $this->getOrder($id); // Внутри встроен verify(VIEW)
+
+    $this->permission->verify(OrderAction::UPDATE, $order, $data);
 
     return OrderRepository::update($id, $data);
   }
@@ -152,18 +153,18 @@ final readonly class OrderManager
    */
   public function deleteOrder(int $id): bool
   {
-    $order = $this->getOrder($id);
-    $this->permission->verify('delete', $order);
+    $order = $this->getOrder($id); // Внутри встроен verify(VIEW)
 
-    if ((int)($order['children_count'] ?? 0) > 0) {
-      throw new \RuntimeException('Нельзя удалить заказ, у которого есть дочерние заказы');
-    }
+    // Проверит и права, и наличие children_count, и статус 1С
+    $this->permission->verify(OrderAction::DELETE, $order);
 
     $this->fileManager->deleteAllOrderFiles($id);
     return OrderRepository::delete($id);
   }
 
+  // ------------------
   // СТАТУСЫ И ИСТОРИЯ
+  // ------------------
 
   /**
    * Сменить статус заказа вручную
@@ -171,8 +172,8 @@ final readonly class OrderManager
    */
   public function changeStatus(int $id, string $newStatusCode, ?string $comment = null): bool
   {
-    $order = $this->getOrder($id);
-    $this->permission->verify('change_status', $order);
+    $order = $this->getOrder($id); // Внутри встроен verify(VIEW)
+    $this->permission->verify(OrderAction::CHANGE_STATUS, $order);
 
     return OrderRepository::changeStatus($id, $newStatusCode, $comment);
   }
@@ -194,7 +195,7 @@ final readonly class OrderManager
     return [
       'status_id' => $status['id'],
       'status_history' => [[
-        'id'   => $status['id'],
+        'id' => $status['id'],
         'code' => $status['code'],
         'date' => (new DateTime())->toString(),
       ]]
@@ -209,8 +210,8 @@ final readonly class OrderManager
    */
   public function sendToLigron(int $orderId): ?array
   {
-    // Только тот, кто может видеть заказ, может его отправить
-    $this->getOrder($orderId);
+    $order = $this->getOrder($orderId); // Проверяет VIEW
+    $this->permission->verify(OrderAction::SEND_TO_1C, $order);
 
     $responseData = $this->integration1c->sendOrder($orderId);
 
@@ -227,7 +228,7 @@ final readonly class OrderManager
       if ($status) {
         $updateData['status_id'] = $status['id'];
         $updateData['status_history'] = [[
-          'id'   => $status['id'],
+          'id' => $status['id'],
           'code' => $status['code'],
           'date' => $responseData['status_zakaza']['status_date'] ?? (new DateTime())->toString(),
         ]];
@@ -250,17 +251,18 @@ final readonly class OrderManager
    */
   public function getLigronRequestData(int $orderId): array
   {
-    $this->getOrder($orderId); // Внутри встроен verify('view')
+    $this->getOrder($orderId); // Внутри встроен verify(VIEW)
     return $this->integration1c->buildRequestData($orderId);
   }
 
   // Работа с файлами
+
   /**
    * @throws Exception
    */
   public function getFilesByOrderId(int $orderId): array
   {
-    $this->getOrder($orderId);  // Внутри встроен verify('view')
+    $this->getOrder($orderId);  // Внутри встроен verify(VIEW)
     return OrderFileRepository::getByOrderId($orderId) ?: [];
   }
 
@@ -269,7 +271,7 @@ final readonly class OrderManager
    */
   public function deleteFile(int $orderId, int $fileId): bool
   {
-    $order = $this->getOrder($orderId); // Проверка доступа к заказу (VIEW)
+    $order = $this->getOrder($orderId); // Внутри встроен verify(VIEW)
     $this->permission->verify(OrderAction::UPDATE, $order);
 
     $file = OrderFileRepository::getById($fileId);

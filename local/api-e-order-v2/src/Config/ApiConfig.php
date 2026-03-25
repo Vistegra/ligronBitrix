@@ -13,10 +13,10 @@ final class ApiConfig
   public const string JWT_ALGO = 'HS256';
   public const int    JWT_EXPIRE = 36000; // 10 часов
 
-  public const string API_VERSION = '1.0';
+  public const string API_VERSION = '2.0';
   public const string API_NAME = 'Order API';
   public const string UPLOAD_FILES_DIR = '/upload/e-order/files/';
-  public const string API_DATE_VERSION = '16.03.2026';
+  public const string API_DATE_VERSION = '25.03.2026';
   public const string SITE_ROOT_URL = 'https://ligron.ru';
   public const string  APP_ORDERS_PAGE = 'https://ligron.ru/e-order-v2/orders';
   public const string CALC_URL = 'https://calculator.ligron.ru';

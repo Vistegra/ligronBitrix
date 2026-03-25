@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OrderApiV2\DB\Repositories;
 
-use Bitrix\Main\ORM\Query\Query;
 use Bitrix\Main\Type\DateTime;
 use Exception;
 use OrderApiV2\DB\Events\OrderEvent;
@@ -13,7 +12,6 @@ use OrderApiV2\DB\Models\OrderTable;
 /**
  * Репозиторий для работы с таблицей заказов vs_e_order.
  */
-
 final class OrderRepository
 {
   private const int DEFAULT_LIMIT = 20;
@@ -21,7 +19,7 @@ final class OrderRepository
   /**
    * Стандартный набор полей для выборки
    */
-  private const array DEFAULT_SELECT = [
+  private const array DEFAULT_SELECT =[
     '*',
     'status_code'         => 'status.code',
     'status_name'         => 'status.name',
@@ -33,10 +31,10 @@ final class OrderRepository
   /**
    * Универсальная выборка заказов
    */
-  public static function queryList(array $params = []): array
+  public static function queryList(array $params =[]): array
   {
     $params['select'] = array_merge(self::DEFAULT_SELECT, $params['select'] ?? []);
-    $params['order']  = $params['order'] ?? ['updated_at' => 'desc'];
+    $params['order']  = $params['order'] ??['updated_at' => 'desc'];
     $params['limit']  = $params['limit'] ?? self::DEFAULT_LIMIT;
     $params['offset'] = $params['offset'] ?? 0;
 
@@ -50,7 +48,7 @@ final class OrderRepository
   {
     $result = OrderTable::getList([
       'select' => self::DEFAULT_SELECT,
-      'filter' => ['=id' => $id],
+      'filter' =>['=id' => $id],
       'limit'  => 1
     ])->fetch();
 
@@ -103,13 +101,13 @@ final class OrderRepository
   /**
    * Получить общее количество заказов для пагинации (с учетом фильтров)
    */
-  public static function getTotalCount(array $filter = []): ?string
+  public static function getTotalCount(array $filter =[]): ?string
   {
     $query = OrderTable::query();
-    $query->setSelect(['ID']);
+    $query->setSelect(['id']); // ToDo||  test id or ID
     $query->setFilter($filter);
 
-    return $query->queryCountTotal();
+    return (string)$query->queryCountTotal();
   }
 
   /**
@@ -131,14 +129,14 @@ final class OrderRepository
     $oldStatusCode = $order['status_code'] ?? null;
     $history = $order['status_history'] ?: [];
 
-    $history[] = [
+    $history[] =[
       'date'    => (new DateTime())->toString(),
       'from'    => $oldStatusCode,
       'to'      => $newStatusCode,
       'comment' => $comment,
     ];
 
-    $updateResult = OrderTable::update($orderId, [
+    $updateResult = OrderTable::update($orderId,[
       'status_id'      => $status['id'],
       'status_history' => $history,
     ]);
@@ -173,4 +171,5 @@ final class OrderRepository
       'limit'  => 1
     ])->fetch() ?: null;
   }
+
 }

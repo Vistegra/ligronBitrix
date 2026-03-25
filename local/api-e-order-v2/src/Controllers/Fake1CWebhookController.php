@@ -17,22 +17,24 @@ final class Fake1CWebhookController extends AbstractController
    */
   public function post(ServerRequestInterface $request): ResponseInterface
   {
-    $input = $request->getParsedBody() ?? [];
+    // Получаем тело запроса от Integration1CService
+    $input = $request->getParsedBody() ??[];
 
     if (empty($input['order_number']) || empty($input['client'])) {
       return $this->error('Недостаточно данных для имитации ответа 1С (нужны order_number и client)', 400);
     }
 
-    $ligronNumber = 'FK' . date('Ymd') . str_pad((string)rand(1, 999), 3, '0', STR_PAD_LEFT);
+    // Имитируем генерацию номера Лигрон (например: FK_20260325012)
+    $ligronNumber = 'FK_' . date('Ymd') . str_pad((string)rand(1, 999), 3, '0', STR_PAD_LEFT);
 
-    $responseData = [
+    $responseData =[
       'ligron_number' => $ligronNumber,
       'error'         => false,
       'message'       => 'Заказ успешно создан в (фейковой) 1С',
       'date'          => date('d.m.Y'),
 
-      'status_zakaza' => [
-        'status_code' => 100, //Получен (https://ligron.ru/local/api-e-order/docs/statuses)
+      'status_zakaza' =>[
+        'status_code' => '100', // 100 = "Получен" (https://ligron.ru/local/api-e-order/docs/statuses)
         'status_date' => date('d.m.Y H:i:s'),
       ],
 
@@ -43,4 +45,5 @@ final class Fake1CWebhookController extends AbstractController
 
     return $this->json($responseData);
   }
+
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OrderApiV2\Controllers;
 
-
+use Exception;
+use OrderApiV2\DB\Models\OrderTable;
+use OrderApiV2\DTO\Auth\UserDTO;
 use OrderApiV2\Helpers\FilterParser;
 use OrderApiV2\Services\Order\OrderManager;
 use Psr\Http\Message\ResponseInterface;
@@ -17,11 +19,13 @@ final class OrderController extends AbstractController
 {
   public function __construct(
     private readonly OrderManager $orderManager
-  ) {}
+  )
+  {
+  }
 
   /**
    * POST /orders - Создание заказа
-   * @throws \Exception
+   * @throws Exception
    */
   public function create(ServerRequestInterface $request): ResponseInterface
   {
@@ -30,6 +34,7 @@ final class OrderController extends AbstractController
     unset($data['is_draft']);
 
     $uploadedFiles = $request->getUploadedFiles()['file'] ?? [];
+
     if ($uploadedFiles && !is_array($uploadedFiles)) {
       $uploadedFiles = [$uploadedFiles];
     }
@@ -48,18 +53,18 @@ final class OrderController extends AbstractController
     return match (true) {
 
       $result->allFilesFailed() => $this->json([
-        'status' => 'error',
-        'message' => 'Заказ создан, но файлы не загружены',
-        'data' => $responseData]
+          'status' => 'error',
+          'message' => 'Заказ создан, но файлы не загружены',
+          'data' => $responseData]
         , 400),
 
-      $result->hasFileErrors()  => $this->json([
+      $result->hasFileErrors() => $this->json([
         'status' => 'partial',
         'message' => 'Заказ создан. Файлы загружены частично',
         'data' => $responseData],
         207),
 
-      default                   => $this->json([
+      default => $this->json([
         'status' => 'success',
         'message' => 'Заказ создан',
         'data' => $responseData],
@@ -154,11 +159,22 @@ final class OrderController extends AbstractController
     }
 
     $isDraft = ($params['is_draft'] ?? '0') === '1';
+
     if ($isDraft) {
+      // Черновик - это заказ без статуса (status_id IS NULL)
       $filter['=status_id'] = false;
+
+      // Черновики видит только их автор
+
+      /** @var UserDTO $user */
+      $user = $request->getAttribute('user');
+      $filter['=author_id'] = $user->id;
+      $filter['=created_by'] = $user->isDealer() ? OrderTable::CREATED_BY_DEALER : OrderTable::CREATED_BY_MANAGER;
+
     } else {
+      // Исключаем черновики из общего списка, если фильтр по статусу не передан явно с фронтенда
       if (!isset($filter['=status_id'])) {
-        $filter['!=status_id'] = false;
+        $filter['!=status_id'] = false; // status_id IS NOT NULL
       }
     }
 
@@ -262,6 +278,6 @@ final class OrderController extends AbstractController
     } catch (\Throwable $e) {
       return $this->handleError($e);
     }
-
   }
+
 }
