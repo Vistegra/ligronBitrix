@@ -40,8 +40,9 @@ export function OrdersTablePanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+
         <h2 className="text-2xl font-bold">{isDraft ? "Черновики" : "Заказы"}</h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         {/* Левая часть: Поиск */}
         <div className="w-full sm:w-auto">

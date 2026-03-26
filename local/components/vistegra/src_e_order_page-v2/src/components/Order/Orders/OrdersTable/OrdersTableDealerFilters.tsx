@@ -47,7 +47,7 @@ export function OrdersTableDealerFilters({
           <FilterIcon className="h-3 w-3 ml-1"/>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent align="start" className="w-64 custom-scrollbar">
         <DropdownMenuCheckboxItem
           checked={selectedInns.length === 0}
           onCheckedChange={() => onToggle([])}

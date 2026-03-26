@@ -179,8 +179,10 @@ export default function NewOrderForm() {
                   <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
                     <UploadIcon size={16}/>
                   </div>
-                  <p className="font-medium">Прикрепите эскизы или фото</p>
-                  <p className="text-xs text-muted-foreground">До 10 файлов, до 20 МБ каждый</p>
+                  <p className="font-medium">Перетащите файлы или кликните для выбора</p>
+                  <p className="text-xs text-muted-foreground">
+                    До 20 МБ, любые типы файлов
+                  </p>
                 </div>
               </Dropzone>
 
@@ -254,7 +256,7 @@ export default function NewOrderForm() {
                 ) : (
                   <SendIcon className="mr-2 h-4 w-4"/>
                 )}
-                Отправить в производство
+                Отправить в Лигрон
               </Button>
             </div>
           </form>
