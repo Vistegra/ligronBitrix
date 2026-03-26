@@ -57,8 +57,8 @@ export function OrdersModalFilters() {
   };
 
   const handleClear = () => {
-    setPendingFilters({
-      search: pendingFilters.search,
+    setPendingFilters(prev => ({
+      ...prev,
       status_id: [],
       inn_dealer: [],
       salon_code: [],
@@ -67,7 +67,7 @@ export function OrdersModalFilters() {
       created_at_to: "",
       updated_at_from: "",
       updated_at_to: "",
-    });
+    }));
   };
 
   const hierarchy = user?.detailed?.hierarchy || [];
@@ -130,7 +130,7 @@ export function OrdersModalFilters() {
           />
         </FilterSection>
 
-        {/* Секция Дилеры и Салоны (V2 универсальная) */}
+        {/* Секция Дилеры и Салоны */}
         {hierarchy.length > 0 && (
           <FilterSection
             title="Дилеры и салоны"

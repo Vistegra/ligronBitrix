@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OrderApiV2\Services\Auth\Session;
@@ -21,11 +22,9 @@ final class LigronManagerAuthSessionProvider implements AuthSessionProviderInter
     $data = AccessRepository::getLigronHierarchy($user->user_code);
 
     return [
-
-      'managed_dealers'    => $data['managed_dealers'],
-      'hierarchy'          => $data['managed_dealers'], //ToDo! Проверить во фронтенде
-      'available_inns'     => $data['available_inns'],
-      'available_salons'   => $data['available_salons'],
+      'hierarchy' => $data['managed_dealers'],
+      'available_inns' => $data['available_inns'],
+      'available_salons' => $data['available_salons'],
       'substituting_codes' => $data['substituting_codes'] ?? [],
     ];
   }

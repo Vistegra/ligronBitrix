@@ -1,6 +1,7 @@
 import {useQuery, keepPreviousData} from "@tanstack/react-query";
 import {orderApi} from "@/api/orderApi.ts";
 import {useOrderUrlState} from "./useOrderUrlState";
+import {useContextSync} from "@/hooks/order/useContextSync.ts";
 
 export function useOrders(defaultLimit = 20, isDraft: boolean) {
 
@@ -18,6 +19,8 @@ export function useOrders(defaultLimit = 20, isDraft: boolean) {
     sortConfig,
     toggleSort,
   } = useOrderUrlState(defaultLimit);
+
+  useContextSync(activeFilters, updateFilters);
 
   const {data, isLoading, isError, error, isFetching} = useQuery({
     queryKey: ['orders', 'list',

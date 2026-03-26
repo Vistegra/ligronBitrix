@@ -1,26 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2, Trash2, UploadIcon, AlertCircle, CheckCircle2, SendIcon, SaveIcon, Info } from "lucide-react";
+import {useState} from "react";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {
+  Loader2, Trash2, UploadIcon, AlertCircle,
+  CheckCircle2, SendIcon, SaveIcon, Info, Building2, Store
+} from "lucide-react";
 
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
-import { Dropzone } from "@/components/ui/shadcn-io/dropzone";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item";
+import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
-import { useCreateOrder } from "@/hooks/order/useCreateOrder.ts";
-import { useFileDropzone } from "@/hooks/order/useFileDropzone.ts";
-import { useAuthStore } from "@/store/authStore.ts";
-import { useContextStore } from "@/store/contextStore.ts";
+import {useCreateOrder} from "@/hooks/order/useCreateOrder.ts";
+import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
+import {useAuthStore} from "@/store/authStore.ts";
+import {useWorkspace} from "@/hooks/common/useWorkspace.ts";
+import {toast} from "sonner";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
@@ -36,18 +40,18 @@ type FormData = z.infer<typeof formSchema>;
 export default function NewOrderForm() {
   const [isDraft, setIsDraft] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
-  // Выбранный в сайдбаре салон
-  const { inn, salonCode } = useContextStore();
+  // Достаем данные из глобального Workspace
+  const {isSet, current} = useWorkspace();
 
   const isDealer = user?.provider === "dealer";
-  const { create, isPending, error, isSuccess } = useCreateOrder();
-  const { onDropRejected, onDropError } = useFileDropzone();
+  const {create, isPending, error, isSuccess} = useCreateOrder();
+  const {onDropRejected, onDropError} = useFileDropzone();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", comment: "" },
+    defaultValues: {name: "", comment: ""},
   });
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -59,8 +63,15 @@ export default function NewOrderForm() {
   };
 
   const onSubmit = (data: FormData) => {
-    // Если салон не выбран, прерываем
-    if (!inn || !salonCode) return;
+    if (!isSet || !current || !current.inn) {
+      toast.error("Пожалуйста, выберите дилера для оформления заказа");
+      return;
+    }
+
+    if (!current.salonCode) {
+      toast.error("Пожалуйста, выберите салон для оформления заказа");
+      return;
+    }
 
     create({
       name: data.name,
@@ -68,24 +79,52 @@ export default function NewOrderForm() {
       files: files.length > 0 ? files : undefined,
       is_draft: Number(isDraft),
 
-      inn_dealer: inn,
-      salon_code: salonCode,
+      inn_dealer: current.inn,
+      salon_code: current.salonCode,
     });
   };
-
-  const isContextReady = !!inn && !!salonCode;
 
   return (
     <Card className="w-full max-w-2xl mx-auto p-0 m-0 border-none shadow-none">
       <CardContent className="p-0 m-0">
 
-        {/* Предупреждение, если контекст не выбран */}
-        {!isContextReady && (
-          <Alert variant="default" className="mb-6 border-blue-200 bg-blue-50 text-blue-800">
-            <Info className="h-4 w-4 text-blue-600" />
+        {/* Блок контекста */}
+        {isSet && current ? (
+          <div className="mb-6 p-4 rounded-xl border border-dashed bg-slate-50/50 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 p-1.5 bg-primary/10 rounded-md text-primary shrink-0">
+                <Building2 className="h-4 w-4"/>
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span
+                  className="text-[10px] font-bold text-muted-foreground tracking-wider">Дилер</span>
+                <span className="text-sm font-bold leading-tight truncate">{current.dealerName}</span>
+                <span className="text-[11px] text-muted-foreground">ИНН: {current.inn}</span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 pt-2 border-t border-slate-200">
+              <div className="mt-1 p-1.5 bg-slate-100 rounded-md text-slate-500 shrink-0">
+                <Store className="h-4 w-4"/>
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span
+                  className="text-[10px] font-bold text-muted-foreground tracking-wider">Салон</span>
+                <span className="text-sm font-medium leading-tight truncate">
+                  {current.salonName || "Не выбран"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">Код: {current.salonCode || "—"}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Предупреждение, если контекст не выбран */
+          <Alert variant="default" className="mb-6 border-amber-200 bg-amber-50 text-amber-800">
+            <Info className="h-4 w-4 text-amber-600"/>
             <AlertTitle>Внимание</AlertTitle>
             <AlertDescription>
-              Для создания заказа необходимо выбрать конкретный <strong>салон</strong> и <strong>дилера</strong>.
+              Для создания заказа необходимо выбрать <strong>один салон</strong> и <strong>одного дилера</strong> в
+              списке или сайдбаре.
             </AlertDescription>
           </Alert>
         )}
@@ -95,13 +134,13 @@ export default function NewOrderForm() {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Название заказа</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите название" {...field} disabled={isPending || !isContextReady} />
+                    <Input placeholder="Введите название или ФИО клиента" {...field} disabled={isPending || !isSet}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -109,18 +148,18 @@ export default function NewOrderForm() {
             <FormField
               control={form.control}
               name="comment"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
-                  <FormLabel>Описание заказа</FormLabel>
+                  <FormLabel>Описание / Комментарий</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Введите описание"
-                      className="min-h-[150px]"
+                      placeholder="Дополнительная информация по заказу"
+                      className="min-h-[120px]"
                       {...field}
-                      disabled={isPending || !isContextReady}
+                      disabled={isPending || !isSet}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -133,15 +172,15 @@ export default function NewOrderForm() {
                 onDropAccepted={onDrop}
                 onDropRejected={onDropRejected}
                 onError={onDropError}
-                disabled={isPending || !isContextReady}
+                disabled={isPending || !isSet}
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
               >
                 <div className="flex flex-col items-center space-y-2">
                   <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <UploadIcon size={16} />
+                    <UploadIcon size={16}/>
                   </div>
-                  <p className="font-medium">Перетащите файлы или кликните для выбора</p>
-                  <p className="text-xs text-muted-foreground">До 20 МБ</p>
+                  <p className="font-medium">Прикрепите эскизы или фото</p>
+                  <p className="text-xs text-muted-foreground">До 10 файлов, до 20 МБ каждый</p>
                 </div>
               </Dropzone>
 
@@ -161,7 +200,7 @@ export default function NewOrderForm() {
                           onClick={() => removeFile(index)}
                           disabled={isPending}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4"/>
                         </Button>
                       </ItemActions>
                     </Item>
@@ -172,7 +211,7 @@ export default function NewOrderForm() {
 
             {error && (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4"/>
                 <AlertTitle>Ошибка</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
@@ -180,9 +219,9 @@ export default function NewOrderForm() {
 
             {isSuccess && (
               <Alert className="border-green-500 bg-green-50 text-green-900">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-green-600"/>
                 <AlertTitle>Успешно!</AlertTitle>
-                <AlertDescription>Заказ создан. Перенаправление...</AlertDescription>
+                <AlertDescription>Заказ создан. Перенаправление на детальную страницу...</AlertDescription>
               </Alert>
             )}
 
@@ -191,31 +230,31 @@ export default function NewOrderForm() {
                 <Button
                   type="submit"
                   variant="outline"
-                  disabled={isPending || isSuccess || !isContextReady}
+                  disabled={isPending || isSuccess || !isSet}
                   onClick={() => setIsDraft(true)}
                   className="w-full sm:w-auto"
                 >
                   {isPending && isDraft ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                   ) : (
-                    <SaveIcon className="mr-2 h-4 w-4" />
+                    <SaveIcon className="mr-2 h-4 w-4"/>
                   )}
-                  Сохранить черновик
+                  Сохранить как черновик
                 </Button>
               )}
 
               <Button
                 type="submit"
-                disabled={isPending || isSuccess || !isContextReady}
+                disabled={isPending || isSuccess || !isSet}
                 onClick={() => setIsDraft(false)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
               >
                 {isPending && !isDraft ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                 ) : (
-                  <SendIcon className="mr-2 h-4 w-4" />
+                  <SendIcon className="mr-2 h-4 w-4"/>
                 )}
-                Отправить в Лигрон
+                Отправить в производство
               </Button>
             </div>
           </form>
@@ -223,4 +262,5 @@ export default function NewOrderForm() {
       </CardContent>
     </Card>
   );
+
 }

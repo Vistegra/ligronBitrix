@@ -32,16 +32,16 @@ export function OrdersTablePanel({
                                    setVisibleColumns,
                                    isDraft
                                  }: OrdersTablePanelProps) {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
-  const { inn, salonCode } = useContextStore();
+  const {inn, salonCode} = useContextStore();
 
   const canCreateOrder = checkCanCreateOrder(user, inn, salonCode);
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold">{isDraft ? "Черновики" : "Заказы"}</h2>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{isDraft ? "Черновики" : "Заказы"}</h2>
 
         {/* Левая часть: Поиск */}
         <div className="w-full sm:w-auto">
@@ -87,7 +87,7 @@ export function OrdersTablePanel({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Кнопка создания заказа (появляется только в контексте Салона) */}
+          {/* Кнопка создания заказа */}
           {canCreateOrder && (
             <ResponsiveSheet
               title="Новый заказ"

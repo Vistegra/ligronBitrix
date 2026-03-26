@@ -64,9 +64,9 @@ export function ManagerItem({manager}: ManagerItemProps) {
           )}
         </div>
 
-        {/* Название роли из констант (OML -> Офис-менеджер Лигрон и т.д.) */}
+        {/* Название роли */}
         <p
-          className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 flex items-center gap-2">
+          className="text-[11px] font-medium tracking-wider text-muted-foreground/80 flex items-center gap-2">
           {ROLE_NAMES[manager.role as keyof typeof ROLE_NAMES] || manager.role}
         </p>
 

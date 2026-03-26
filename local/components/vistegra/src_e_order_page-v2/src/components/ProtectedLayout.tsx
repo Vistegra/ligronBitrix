@@ -13,6 +13,7 @@ import {AppBreadcrumbs} from "@/components/Sidebar/AppBreadcrumbs";
 import {useIsMobile} from "@/hooks/use-mobile";
 import {MobileBottomNav} from "@/components/MobileBottomNav";
 import {cn} from "@/lib/utils.ts";
+import {ActiveContextBadge} from "@/components/Order/Orders/OrdersTable/ActiveContextBadge.tsx";
 
 export function ProtectedLayout() {
   const {isLoading} = useAuth()
@@ -32,6 +33,12 @@ export function ProtectedLayout() {
           <Separator orientation="vertical" className="mr-2 h-4"/>
           {/* Хлебные крошки */}
           <AppBreadcrumbs/>
+
+          {/* Информация по выбранному дилеру и салону (текущий контекст) */}
+          <div className="ml-auto flex items-center">
+            <ActiveContextBadge />
+          </div>
+
         </header>
 
         {/* padding-bottom чтобы контент не перекрывался меню на мобиле */}

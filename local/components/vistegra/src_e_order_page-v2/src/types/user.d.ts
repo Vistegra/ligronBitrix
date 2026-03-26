@@ -27,29 +27,30 @@ export interface SalonNode {
 export interface DealerNode {
   inn: string;
   name: string;
+  is_substituted: boolean;
   salons: SalonNode[];
 }
 
 /** Данные в сессии для сотрудника Лигрон */
-export interface ManagerDetailed {
-  hierarchy: DealerNode[]; // Дерево всех доступных дилеров и их салонов
-  available_inns: string[]; // Плоский список ИНН для фильтрации
+/** Общие поля для всех типов детальных данных */
+interface BaseDetailed {
+  hierarchy: DealerNode[];
+  available_inns: string[];
+  available_salons: string[];
   session_id: string;
   fetched_at: number;
 }
 
-/** Данные в сессии для сотрудника Дилера */
-export interface DealerDetailed {
-  inn: string;
-  dealer_name: string;
-  salon_code: string;
-  salon_name: string;
-  available_inns: string[];
-  available_salons: string[];
-  hierarchy: DealerNode[];
-  managers: ManagerOfDealer[];
-  session_id: string;
-  fetched_at: number;
+export interface ManagerDetailed extends BaseDetailed {
+  substituting_codes: string[];
+}
+
+export interface DealerDetailed extends BaseDetailed {
+  inn: string;           // Основной ИНН (для профиля)
+  dealer_name: string;   // Название организации
+  salon_code: string;    // Родной салон
+  salon_name: string;    // Название родного салона
+  managers: ManagerOfDealer[]; // Закрепленные менеджеры Лигрон
 }
 
 interface BaseUser {
