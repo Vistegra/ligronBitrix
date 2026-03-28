@@ -1,81 +1,57 @@
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/store/authStore";
-import { authApi } from "@/api/authApi";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuthNavigation } from "./useAuthNavigation";
+import {useEffect} from "react";
+import {useMutation} from "@tanstack/react-query";
+import {useAuthStore} from "@/store/authStore";
+import {toast} from "sonner";
+import {useAuthNavigation} from "./useAuthNavigation";
+import {queries} from "@/lib/queryFactory";
 
-// Глобальная блокировка
+// Глобальная блокировка повторных вызовов
 let processingTokenGlobal: string | null = null;
 
 export function useTokenAuth() {
-  const queryClient = useQueryClient();
-
-  const { navigateToApp, navigateToLogin, clearUrlParam, location } = useAuthNavigation();
+  const {login: setAuth, logout: storeLogout} = useAuthStore();
+  const {navigateToApp, navigateToLogin, clearUrlParam, location} = useAuthNavigation();
 
   const searchParams = new URLSearchParams(location.search);
   const utToken = searchParams.get("ut");
 
-  const [isProcessing, setIsProcessing] = useState(!!utToken);
+  const mutation = useMutation({
+    ...queries.auth.loginByUt(),
+    onSuccess: (data) => {
+      setAuth({user: data.user, token: data.token});
+      toast.success("Вход по ссылке выполнен");
+
+      // Навигация или очистка URL
+      if (location.pathname === "/login") {
+        navigateToApp();
+      } else {
+        clearUrlParam("ut");
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message);
+      navigateToLogin();
+    },
+    onSettled: () => {
+      processingTokenGlobal = null;
+    }
+  });
 
   useEffect(() => {
-    if (!utToken) {
-      setIsProcessing(false);
-      return;
+    if (!utToken || processingTokenGlobal === utToken) return;
+
+    processingTokenGlobal = utToken;
+
+    // Сброс текущей сессии перед входом по новой ссылке
+    if (useAuthStore.getState().token) {
+      storeLogout();
     }
 
-    if (processingTokenGlobal === utToken) {
-      setIsProcessing(true);
-      return;
-    }
-
-    const processLogin = async () => {
-      try {
-        processingTokenGlobal = utToken;
-        setIsProcessing(true);
-
-        const currentToken = useAuthStore.getState().token;
-        if (currentToken) {
-          useAuthStore.getState().logout();
-        }
-
-        const res = await authApi.loginByUt(utToken);
-
-        if (!res.data?.user || !res.data?.token) {
-          throw new Error("Пустой ответ от сервера");
-        }
-
-        useAuthStore.getState().login({
-          user: res.data.user,
-          token: res.data.token
-        });
-
-        toast.success("Вход по ссылке выполнен");
-
-        if (location.pathname === "/login") {
-          // PAGE.LOGIN нельзя использовать из-за  циклической ссылки
-          navigateToApp();
-        } else {
-          clearUrlParam("ut");
-        }
-
-      } catch (err: any) {
-        console.error("Token auth error", err);
-        toast.error(err.message || "Ссылка недействительна");
-
-        navigateToLogin();
-
-      } finally {
-        processingTokenGlobal = null;
-        setIsProcessing(false);
-      }
-    };
-
-    processLogin();
-
-  }, [utToken, queryClient, navigateToApp, navigateToLogin, clearUrlParam, location.pathname]);
+    mutation.mutate(utToken);
+  }, [utToken, storeLogout]);
 
   return {
-    isTokenProcessing: isProcessing || !!utToken
+    // Статусы
+    isTokenProcessing: mutation.isPending || !!utToken,
   };
 }

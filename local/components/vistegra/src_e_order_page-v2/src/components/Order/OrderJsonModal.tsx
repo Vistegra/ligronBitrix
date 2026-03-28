@@ -1,11 +1,13 @@
+"use client";
+
 import {useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import {orderApi} from "@/api/orderApi.ts";
 import {AlertCircle, Copy, DownloadIcon, Info, Loader2} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {ResponsiveSheet} from "../ResponsiveSheet";
+import {queries} from "@/lib/queryFactory"; // Фабрика
 
 interface OrderJsonModalProps {
   orderId: number;
@@ -15,13 +17,13 @@ interface OrderJsonModalProps {
 export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
   const [open, setOpen] = useState(false);
 
+  // Конфигурация из фабрики
   const {data, isLoading, error} = useQuery({
-    queryKey: ["order", "json-preview", orderId],
-    queryFn: () => orderApi.getLigronRequestData(orderId),
+    ...queries.orders.jsonPreview(orderId),
     enabled: open,
-    staleTime: 0,
   });
 
+  // Копирование в буфер обмена
   const handleCopy = async () => {
     if (!data?.data) {
       toast.error("Нет данных для копирования");
@@ -30,13 +32,14 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
 
     try {
       const jsonString = JSON.stringify(data.data, null, 2);
-      await navigator.clipboard.writeText(jsonString); // Ожидаем Promise
+      await navigator.clipboard.writeText(jsonString);
       toast.success("JSON скопирован");
     } catch (err) {
       toast.error("Не удалось скопировать данные");
     }
   };
 
+  // Скачивание файла
   const handleDownload = () => {
     if (!data?.data) {
       toast.error("Нет данных для скачивания");
@@ -44,11 +47,9 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
     }
 
     try {
-
       const jsonString = JSON.stringify(data.data, null, 2);
       const blob = new Blob([jsonString], {type: "application/json"});
       const url = URL.createObjectURL(blob);
-
       const fileName = `${data.data.order_number || `order_${orderId}`}.json`;
 
       const link = document.createElement("a");
@@ -56,19 +57,16 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       toast.success(`Файл ${fileName} скачан`);
     } catch (err) {
-      console.error(err);
       toast.error("Ошибка при скачивании файла");
     }
   };
 
   return (
-
     <ResponsiveSheet
       open={open}
       onOpenChange={setOpen}
@@ -86,11 +84,9 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
         </Button>
       }
     >
-      <div className="flex flex-col h-full gap-4 pb-safe"> {/* pb-safe для iPhone */}
-
-        {/* Контент: JSON превью */}
-        <div
-          className="relative border rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
+      <div className="flex flex-col h-full gap-4 pb-safe">
+        {/* Контент: Превью */}
+        <div className="relative border rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
           {isLoading ? (
             <div className="flex h-full items-center justify-center flex-col gap-2 text-muted-foreground p-8">
               <Loader2 className="h-8 w-8 animate-spin"/>
@@ -112,7 +108,7 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
           )}
         </div>
 
-        {/* Футер с кнопками */}
+        {/* Футер: Кнопки */}
         <div className="flex justify-end gap-2 pt-2 border-t mt-auto">
           <Button
             variant="default"
@@ -138,9 +134,7 @@ export function OrderJsonModal({orderId, className}: OrderJsonModalProps) {
             Закрыть
           </Button>
         </div>
-
       </div>
-
     </ResponsiveSheet>
   );
 }

@@ -1,12 +1,12 @@
-import { useSearchParams } from "react-router-dom";
-import { useCallback, useMemo } from "react";
-import type { OrderFilterState } from "@/components/Order/Orders/types.ts";
+import {useSearchParams} from "react-router-dom";
+import {useCallback, useMemo} from "react";
+import type {OrderFilterState} from "@/components/Order/Orders/types.ts";
 
 const ALLOWED_FILTERS = [
   "search",
   "status_id",
-  "inn_dealer",    // Новое: фильтрация по списку ИНН
-  "salon_code",    // Новое: фильтрация по списку кодов салонов
+  "inn_dealer",
+  "salon_code",
   "origin_type",
   "created_at_from",
   "created_at_to",
@@ -17,13 +17,13 @@ const ALLOWED_FILTERS = [
 export function useOrderUrlState(defaultLimit = 20) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // --- СОРТИРОВКА ---
+  // Сортировка
   const sortParam = searchParams.get("sort");
 
   const sortConfig = useMemo(() => {
-    if (!sortParam) return { field: null, direction: null };
+    if (!sortParam) return {field: null, direction: null};
     const [field, direction] = sortParam.split(":");
-    return { field, direction: direction as "asc" | "desc" };
+    return {field, direction: direction as "asc" | "desc"};
   }, [sortParam]);
 
   const toggleSort = useCallback((key: string) => {
@@ -47,15 +47,15 @@ export function useOrderUrlState(defaultLimit = 20) {
     });
   }, [setSearchParams]);
 
-  // --- ПАГИНАЦИЯ ---
+  // Пагинация
   const limit = Number(searchParams.get("limit")) || defaultLimit;
   const offset = Number(searchParams.get("offset")) || 0;
 
-  // --- ПОИСК ---
+  // Поиск
   const rawSearch = searchParams.get("search") ?? '';
   const searchString = rawSearch ? rawSearch : undefined;
 
-  // --- ФИЛЬТРЫ ДЛЯ API (строка key=v1,v2;key2=v3) ---
+  // Фильтры для api (строка key=v1,v2;key2=v3)
   const filterString = useMemo(() => {
     const parts: string[] = [];
     searchParams.forEach((value, key) => {
@@ -66,7 +66,7 @@ export function useOrderUrlState(defaultLimit = 20) {
     return parts.join(";");
   }, [searchParams]);
 
-  // --- АКТИВНЫЕ ФИЛЬТРЫ ДЛЯ UI (объект со списками) ---
+  // Активные фильтры для ui
   const activeFilters = useMemo<OrderFilterState>(() => ({
     search: searchParams.get("search") || "",
     // Новая логика множественного выбора для Дилеров и Салонов
@@ -82,7 +82,7 @@ export function useOrderUrlState(defaultLimit = 20) {
     updated_at_to: searchParams.get("updated_at_to") || "",
   }), [searchParams]);
 
-  // --- МЕТОДЫ ОБНОВЛЕНИЯ ---
+  // Методы обновления
   const setPage = useCallback((newOffset: number) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -112,8 +112,7 @@ export function useOrderUrlState(defaultLimit = 20) {
           } else {
             p.delete(key);
           }
-        }
-        else if (value !== null && value !== undefined && value !== "") {
+        } else if (value !== null && value !== undefined && value !== "") {
           p.set(key, String(value));
         } else {
           p.delete(key);

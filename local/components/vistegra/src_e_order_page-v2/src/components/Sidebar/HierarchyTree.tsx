@@ -58,8 +58,8 @@ export function HierarchyTree({data, isSearching}: HierarchyTreeProps) {
 
         return (
           <Collapsible
-            key={dealer.inn}
-            open={shouldBeOpen ? true : undefined}
+            key={`${dealer.inn}-${isSearching}`}
+            defaultOpen={shouldBeOpen}
             className="group/dealer"
           >
             <SidebarMenuItem>

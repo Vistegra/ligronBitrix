@@ -24,6 +24,7 @@ import {cn} from "@/lib/utils";
 import {PAGE} from "@/api/constants.ts";
 import {formatDate} from "@/components/Order/Orders/utils.ts";
 import {OpenInCalculatorButton} from "@/components/Order/OrderEdit/OpenInCalculatorButton.tsx";
+import {useDebounce} from "@/hooks/useDebounce.ts";
 
 interface OrderEditProps {
   className?: string;
@@ -37,8 +38,13 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
   const [activeTab, setActiveTab] = useState("description");
 
-  const {order, loading, error, files} = useOrder(orderId);
+  const { order, isLoading, error, files, refetch } = useOrder(orderId);
   const {children, loading: childLoading} = useChildOrders(orderId);
+
+  // Создаем дебаунс-версию функции refetch
+  const debouncedRefetch = useDebounce(() => {
+    refetch();
+  }, 3000);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,14 +74,40 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
     }
   };
 
-  if (loading) return <div className="h-full flex items-center justify-center"><Loader2
-    className="animate-spin h-8 w-8 text-muted-foreground"/></div>;
+  // Сначала показываем загрузку
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-muted-foreground"/>
+      </div>
+    );
+  }
 
-  if (error || !order) return (
-    <Alert variant="destructive">
-      <AlertDescription>{error || "Заказ не найден"}</AlertDescription>
-    </Alert>
-  );
+  // Если загрузка завершена, но есть ошибка от API
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Если загрузка завершена, ошибок нет, но заказа в базе не существует
+  if (!order) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Заказ №{orderId} не найден в системе</AlertDescription>
+      </Alert>
+    );
+  }
+
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    //обновление заказа с задержкой
+    debouncedRefetch();
+  };
+
 
   return (
     <div className={cn('bg-background h-full flex flex-col overflow-hidden relative', className)}>
@@ -111,7 +143,7 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
         <CardContent className="px-0 md:px-6 flex-1 flex flex-col overflow-hidden min-h-0">
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
 
             <div className="bg-background pb-2 md:p-0 shrink-0">
               <TabsList className={cn(

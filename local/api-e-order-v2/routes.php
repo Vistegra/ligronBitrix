@@ -64,6 +64,9 @@ return function (App $app) {
       });
     });
 
+    // Тест отправки заказа
+    $api->post('/fake-1c-webhook', \OrderApiV2\Controllers\Fake1CWebhookController::class . ':post');
+
     /** УВЕДОМЛЕНИЯ */
     /*$api->group('/notifications', function (RouteCollectorProxy $notify) {
       $notify->get('', NotificationController::class . ':index');                        // Список

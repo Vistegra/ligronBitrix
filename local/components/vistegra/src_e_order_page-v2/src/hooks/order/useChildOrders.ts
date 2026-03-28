@@ -1,15 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { orderApi } from "@/api/orderApi.ts";
+import {useQuery} from "@tanstack/react-query";
+import {queries} from "@/lib/queryFactory";
 
 export function useChildOrders(parentId: number) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['orders', 'children', parentId],
-    queryFn: () => orderApi.getOrders({ filter: `parent_id=${parentId}`, is_draft: 0 }),
-    enabled: !!parentId
-  });
+  // Конфигурация из фабрики
+  const {data, isLoading} = useQuery(queries.orders.children(parentId));
 
   return {
+    // Вложенные заказы
     children: data?.data?.orders || [],
     loading: isLoading
   };
+
 }

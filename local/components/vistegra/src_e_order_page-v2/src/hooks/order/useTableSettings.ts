@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
-import { safeStorage } from "@/helpers/storage";
-import type { PartVisibleColumns, PageSize, ColumnKey } from "@/components/Order/Orders/types";
+import {useState, useCallback, useEffect} from "react";
+import {safeStorage} from "@/helpers/storage";
+import type {PartVisibleColumns, PageSize, ColumnKey} from "@/components/Order/Orders/types";
 
 interface UseTableSettingsProps {
   storageKey: string;
@@ -21,18 +21,14 @@ export function useTableSettings({
    */
   const getFilteredColumns = useCallback(
     (saved: unknown): PartVisibleColumns => {
-      // Проверяем, что saved — это объект и не null
       if (!saved || typeof saved !== "object") {
         return initialVisibleColumns;
       }
 
-      // Приводим к типу записи, чтобы можно было обращаться по ключам
       const savedData = saved as Record<string, boolean>;
       const filtered: PartVisibleColumns = {};
 
-      // Итерируемся строго по ключам ПРЕСЕТА (initialVisibleColumns)
       (Object.keys(initialVisibleColumns) as ColumnKey[]).forEach((key) => {
-        // Если в сохраненных есть значение — берем его, иначе — дефолт из пресета
         filtered[key] = savedData[key] !== undefined ? savedData[key] : initialVisibleColumns[key];
       });
 
@@ -93,5 +89,11 @@ export function useTableSettings({
     [PAGE_SIZE_KEY]
   );
 
-  return { visibleColumns, setVisibleColumns, pageSize, setPageSize };
+  return {
+    visibleColumns,
+    setVisibleColumns,
+    pageSize,
+    setPageSize
+  };
+
 }

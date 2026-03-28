@@ -1,65 +1,53 @@
-import {useQuery, keepPreviousData} from "@tanstack/react-query";
-import {orderApi} from "@/api/orderApi.ts";
-import {useOrderUrlState} from "./useOrderUrlState";
-import {useContextSync} from "@/hooks/order/useContextSync.ts";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useOrderUrlState } from "./useOrderUrlState";
+import { useContextSync } from "@/hooks/order/useContextSync.ts";
+import { queries } from "@/lib/queryFactory";
 
 export function useOrders(defaultLimit = 20, isDraft: boolean) {
-
+  // Состояние из URL
   const {
     limit,
     offset,
     filterString,
     searchString,
     activeFilters,
-    setPage,
-    setLimit,
     updateFilters,
-
     sortParam,
-    sortConfig,
-    toggleSort,
+    ...urlStateMethods
   } = useOrderUrlState(defaultLimit);
 
+  // Синхронизация контекста с фильтрами URL
   useContextSync(activeFilters, updateFilters);
 
-  const {data, isLoading, isError, error, isFetching} = useQuery({
-    queryKey: ['orders', 'list',
-      {
-        isDraft: Number(isDraft),
-        limit,
-        offset,
-        filter: filterString,
-        search: searchString,
-        sort: sortParam
-      }
-    ],
+  // Объект параметров для запроса
+  const requestParams = {
+    limit,
+    offset,
+    is_draft: Number(isDraft),
+    filter: filterString,
+    search: searchString,
+    sort: sortParam,
+  };
 
-    queryFn: () => orderApi.getOrders({
-      limit,
-      offset,
-      is_draft: Number(isDraft),
-      filter: filterString,
-      search: searchString,
-      sort: sortParam
-    }),
 
+  const { data, isLoading, isError, error, isFetching } = useQuery({
+    ...queries.orders.list(requestParams),
     placeholderData: keepPreviousData,
-    staleTime: 300,
   });
 
   return {
+    // Данные
     orders: data?.data?.orders || [],
-    pagination: data?.data?.pagination || {limit, offset, total: 0},
+    pagination: data?.data?.pagination || { limit, offset, total: 0 },
+
+    // Статусы загрузки
     loading: isLoading,
     isFetching,
     error: isError ? (error as Error).message : null,
 
-    // методы и данные из useOrderUrlState
+    // Методы управления (фильтры, пагинация, сортировка)
     activeFilters,
-    setPage,
-    setLimit,
     updateFilters,
-    sortConfig,
-    toggleSort,
+    ...urlStateMethods,
   };
 }

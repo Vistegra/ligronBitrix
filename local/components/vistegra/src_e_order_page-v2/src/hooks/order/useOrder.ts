@@ -1,19 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { orderApi } from "@/api/orderApi.ts";
+import { queries } from "@/lib/queryFactory";
 
 export function useOrder(id: number) {
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['orders', 'detail', id],
-    queryFn: () => orderApi.getOrder(id),
-    enabled: !!id && id > 0, // Не делать запрос, если ID нет
-    staleTime: 5 * 60 * 1000, // 5 минут кэша
-    retry: 1,
-  });
+
+  const query = useQuery(queries.orders.detail(id));
 
   return {
-    order: data?.data?.order || null,
-    files: data?.data?.files || [],
-    loading: isLoading,
-    error: isError ? (error as Error).message : null,
+    order: query.data?.data?.order || null,
+    files: query.data?.data?.files || [],
+    isLoading: query.isLoading,
+    error: query.error?.message,
+    refetch: query.refetch,
   };
 }

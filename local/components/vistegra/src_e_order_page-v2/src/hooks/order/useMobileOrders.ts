@@ -1,44 +1,36 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { orderApi } from "@/api/orderApi";
-import { useOrderUrlState } from "./useOrderUrlState";
+import {useInfiniteQuery} from "@tanstack/react-query";
+import {useOrderUrlState} from "./useOrderUrlState";
+import {useContextSync} from "@/hooks/order/useContextSync.ts";
+import {queries} from "@/lib/queryFactory";
 
 const PAGE_SIZE = 10;
 
 export function useMobileOrders(isDraft: boolean) {
-  const { filterString, searchString, activeFilters } = useOrderUrlState(PAGE_SIZE);
+  // Состояние из URL
+  const {filterString, searchString, activeFilters, updateFilters} = useOrderUrlState(PAGE_SIZE);
 
-  const query = useInfiniteQuery({
-    queryKey: ["orders", "mobile", { isDraft: Number(isDraft), filter: filterString, search: searchString }],
+  // Синхронизация контекста
+  useContextSync(activeFilters, updateFilters);
 
-    queryFn: async ({ pageParam = 0 }) => {
-      const res = await orderApi.getOrders({
-        limit: PAGE_SIZE,
-        offset: pageParam,
-        is_draft: Number(isDraft),
-        filter: filterString,
-        search: searchString,
-      });
-      return res.data;
-    },
+  // Параметры без offset
+  const requestParams = {
+    limit: PAGE_SIZE,
+    is_draft: Number(isDraft),
+    filter: filterString,
+    search: searchString,
+  };
 
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const currentTotal = allPages.reduce((acc, page) => acc + (page?.orders?.length || 0), 0);
-
-      if (lastPage && currentTotal < lastPage.pagination.total) {
-        return currentTotal;
-      }
-      return undefined;
-    },
-    staleTime: 1000 * 60,
-  });
+  const query = useInfiniteQuery(queries.orders.infiniteList(requestParams));
 
   const orders = query.data?.pages.flatMap((page) => page?.orders) || [];
   const total = query.data?.pages[0]?.pagination.total || 0;
 
   return {
+    // Данные
     orders,
     total,
+
+    // Статусы
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
@@ -47,6 +39,7 @@ export function useMobileOrders(isDraft: boolean) {
     isFetchingNextPage: query.isFetchingNextPage,
     refetch: query.refetch,
 
+    // Фильтры
     activeFilters
   };
 }

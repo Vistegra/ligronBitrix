@@ -1,6 +1,6 @@
-import { useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { PAGE } from "@/api/constants";
+import {useCallback} from "react";
+import {useNavigate, useLocation} from "react-router-dom";
+import {PAGE} from "@/api/constants";
 
 export function useAuthNavigation() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export function useAuthNavigation() {
     const fullPath = location.pathname + location.search;
     navigate(PAGE.LOGIN, {
       replace: true,
-      state: { from: fullPath }
+      state: {from: fullPath}
     });
   }, [navigate, location.pathname, location.search]);
 
@@ -28,7 +28,7 @@ export function useAuthNavigation() {
     const from = location.state?.from;
     const redirectTo = from && from !== PAGE.LOGIN ? from : PAGE.ORDERS;
 
-    navigate(redirectTo, { replace: true });
+    navigate(redirectTo, {replace: true});
   }, [navigate, location.state?.from]);
 
   /**
@@ -39,8 +39,8 @@ export function useAuthNavigation() {
     if (newParams.has(param)) {
       newParams.delete(param);
       navigate(
-        { pathname: location.pathname, search: newParams.toString() },
-        { replace: true }
+        {pathname: location.pathname, search: newParams.toString()},
+        {replace: true}
       );
     }
   }, [navigate, location.pathname, location.search]);

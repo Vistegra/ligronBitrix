@@ -40,7 +40,7 @@ export function StatusHistoryTab({history}: Props) {
 
               return (
                 <TableRow
-                  key={item.id}
+                  key={`${item.id}-${index}`}
                   className={`
                     border-b last:border-b-0
                     ${isFirst ? "rounded-t-lg" : ""}

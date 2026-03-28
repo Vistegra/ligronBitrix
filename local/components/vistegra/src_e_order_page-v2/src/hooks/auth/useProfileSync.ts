@@ -1,7 +1,6 @@
 import {useQuery} from "@tanstack/react-query";
 import {useAuthStore} from "@/store/authStore";
 import {useContextStore} from "@/store/contextStore";
-import {authApi} from "@/api/authApi";
 import {useEffect} from "react";
 import {queries} from "@/lib/queryFactory.ts";
 import type {ApiResponse} from "@/api/client";
@@ -13,33 +12,31 @@ interface UseProfileSyncProps {
 
 export function useProfileSync({isTokenProcessing}: UseProfileSyncProps) {
   const {token, user, updateUserDetailed, logout} = useAuthStore();
-
   const {inn, _set} = useContextStore();
 
   const query = useQuery({
     ...queries.auth.me(),
-    queryFn: () => authApi.me(),
-    enabled: !!token && !isTokenProcessing,
+    // Данные из кэша для мгновенного отображения
     initialData: user?.detailed
       ? ({
-        status: 'success',
-        message: 'from cache',
-        data: {detailed: user.detailed}
+        status: "success",
+        message: "from cache",
+        data: {detailed: user.detailed},
       } as ApiResponse<DetailedResponse>)
       : undefined,
+    enabled: !!token && !isTokenProcessing,
   });
 
-  // Инициализация дефолтного контекста для Дилера
+  // Авто-установка контекста для Дилера при входе
   useEffect(() => {
-    // Если зашел Дилер и в сторе пусто
-    if (user?.provider === 'dealer' && !inn) {
+    if (user?.provider === "dealer" && !inn) {
       if (user.inn_dealer && user.salon_code) {
         _set(user.inn_dealer, user.salon_code);
       }
     }
   }, [user, inn, _set]);
 
-  // Синхронизация данных профиля
+  // Синхронизация данных профиля с состоянием
   useEffect(() => {
     if (isTokenProcessing) return;
 
@@ -55,16 +52,11 @@ export function useProfileSync({isTokenProcessing}: UseProfileSyncProps) {
         updateUserDetailed(incomingDetailed);
       }
     }
-  }, [
-    query.data,
-    query.isError,
-    user?.detailed,
-    isTokenProcessing,
-    logout,
-    updateUserDetailed
-  ]);
+  }, [query.data, query.isError, user?.detailed, isTokenProcessing, logout, updateUserDetailed]);
 
-  const isProfileLoading = !!token && (query.isLoading || !user?.detailed);
+  return {
+    // Статусы
+    isProfileLoading: !!token && (query.isLoading || !user?.detailed),
+  };
 
-  return {isProfileLoading};
 }
