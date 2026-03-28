@@ -6,6 +6,7 @@ namespace OrderApi\Services\Order;
 use Bitrix\Main\Type\DateTime;
 use OrderApi\Config\ApiConfig;
 use OrderApi\DB\Models\OrderTable;
+use OrderApi\DB\Repositories\DealerUserRepository;
 use OrderApi\DB\Repositories\FileDiskRepository;
 use OrderApi\DB\Repositories\OrderFileRepository;
 use OrderApi\DB\Repositories\OrderRepository;
@@ -48,10 +49,25 @@ final readonly class OrderService
       $data['dealer_prefix'] = $this->user->dealer_prefix;
       $data['dealer_user_id'] = $this->user->id;
 
+      // Поддержка v2
+      $data['INN_DEALER'] = AuthSession::getInn();
+      $data['SALON_CODE'] = AuthSession::getSalonCode();
+
     } elseif ($this->user->isManager()) {
       $data['created_by'] = OrderTable::CREATED_BY_MANAGER;
       if (!$data['dealer_prefix'] || !$data['dealer_user_id']) {
         throw new \RuntimeException('Не переданы данные пользователя');
+      }
+
+      $dealer = DealerUserRepository::getDealerByPrefix($data['dealer_prefix'], ['select' => ['settings']]);
+      if ($dealer) {
+        $data['inn_dealer'] = $dealer['settings']['prop_tin'] ?? null;
+
+        // Салон для менеджера обычно передается в $data или будет пустым
+        if (isset($data['salon_code'])) {
+          $data['SALON_CODE'] = $data['salon_code'];
+        }
+
       }
 
     } elseif ($this->user->isOfficeManager()) {
@@ -143,6 +159,10 @@ final readonly class OrderService
     $data['status_id'] = $statusData['status_id'];
     $data['status_history'] = $statusData['status_history'];
     $data['number'] = $responseData['ligron_number'];
+
+    // Поддержка api v2
+    if (!empty($responseData['client'])) $data['inn_dealer'] = $responseData['client'];
+    if (!empty($responseData['salon'])) $data['salon_code'] = $responseData['salon'];
 
     return OrderRepository::update($orderId, $data);
   }

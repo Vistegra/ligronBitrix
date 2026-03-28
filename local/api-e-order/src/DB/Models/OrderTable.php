@@ -158,6 +158,17 @@ class OrderTable extends DataManager
         'fetch_data_modification' => F::toTimestamp(),
       ]),
 
+      // Поддержка api v2
+      new Fields\StringField('inn_dealer', [
+        'size' => 20,
+        'nullable' => true,
+      ]),
+
+      new Fields\StringField('salon_code', [
+        'size' => 50,
+        'nullable' => true,
+      ]),
+
     ];
   }
 

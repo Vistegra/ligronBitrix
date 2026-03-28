@@ -62,6 +62,15 @@ final readonly class Webhook1cOrderService
         [$newHistoryItem],
         $order['status_history'] ?? []
       );
+
+    }
+
+    // Поддержка api v2
+    if (!empty($data['client'])) {
+      $fieldsToUpdate['inn_dealer'] = (string)$data['client'];
+    }
+    if (!empty($data['salon'])) {
+      $fieldsToUpdate['salon_code'] = (string)$data['salon'];
     }
 
     // Дополнительные поля
@@ -161,6 +170,10 @@ final readonly class Webhook1cOrderService
       'name' => (string)$data['name'],
       'comment' => (string)($data['comment'] ?? ''),
 
+      // Поддержка api v2
+      'inn_dealer' => (string)$data['client'],
+      'salon_code' => (string)$data['salon'],
+
       // Привязки
       'dealer_prefix' => $dealerData['prefix'],
       'dealer_user_id' => $dealerData['user_id'],
@@ -251,4 +264,5 @@ final readonly class Webhook1cOrderService
       return null;
     }
   }
+
 }
