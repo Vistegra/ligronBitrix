@@ -18,7 +18,7 @@ export function useAuth() {
   });
 
   // 4. Логика ручного входа
-  const { login, loginError, resetError } = useAuthLogin();
+  const { login, error: loginError, resetError } = useAuthLogin();
 
   const { user } = useAuthStore();
 

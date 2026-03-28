@@ -73,8 +73,9 @@ export const queries = {
       queryKey: [...queries.orders._lists(), params] as const,
       queryFn: () => orderApi.getOrders(params),
       staleTime: 30 * TIME.SECOND,
-      refetchOnWindowFocus: 'always',
+      refetchOnWindowFocus: 'always' as const,
     }),
+
 
     // Детальная страница заказа по ID
     detail: (id: number) => queryOptions({
@@ -110,7 +111,7 @@ export const queries = {
     // Бесконечный список заказов для мобильной версии
     infiniteList: (params: Omit<OrdersRequest, 'offset'>) => ({
       queryKey: [...queries.orders._lists(), 'infinite', params] as const,
-      queryFn: async ({pageParam = 0}) => {
+      queryFn: async ({ pageParam = 0 }) => {
         const res = await orderApi.getOrders({
           ...params,
           offset: pageParam as number,
@@ -123,7 +124,7 @@ export const queries = {
         return lastPage && currentTotal < lastPage.pagination.total ? currentTotal : undefined;
       },
       staleTime: 30 * TIME.SECOND,
-      refetchOnWindowFocus: 'always',
+      refetchOnWindowFocus: 'always' as const,
     }),
 
   },

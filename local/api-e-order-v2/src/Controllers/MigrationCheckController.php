@@ -42,115 +42,102 @@ class MigrationCheckController extends AbstractController
   /**
    * Отчет по Заказам: Анализ сопоставления и выполнение миграции
    */
+  /**
+   * Отчет по Заказам: Анализ и Миграция
+   */
   public function orders(ServerRequestInterface $request): ResponseInterface
   {
     $queryParams = $request->getQueryParams();
     $isUpdateAction = ($queryParams['is_update_salons_and_dealers'] ?? '0') === '1';
 
     $analyzer = new OrderMigrationAnalyzerService();
-    $migrationReport = null;
+    $migrationReport = $isUpdateAction ? $analyzer->migrate() : null;
 
-    // 1. Выполнение миграции, если передан соответствующий флаг
-    if ($isUpdateAction) {
-      $migrationReport = $analyzer->migrate();
-    }
-
-    // 2. Получение свежих данных анализа (после возможного обновления)
     $results = $analyzer->analyze();
 
-    // 3. Расчет статистики для сводных карточек
+    // Расчет статистики
     $total = count($results);
-    $ready = 0;
-    $missingLink = 0;
+    $alreadyInBase = 0;
+    $readyToMigrate = 0;
     $errors = 0;
 
     foreach ($results as $res) {
-      if ($res['link_valid_v2']) {
-        $ready++;
-      } elseif ($res['exists_in_v2']) {
-        $missingLink++;
+      if ($res['is_already_filled']) {
+        $alreadyInBase++;
+      } elseif ($res['found_in_v1'] && $res['exists_in_v2']) {
+        $readyToMigrate++;
       } else {
         $errors++;
       }
     }
 
-    // 4. Генерация HTML
-    $html = $this->renderHtmlHead('Детальный Анализ и Миграция Заказов V1');
+    $html = $this->renderHtmlHead('Миграция Заказов: V1 (Префиксы) -> V2 (ИНН)');
 
-    // Блок отчета о выполненной миграции (если действие было запущено)
     if ($migrationReport) {
       $html .= '<div class="card" style="border-left: 5px solid #27ae60; background: #f0fff4;">
-                <h2 style="color:#27ae60; margin-bottom:10px;">Отчет о выполнении обновления</h2>
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                    <div>Всего проанализировано: <b>' . $migrationReport['total'] . '</b></div>
-                    <div style="color:#27ae60">Успешно обновлено: <b>' . $migrationReport['updated'] . '</b></div>
-                    <div style="color:#7f8c8d">Пропущено: <b>' . $migrationReport['skipped'] . '</b></div>
+                <h3>Результат выполнения миграции:</h3>
+                <p>Всего в очереди: <b>' . $migrationReport['total'] . '</b> | 
+                   Успешно обновлено: <b style="color:green">' . $migrationReport['updated'] . '</b> | 
+                   Уже было заполнено: <b>' . $migrationReport['already_filled'] . '</b> | 
+                   Пропущено (ошибки): <b style="color:red">' . $migrationReport['skipped'] . '</b></p>
                 </div>';
-      if (!empty($migrationReport['errors'])) {
-        $html .= '<div style="margin-top:10px; color:#e74c3c; font-size:12px;">
-                    <strong>Ошибки при записи в БД (' . count($migrationReport['errors']) . '):</strong><br>'
-          . implode('<br>', array_slice($migrationReport['errors'], 0, 5)) . '...
-                  </div>';
-      }
-      $html .= '</div>';
     }
 
-    // Секция сводной статистики и кнопка управления
     $html .= '<div class="card">
             <div class="stats">
-                <div class="stat-box">Всего заказов V1<br><strong>' . $total . '</strong></div>
-                <div class="stat-box">Полностью готовы (V2 OK)<br><strong style="color:#27ae60">' . $ready . '</strong></div>
-                <div class="stat-box">Объекты найдены, нет связей<br><strong style="color:#f39c12">' . $missingLink . '</strong></div>
-                <div class="stat-box">Ошибки данных (не сопоставлено)<br><strong style="color:#e74c3c">' . $errors . '</strong></div>
+                <div class="stat-box">Всего заказов<br><strong>' . $total . '</strong></div>
+                <div class="stat-box" style="border-color:#3498db">Уже в базе V2<br><strong style="color:#3498db">' . $alreadyInBase . '</strong></div>
+                <div class="stat-box" style="border-color:#27ae60">Готовы к миграции<br><strong style="color:#27ae60">' . $readyToMigrate . '</strong></div>
+                <div class="stat-box" style="border-color:#e74c3c">Кривые данные V1<br><strong style="color:#e74c3c">' . $errors . '</strong></div>
                 
-                <div class="stat-box" style="background:#f8f9fa; border: 1px dashed #cbd5e0; min-width:280px;">
-                    <form method="GET" onsubmit="return confirm(\'ВНИМАНИЕ: Будут обновлены поля INN_DEALER и SALON_CODE для всех сопоставленных заказов. Продолжить?\')">
+                <div class="stat-box" style="background:#fdf2e9; border: 1px dashed #e67e22;">
+                    <form method="GET">
                         <input type="hidden" name="is_update_salons_and_dealers" value="1">
-                        <button type="submit" style="width:100%; padding:12px; background:#2ecc71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow: 0 2px 4px rgba(46,204,113,0.3);">
-                            ЗАПУСТИТЬ МИГРАЦИЮ ПОЛЕЙ
+                        <button type="submit" style="width:100%; padding:10px; background:#e67e22; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+                            ЗАПУСТИТЬ МИГРАЦИЮ ПУСТЫХ ПОЛЕЙ
                         </button>
                     </form>
                 </div>
             </div>
         </div>';
 
-    // Детальная таблица реестра
     $html .= '<div class="card">
-            <h2>Реестр заказов и статус сопоставления</h2>
-            <table style="width:100%; border-collapse: collapse;">
+            <h2>Реестр сопоставления</h2>
+            <table>
                 <thead>
                     <tr>
-                        <th style="width:50px">ID</th>
-                        <th style="width:120px">Номер</th>
-                        <th style="width:100px">V1 Префикс</th>
-                        <th style="width:140px">Целевой ИНН</th>
-                        <th style="width:140px">Код Салона</th>
-                        <th>Логин владельца</th>
-                        <th style="width:110px">Статус V2</th>
-                        <th>Ошибка / Комментарий</th>
+                        <th>ID</th>
+                        <th>Номер</th>
+                        <th>V1 Префикс</th>
+                        <th>Текущие V2 (ИНН / Салон)</th>
+                        <th>Целевые V2 (ИНН / Салон)</th>
+                        <th>Статус</th>
+                        <th>Комментарий</th>
                     </tr>
                 </thead>
                 <tbody>';
 
     foreach ($results as $r) {
-      $rowClass = $r['link_valid_v2'] ? 'status-ok' : ($r['exists_in_v2'] ? 'status-warn' : 'status-err');
-      $v2StatusLabel = $r['link_valid_v2'] ? '✅ ГОТОВ' : ($r['exists_in_v2'] ? '⚠️ НЕТ СВЯЗИ' : '❌ ОШИБКА');
+      $rowClass = $r['is_already_filled'] ? 'status-ok' : ($r['found_in_v1'] && $r['exists_in_v2'] ? 'status-warn' : 'status-err');
+      $statusLabel = $r['is_already_filled'] ? '✅ В БАЗЕ' : ($r['found_in_v1'] && $r['exists_in_v2'] ? '⏳ ОЖИДАЕТ' : '❌ ОШИБКА');
 
       $html .= "<tr class='{$rowClass}'>
                 <td>{$r['order_id']}</td>
                 <td><b>{$r['order_number']}</b></td>
-                <td><code style='background:#eee; padding:2px 4px; border-radius:3px;'>{$r['v1_prefix']}</code></td>
-                <td>" . ($r['old_inn'] ?? '<span style="color:red">не определен</span>') . "</td>
-                <td>" . ($r['old_salon_code'] ?? '<span style="color:red">не определен</span>') . "</td>
-                <td style='color:#7f8c8d'>{$r['old_user_login']}</td>
-                <td style='font-weight:bold; font-size:11px;'>{$v2StatusLabel}</td>
-                <td style='font-size:11px; color:#555;'>" . ($r['error'] ?? '<span style="color:green">Данные сопоставлены успешно</span>') . "</td>
+                <td><code>{$r['v1_prefix']}</code></td>
+                <td style='font-size:11px; color:#666'>
+                    " . ($r['current_inn'] ?: '—') . " / " . ($r['current_salon'] ?: '—') . "
+                </td>
+                <td>
+                    " . ($r['old_inn'] ?: '<span style="color:red">?</span>') . " / 
+                    " . ($r['old_salon_code'] ?: '<span style="color:red">?</span>') . "
+                </td>
+                <td style='font-weight:bold; font-size:11px;'>{$statusLabel}</td>
+                <td style='font-size:11px'>" . ($r['error'] ?: '<span style="color:green">OK</span>') . "</td>
             </tr>";
     }
 
-    $html .= '</tbody></table></div>';
-    $html .= '</body></html>';
-
+    $html .= '</tbody></table></div></body></html>';
     return $this->htmlResponse($html);
   }
 

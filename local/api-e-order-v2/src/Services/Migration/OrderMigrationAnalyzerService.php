@@ -18,12 +18,10 @@ class OrderMigrationAnalyzerService
   {
     $results = [];
 
-    // 1. ЗАГРУЖАЕМ НОВЫЕ ДАННЫЕ (V2 - MS SQL) для проверки существования
+    // 1. ЗАГРУЖАЕМ НОВЫЕ ДАННЫЕ (V2 - MS SQL)
     $newDealers = array_column(NewDealerTable::getList(['select' => ['inn_dealer']])->fetchAll(), 'inn_dealer', 'inn_dealer');
     $newSalons = array_column(NewSalonTable::getList(['select' => ['salon_code']])->fetchAll(), 'salon_code', 'salon_code');
-    $newUsers = array_column(NewDealerUserTable::getList(['select' => ['username', 'id']])->fetchAll(), 'id', 'username');
 
-    // Кэшируем связи ИНН-Салон в V2
     $newLinksRaw = NewDealerSalonTable::getList(['select' => ['inn_dealer', 'salon_code']])->fetchAll();
     $newLinks = [];
     foreach ($newLinksRaw as $link) {
@@ -37,28 +35,21 @@ class OrderMigrationAnalyzerService
       $prefix = $od['cms_param']['prefix'] ?? null;
       if (!$prefix) continue;
 
-      $inn = trim((string)($od['settings']['prop_tin'] ?? ''));
-
-      // Маппинг имен салонов в коды из настроек V1
       $salonsMap = [];
       $rawSalons = $od['settings']['prop_dealercode'] ?? [];
       if (is_array($rawSalons)) {
         foreach ($rawSalons as $item) {
           $sData = $this->extractSalonData($item);
-          if ($sData) {
-            $salonsMap[mb_strtolower($sData['name'])] = $sData['code'];
-          }
+          if ($sData) $salonsMap[mb_strtolower($sData['name'])] = $sData['code'];
         }
       }
-
       $oldDealersCache[$prefix] = [
-        'inn' => $inn,
-        'name' => $od['name'],
+        'inn' => trim((string)($od['settings']['prop_tin'] ?? '')),
         'salons' => $salonsMap
       ];
     }
 
-    // 3. ПОЛУЧАЕМ ЗАКАЗЫ ДЛЯ АНАЛИЗА
+    // 3. ПОЛУЧАЕМ ЗАКАЗЫ
     $orders = OrderTable::getList([
       'filter' => ['!=dealer_prefix' => null],
       'select' => ['id', 'number', 'name', 'dealer_prefix', 'dealer_user_id', 'inn_dealer', 'salon_code']
@@ -67,22 +58,24 @@ class OrderMigrationAnalyzerService
     $oldUsersCache = [];
 
     foreach ($orders as $order) {
-      $orderId = (int)$order['id'];
       $prefix = trim((string)$order['dealer_prefix']);
       $oldUserId = (int)$order['dealer_user_id'];
 
       $analysis = [
-        'order_id' => $orderId,
+        'order_id' => (int)$order['id'],
         'order_number' => $order['number'] ?: 'Draft',
         'v1_prefix' => $prefix,
-        'v1_user_id' => $oldUserId,
 
-        // Результаты поиска в V1
+        // ТЕКУЩЕЕ СОСТОЯНИЕ (V2)
+        'current_inn' => $order['inn_dealer'],
+        'current_salon' => $order['salon_code'],
+        'is_already_filled' => !empty($order['inn_dealer']) && !empty($order['salon_code']),
+
+        // ЦЕЛЕВЫЕ ДАННЫЕ (из V1)
         'old_inn' => null,
         'old_salon_code' => null,
         'old_user_login' => null,
 
-        // Флаги статуса
         'found_in_v1' => false,
         'exists_in_v2' => false,
         'link_valid_v2' => false,
@@ -90,58 +83,41 @@ class OrderMigrationAnalyzerService
       ];
 
       try {
-        // А) Ищем дилера и ИНН
-        if (!isset($oldDealersCache[$prefix])) {
-          throw new \Exception("Дилер V1 не найден по префиксу");
-        }
-        $dealerData = $oldDealersCache[$prefix];
-        $analysis['old_inn'] = $dealerData['inn'];
+        if (!isset($oldDealersCache[$prefix])) throw new \Exception("Дилер V1 не найден");
+        $dealerV1 = $oldDealersCache[$prefix];
+        $analysis['old_inn'] = $dealerV1['inn'];
 
-        // Б) Ищем пользователя и его салон в V1
-        $uCacheKey = $prefix . '_' . $oldUserId;
-        if (!isset($oldUsersCache[$uCacheKey])) {
+        $uKey = $prefix . '_' . $oldUserId;
+        if (!isset($oldUsersCache[$uKey])) {
           $userClass = OldDealerUserTable::getEntityClassByPrefix($prefix);
-          $oldUser = $userClass::getByPrimary($oldUserId, ['select' => ['login', 'contacts']])->fetch();
-          $oldUsersCache[$uCacheKey] = $oldUser ?: false;
+          $oldUsersCache[$uKey] = $userClass::getByPrimary($oldUserId, ['select' => ['login', 'contacts']])->fetch();
         }
+        $userV1 = $oldUsersCache[$uKey];
+        if (!$userV1) throw new \Exception("Юзер V1 не найден");
 
-        $userData = $oldUsersCache[$uCacheKey];
-        if (!$userData) {
-          throw new \Exception("Пользователь V1 не найден в таблице {$prefix}users");
-        }
+        $analysis['old_user_login'] = $userV1['login'];
+        $salonNameV1 = trim((string)($userV1['contacts']['code'] ?? ''));
+        $resolvedCode = $dealerV1['salons'][mb_strtolower($salonNameV1)] ?? null;
 
-        $analysis['old_user_login'] = $userData['login'];
-        $salonNameV1 = trim((string)($userData['contacts']['code'] ?? ''));
+        if (!$resolvedCode) throw new \Exception("Салон '{$salonNameV1}' не найден в маппинге");
 
-        if (!$salonNameV1) {
-          throw new \Exception("У пользователя V1 не указан салон в профиле");
-        }
-
-        $resolvedSalonCode = $dealerData['salons'][mb_strtolower($salonNameV1)] ?? null;
-        if (!$resolvedSalonCode) {
-          throw new \Exception("Имя салона '{$salonNameV1}' не найдено в справочнике дилера");
-        }
-        $analysis['old_salon_code'] = $resolvedSalonCode;
+        $analysis['old_salon_code'] = $resolvedCode;
         $analysis['found_in_v1'] = true;
 
-        // В) ПРОВЕРКА В V2 (MS SQL)
+        // Проверка существования в V2
         $innExists = isset($newDealers[$analysis['old_inn']]);
-        $salonExists = isset($newSalons[$resolvedSalonCode]);
+        $salonExists = isset($newSalons[$resolvedCode]);
 
         if ($innExists && $salonExists) {
           $analysis['exists_in_v2'] = true;
-
-          // Проверяем наличие связи в combination_dealer_salons
-          $linkKey = $analysis['old_inn'] . '_' . $resolvedSalonCode;
-          if (isset($newLinks[$linkKey])) {
+          if (isset($newLinks[$analysis['old_inn'] . '_' . $resolvedCode])) {
             $analysis['link_valid_v2'] = true;
           } else {
-            $analysis['error'] = "В V2 нет связи между ИНН и Салоном";
+            $analysis['error'] = "В V2 нет связи ИНН-Салон";
           }
         } else {
-          $analysis['error'] = (!$innExists ? "ИНН отсутствует в V2. " : "") . (!$salonExists ? "Салон отсутствует в V2." : "");
+          $analysis['error'] = (!$innExists ? "ИНН нет в V2. " : "") . (!$salonExists ? "Салона нет в V2." : "");
         }
-
       } catch (\Throwable $e) {
         $analysis['error'] = $e->getMessage();
       }
@@ -152,10 +128,43 @@ class OrderMigrationAnalyzerService
     return $results;
   }
 
+  public function migrate(): array
+  {
+    $report = ['total' => 0, 'updated' => 0, 'skipped' => 0, 'already_filled' => 0, 'errors' => []];
+    $results = $this->analyze();
+
+    foreach ($results as $res) {
+      $report['total']++;
+
+      // Если поля уже заполнены (миграция не нужна)
+      if ($res['is_already_filled']) {
+        $report['already_filled']++;
+        continue;
+      }
+
+      // Обновляем только если данные найдены и валидны
+      if ($res['found_in_v1'] && $res['old_inn'] && $res['old_salon_code']) {
+        try {
+          OrderTable::update($res['order_id'], [
+            'inn_dealer' => $res['old_inn'],
+            'salon_code' => $res['old_salon_code'],
+          ]);
+          $report['updated']++;
+        } catch (\Throwable $e) {
+          $report['errors'][] = "ID {$res['order_id']}: " . $e->getMessage();
+        }
+      } else {
+        $report['skipped']++;
+      }
+    }
+    return $report;
+  }
+
   private function extractSalonData(mixed $item): ?array
   {
     if (!is_array($item)) return null;
-    $name = ''; $code = '';
+    $name = '';
+    $code = '';
     if (isset($item['name'], $item['code'])) {
       $name = trim((string)$item['name']);
       $code = trim((string)$item['code']);
@@ -164,38 +173,5 @@ class OrderMigrationAnalyzerService
       $code = trim((string)($item[1] ?? ''));
     }
     return ($name === '' || $code === '') ? null : ['name' => $name, 'code' => $code];
-  }
-
-  public function migrate(): array
-  {
-    $report = ['total' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
-
-    // Получаем результаты анализа
-    $analysisResults = $this->analyze();
-
-    foreach ($analysisResults as $res) {
-      $report['total']++;
-
-      // Условия для миграции: данные в V1 найдены и объекты в V2 созданы
-      // Мы не требуем link_valid_v2 (наличие связи в combination),
-      // так как данные в заказ можно прописать заранее.
-      if ($res['found_in_v1'] && $res['old_inn'] && $res['old_salon_code']) {
-        try {
-          OrderTable::update($res['order_id'], [
-            'INN_DEALER' => $res['old_inn'],
-            'SALON_CODE' => $res['old_salon_code'],
-            // Логин тоже полезно прописать для статистики и истории
-           // 'DEALER_USERNAME' => $res['old_user_login']
-          ]);
-          $report['updated']++;
-        } catch (\Throwable $e) {
-          $report['errors'][] = "Order #{$res['order_id']}: " . $e->getMessage();
-        }
-      } else {
-        $report['skipped']++;
-      }
-    }
-
-    return $report;
   }
 }

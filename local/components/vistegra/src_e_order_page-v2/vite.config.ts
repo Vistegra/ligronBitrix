@@ -80,7 +80,7 @@ export default defineConfig(({mode}) => ({
 
   build: {
     // Куда собираем
-    outDir: path.resolve(__dirname, "../e.order.page/templates/.default"),
+    outDir: path.resolve(__dirname, "../e.order.page.v2/templates/.default"),
 
     // НЕ чистим папку — там лежит template.php
     emptyOutDir: false,
