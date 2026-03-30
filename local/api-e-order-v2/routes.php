@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 use OrderApiV2\Controllers\{AuthController,
+  CacheController,
   DocsController,
   LogViewerController,
   OrderController,
@@ -96,8 +97,10 @@ return function (App $app) {
     $group->get('/{page}', [DocsController::class, 'page']);
   });
 
-
   $app->group('/tools/migration', function (\Slim\Routing\RouteCollectorProxy $group) {
+    $group->get('/cache/clear', CacheController::class . ':clear');
+
+    //ToDo! удалить после ввода в эксплуатацию
     $group->get('/dictionaries', \OrderApiV2\Controllers\MigrationCheckController::class . ':dictionaries');
     $group->get('/orders', \OrderApiV2\Controllers\MigrationCheckController::class . ':orders');
     $group->get('/tree', \OrderApiV2\Controllers\MigrationCheckController::class . ':hierarchy');

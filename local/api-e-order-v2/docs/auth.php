@@ -1,0 +1,119 @@
+<div class="api-doc-container">
+    <h1>Авторизация</h1>
+    <p>API использует аутентификацию на основе JWT токенов. Для выполнения защищенных запросов необходимо получить токен и передавать его в заголовках каждого запроса.</p>
+
+    <div class="header-block">
+        <h3>🔑 Как передавать токен</h3>
+        <p>Токен должен передаваться в кастомном заголовке <code>X-Auth-Token</code>.</p>
+        <pre>X-Auth-Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</pre>
+    </div>
+
+    <h2>1. Получение токена (Вход по логину)</h2>
+    <div class="api-endpoint">
+        <span class="method post">POST</span>
+        <span class="url">/auth/login</span>
+    </div>
+
+    <p>Используется для стандартной авторизации по логину и паролю.</p>
+
+    <table class="param-table">
+        <thead>
+        <tr>
+            <th>Параметр</th>
+            <th>Тип</th>
+            <th>Описание</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>login</code></td>
+            <td>string <span class="required">*</span></td>
+            <td>Логин пользователя</td>
+        </tr>
+        <tr>
+            <td><code>password</code></td>
+            <td>string <span class="required">*</span></td>
+            <td>Пароль пользователя</td>
+        </tr>
+        <tr>
+            <td><code>providerType</code></td>
+            <td>string <span class="required">*</span></td>
+            <td>Тип провайдера авторизации. Варианты:
+                <ul>
+                    <li><code>dealer</code> — для дилеров</li>
+                    <li><code>ligron</code> — для менеджеров Ligron</li>
+                </ul>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>Пример запроса</h3>
+    <pre>
+curl --location 'https://ligron.ru/auth/login' \
+--header 'Content-Type: application/json' \
+--data '{
+    "login": "dealer_login",
+    "password": "secret_password",
+    "providerType": "dealer"
+}'
+</pre>
+
+    <h3>Пример ответа</h3>
+    <pre>
+{
+    "status": "success",
+    "message": "Успешный вход",
+    "data": {
+        "user": {
+            "id": 123,
+            "login": "user1",
+            "name": "Иван Иванов",
+            "role": "dealer"
+        },
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+        "expires_in": 36000,
+        "token_type": "Bearer",
+        "provider": "dealer"
+    }
+}
+</pre>
+
+    <h2>2. Вход по временному токену (ссылке)</h2>
+    <div class="api-endpoint">
+        <span class="method post">POST</span>
+        <span class="url">/auth/login-by-token</span>
+    </div>
+
+    <p>Используется для быстрой авторизации через временный токен пользователя.</p>
+
+    <table class="param-table">
+        <thead>
+        <tr>
+            <th>Параметр</th>
+            <th>Тип</th>
+            <th>Описание</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>user_token</code></td>
+            <td>string <span class="required">*</span></td>
+            <td>Уникальный токен пользователя</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>3. Проверка текущего пользователя</h2>
+    <div class="api-endpoint">
+        <span class="method get">GET</span>
+        <span class="url">/auth/me</span>
+    </div>
+
+    <p>Возвращает информацию о текущем авторизованном пользователе. Требует заголовок <code>X-Auth-Token</code>.</p>
+
+    <h3>Пример запроса</h3>
+    <pre>
+curl --location 'https://ligron.ru/auth/me' \
+--header 'X-Auth-Token: ВАШ_ТОКЕН_ЗДЕСЬ'
+</pre>

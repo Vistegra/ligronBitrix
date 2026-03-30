@@ -8,6 +8,7 @@ use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Type\Date;
+use OrderApiV2\Config\CacheConfig;
 use OrderApiV2\DB\Models\DealerSalonTable;
 use OrderApiV2\DB\Models\DealerTable;
 use OrderApiV2\DB\Models\FillingTable;
@@ -21,25 +22,24 @@ class AccessRepository
   use CacheableTrait;
 
   private const string CACHE_DIR = '/order_api_v2/hierarchy';
-  private const int TTL = 3600;
 
   public static function getDealerHierarchy(string $startSalonCode): array
   {
     return self::cache(
-      cacheId: 'hierarchy_dealer_' . md5($startSalonCode),
-      ttl: self::TTL,
+      cacheId: CacheConfig::getDealerHierarchyKey($startSalonCode),
+      ttl: CacheConfig::TTL_HIERARCHY,
       callback: fn() => self::buildHierarchyInMemory($startSalonCode),
-      cacheDir: self::CACHE_DIR,
+      cacheDir: CacheConfig::DIR_HIERARCHY,
     );
   }
 
   public static function getLigronHierarchy(string $userCode): array
   {
     return self::cache(
-      cacheId: 'hierarchy_ligron_v2_' . md5($userCode),
-      ttl: self::TTL,
+      cacheId: CacheConfig::getLigronHierarchyKey($userCode),
+      ttl: CacheConfig::TTL_HIERARCHY,
       callback: fn() => self::buildLigronHierarchyData($userCode),
-      cacheDir: self::CACHE_DIR,
+      cacheDir: CacheConfig::DIR_HIERARCHY,
     );
   }
 
@@ -173,17 +173,17 @@ class AccessRepository
       }
 
       $managedDealers[] = [
-        'inn'            => $inn,
-        'name'           => trim($d['name']),
+        'inn' => $inn,
+        'name' => trim($d['name']),
         'is_substituted' => $innsWithSubFlags[$inn] ?? false,
-        'salons'         => $dealerSalons
+        'salons' => $dealerSalons
       ];
     }
 
     return [
-      'managed_dealers'  => $managedDealers,
+      'managed_dealers' => $managedDealers,
       'available_salons' => $salonCodes,
-      'available_inns'   => $inns
+      'available_inns' => $inns
     ];
   }
 
@@ -222,10 +222,10 @@ class AccessRepository
       if ($managerData) {
         $resultManagers[] = [
           'code_user' => trim((string)$managerData['user_code']),
-          'name'      => trim((string)$managerData['name']),
-          'email'     => trim((string)$managerData['email']),
-          'phone'     => trim((string)$managerData['phone']),
-          'role'      => trim((string)$managerData['role_code']),
+          'name' => trim((string)$managerData['name']),
+          'email' => trim((string)$managerData['email']),
+          'phone' => trim((string)$managerData['phone']),
+          'role' => trim((string)$managerData['role_code']),
           'is_substitute' => (bool)$sub,
         ];
       }

@@ -7,12 +7,11 @@ namespace OrderApiV2\DB\Repositories;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
+use OrderApiV2\Config\CacheConfig;
 use OrderApiV2\DB\Models\OrderStatusTable;
 
 final class OrderStatusRepository
 {
-  private const int CACHE_TTL = 86400; // 24 часа
-
   /**
    * @throws ObjectPropertyException
    * @throws SystemException
@@ -22,8 +21,8 @@ final class OrderStatusRepository
   {
     $result = OrderStatusTable::getList([
       'select' => ['*'],
-      'order' => ['sort' => 'asc'],
-      'cache' => ['ttl' => self::CACHE_TTL],
+      'order' =>['sort' => 'asc'],
+      'cache' => ['ttl' => CacheConfig::TTL_STATUSES],
     ]);
 
     return $result->fetchAll();
@@ -40,7 +39,7 @@ final class OrderStatusRepository
       'select' => ['*'],
       'filter' => ['=code' => $code],
       'limit' => 1,
-      'cache' => ['ttl' => self::CACHE_TTL],
+      'cache' => ['ttl' => CacheConfig::TTL_STATUSES],
     ]);
 
     return $result->fetch() ?: null;
@@ -55,7 +54,7 @@ final class OrderStatusRepository
   {
     $result = OrderStatusTable::getByPrimary($id, [
       'select' => ['*'],
-      'cache' => ['ttl' => self::CACHE_TTL],
+      'cache' => ['ttl' => CacheConfig::TTL_STATUSES],
     ]);
 
     return $result->fetch() ?: null;
@@ -73,7 +72,7 @@ final class OrderStatusRepository
       'select' => ['id', 'name', 'code', 'color'],
       'limit' => 1,
       'order' => ['sort' => 'asc'],
-      'cache' => ['ttl' => self::CACHE_TTL],
+      'cache' => ['ttl' => CacheConfig::TTL_STATUSES],
     ]);
 
     return $result->fetch() ?: [];

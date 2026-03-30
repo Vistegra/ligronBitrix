@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OrderApiV2\Controllers;
 
+use OrderApiV2\Config\ApiConfig;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -13,64 +14,70 @@ final class DocsController extends AbstractController
   private const string LAYOUT_FILE = __DIR__ . '/../../docs/layout.php';
 
   // Структура меню (Sidebar)
-  private array $menu = [
-    'index' => [
+  private array $menu =[
+    'index' =>[
       'title' => 'Главная',
       'category' => 'General'
     ],
-    'auth' => [
+    'auth' =>[
       'title' => 'Авторизация',
       'category' => 'Security'
     ],
-    'statuses' => [
+    'statuses' =>[
       'title' => 'Справочник статусов',
       'category' => 'Reference'
     ],
-    'webhook_1c_create' => [
+    'webhook_1c_create' =>[
       'title' => 'Webhook 1C: Создание заказа',
       'category' => 'Integration'
     ],
-    'webhook_1c_update_order' => [
+    'webhook_1c_update_order' =>[
       'title' => 'Webhook 1C: Обновление заказа',
       'category' => 'Integration'
     ],
-    'orders_list' => [
+    'orders_list' =>[
       'title' => 'Список заказов',
       'category' => 'Orders'
     ],
-    'orders_get_by_id' => [
+    'orders_get_by_id' =>[
       'title' => 'Заказ по ID',
       'category' => 'Orders'
     ],
-    'orders_get_by_number' => [
+    'orders_get_by_number' =>[
       'title' => 'Заказ по номеру',
       'category' => 'Orders'
     ],
-    'orders_create' => [
+    'orders_create' =>[
       'title' => 'Создание заказа',
       'category' => 'Orders'
     ],
-    'orders_update' => [
+    'orders_update' =>[
       'title' => 'Обновление заказа',
       'category' => 'Orders'
     ],
-    'orders_upload_files' => [
+    'orders_upload_files' =>[
       'title' => 'Загрузка файлов',
       'category' => 'Orders'
     ],
-    'orders_delete_file' => [
+    'orders_delete_file' =>[
       'title' => 'Удаление файла',
       'category' => 'Orders'
     ],
+    // -------------------
+    // Инструменты
+    // -------------------
+    'cache_clear' =>[
+      'title' => 'Управление кэшем',
+      'category' => 'Tools'
+    ],
   ];
 
-  // GET /docs
+
   public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
   {
     return $this->renderPage($response, 'index');
   }
 
-  // GET /docs/{page}
   public function page(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
   {
     $page = $args['page'] ?? 'index';
@@ -90,7 +97,6 @@ final class DocsController extends AbstractController
   {
     $filePath = self::DOCS_DIR . $page . '.php';
 
-    // Если .php нет, ищем .html
     if (!file_exists($filePath)) {
       $filePath = self::DOCS_DIR . $page . '.html';
     }
@@ -99,23 +105,22 @@ final class DocsController extends AbstractController
       return $this->error('Documentation file not found', 404);
     }
 
-    // Данные для Layout
     $title = $this->menu[$page]['title'] ?? 'Docs';
-    $currentCategory = $this->menu[$page]['category'] ?? 'General';
 
+    $appPath = ApiConfig::APP_PATH;
 
     ob_start();
+    // переменная $appPath доступна внутри любого подключаемого файла
     include $filePath;
     $content = ob_get_clean();
 
-    // Буферизация Layout
     ob_start();
 
     // Переменные, доступные внутри layout.php
     $menu = $this->menu;
     $activePage = $page;
     $pageTitle = $title;
-    $breadcrumbs = $this->buildBreadcrumbs($page, $title);
+    $breadcrumbs = $this->buildBreadcrumbs($page, $title, $appPath);
 
     require self::LAYOUT_FILE;
 
@@ -125,16 +130,18 @@ final class DocsController extends AbstractController
     return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
   }
 
-  private function buildBreadcrumbs(string $slug, string $title): array
+  private function buildBreadcrumbs(string $slug, string $title, string $appPath): array
   {
-    $crumbs = [
-      ['title' => 'API Docs', 'link' => '/local/api-e-order/docs/']
+    // Используем $appPath для хлебных крошек
+    $crumbs =[
+      ['title' => 'API Docs', 'link' => $appPath . '/docs/']
     ];
 
     if ($slug !== 'index') {
-      $crumbs[] = ['title' => $title, 'link' => null]; // Активная страница без ссылки
+      $crumbs[] =['title' => $title, 'link' => null];
     }
 
     return $crumbs;
   }
+
 }
