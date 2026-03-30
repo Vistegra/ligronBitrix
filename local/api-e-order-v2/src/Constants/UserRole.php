@@ -14,4 +14,8 @@ final class UserRole
   // Роли Лигрон (из таблицы ligron_roles)
   public const string LIGRON_MANAGER = 'ML';
   public const string LIGRON_OFFICE_MANAGER = 'OML';
+
+  // Виртуальные роли (Режим Бога)
+  public const string GOD_DEALER = 'GOD_DEALER';
+  public const string GOD_LIGRON = 'GOD_LIGRON';
 }

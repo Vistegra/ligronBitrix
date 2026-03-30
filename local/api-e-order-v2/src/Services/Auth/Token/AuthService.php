@@ -15,6 +15,7 @@ class AuthService
   public function login(string $login, string $password, string $providerType): ?array
   {
     AuthSession::clear();
+
     $provider = $this->getAuthProvider($providerType);
     return $provider?->login($login, $password);
   }
@@ -24,6 +25,11 @@ class AuthService
     AuthSession::clear();
   }
 
+
+  /**
+   * @param string $providerType
+   * @return AuthProviderInterface|null
+   */
   private function getAuthProvider(string $providerType): ?AuthProviderInterface
   {
     return match ($providerType) {

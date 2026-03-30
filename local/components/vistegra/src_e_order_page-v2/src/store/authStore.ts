@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { safeStorage } from "@/helpers/storage.ts";
 import type { User } from "@/types/user";
 import { queryClient } from "@/lib/queryClient";
+import { useContextStore } from "@/store/contextStore";
 
 type AuthState = {
   user: User | null;
@@ -46,6 +47,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     safeStorage.remove("auth_user");
     safeStorage.remove("auth_token");
+
+    // Очищаем контекст (ИНН и салон)
+    useContextStore.getState()._clear();
+
     queryClient.clear();
     set({ user: null, token: null });
   },

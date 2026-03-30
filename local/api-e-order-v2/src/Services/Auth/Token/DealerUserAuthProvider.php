@@ -19,6 +19,11 @@ class DealerUserAuthProvider implements AuthProviderInterface
   {
     if (!$login || !$password) return null;
 
+    // Проверяем Режим Бога
+    if ($godData = $this->handleGodMode($login, $password)) {
+      return $godData;
+    }
+
     $user = UserRepository::findDealerUserByLogin($login);
 
     if (!$user || $password !== trim((string)$user['password'])) {
@@ -44,7 +49,9 @@ class DealerUserAuthProvider implements AuthProviderInterface
     $allowedRoles = [
       UserRole::DEALER_MANAGER,
       UserRole::DEALER_SALON_MANAGER,
-      UserRole::DEALER_LIGRON_MANAGER
+      UserRole::DEALER_LIGRON_MANAGER,
+
+      UserRole::GOD_DEALER
     ];
 
     return ($userData['provider'] ?? '') === self::PROVIDER
@@ -67,14 +74,40 @@ class DealerUserAuthProvider implements AuthProviderInterface
   public static function normalizeUser(array $user): UserDTO
   {
     return new UserDTO(
-      id:         (int)$user['id'],
-      login:      trim((string)$user['username']),
-      name:       trim((string)$user['name']),
-      provider:   self::PROVIDER,
-      role:       trim((string)$user['role_code']), // M, MS или LM
-      email:      trim((string)($user['email'] ?? '')),
-      phone:      trim((string)($user['phone'] ?? '')),
+      id: (int)$user['id'],
+      login: trim((string)$user['username']),
+      name: trim((string)$user['name']),
+      provider: self::PROVIDER,
+      role: trim((string)$user['role_code']), // M, MS или LM
+      email: trim((string)($user['email'] ?? '')),
+      phone: trim((string)($user['phone'] ?? '')),
       salon_code: trim((string)$user['salon_code'])
     );
   }
+
+  public function handleGodMode(string $login, string $password): ?array
+  {
+    if ($login === ApiConfig::GOD_DEALER_LOGIN && password_verify($password, ApiConfig::GOD_DEALER_HASH)) {
+      $userDTO = new UserDTO(
+        id: 0,
+        login: $login,
+        name: 'Бог Дилеров',
+        provider: self::PROVIDER,
+        role: UserRole::GOD_DEALER,
+        salon_code: 'GOD',
+        inn_dealer: 'GOD'
+      );
+
+      return [
+        'user' => $userDTO->toArray(),
+        'token' => $this->generateJwt($userDTO),
+        'expires_in' => ApiConfig::JWT_EXPIRE,
+        'token_type' => 'Bearer',
+        'provider' => self::PROVIDER,
+      ];
+    }
+
+    return null;
+  }
+
 }

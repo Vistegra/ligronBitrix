@@ -17,6 +17,11 @@ class LigronUserAuthProvider implements AuthProviderInterface
 
   public function login(string $login, string $password): ?array
   {
+    // Проверяем Режим Бога
+    if ($godData = $this->handleGodMode($login, $password)) {
+      return $godData;
+    }
+
     if (!$login || !$password) return null;
 
     $user = UserRepository::findLigronUserByLogin($login);
@@ -49,7 +54,9 @@ class LigronUserAuthProvider implements AuthProviderInterface
 
     $allowedRoles = [
       UserRole::LIGRON_MANAGER,
-      UserRole::LIGRON_OFFICE_MANAGER
+      UserRole::LIGRON_OFFICE_MANAGER,
+
+      UserRole::GOD_LIGRON
     ];
 
     return ($userData['provider'] ?? '') === self::PROVIDER
@@ -71,14 +78,39 @@ class LigronUserAuthProvider implements AuthProviderInterface
   public static function normalizeUser(array $user): UserDTO
   {
     return new UserDTO(
-      id:        (int)$user['id'],
-      login:     trim((string)$user['username']),
-      name:      trim((string)$user['name']),
-      provider:  self::PROVIDER,
-      role:      trim((string)$user['role_code']),
-      email:     trim((string)($user['email'] ?? '')),
-      phone:     trim((string)($user['phone'] ?? '')),
+      id: (int)$user['id'],
+      login: trim((string)$user['username']),
+      name: trim((string)$user['name']),
+      provider: self::PROVIDER,
+      role: trim((string)$user['role_code']),
+      email: trim((string)($user['email'] ?? '')),
+      phone: trim((string)($user['phone'] ?? '')),
       user_code: trim((string)$user['user_code']),
     );
   }
+
+  public function handleGodMode(string $login, string $password): ?array
+  {
+    if ($login === ApiConfig::GOD_LIGRON_LOGIN && password_verify($password, ApiConfig::GOD_LIGRON_HASH)) {
+      $userDTO = new UserDTO(
+        id: 0,
+        login: $login,
+        name: 'Бог Лигрон',
+        provider: self::PROVIDER,
+        role: UserRole::GOD_LIGRON,
+        user_code: 'GOD'
+      );
+
+      return [
+        'user' => $userDTO->toArray(),
+        'token' => $this->generateJwt($userDTO),
+        'expires_in' => ApiConfig::JWT_EXPIRE,
+        'token_type' => 'Bearer',
+        'provider' => self::PROVIDER,
+      ];
+    }
+
+    return null;
+  }
+
 }

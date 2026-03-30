@@ -18,11 +18,11 @@ use OrderApiV2\DTO\Auth\UserDTO;
  * @method static array getAvailableSalons()
  *
  * Для пользователя менеджера:
- * @method static array getManagedDealers()
  * @method static array getSubstitutingCodes()
  *
- *  Для всех пользователей:
-* @method static array getAvailableInns()
+ * Для всех пользователей:
+ * @method static array getAvailableInns()
+ * @method static array getHierarchy()
  */
 final class AuthSession
 {
@@ -31,6 +31,9 @@ final class AuthSession
 
   private static array $providers = [];
 
+  /**
+   * @return AuthSessionProviderInterface[]
+   */
   private static function getProviders(): array
   {
     if (self::$providers === []) {
@@ -55,13 +58,17 @@ final class AuthSession
 
     foreach (self::getProviders() as $provider) {
       if ($provider->supports($user)) {
+
         $data = $provider->fetchDetailedData($user);
 
+        if (empty($data)) {
+          return false;
+        }
+
+        // Системные поля
         $data['session_id'] = self::session()->getId();
         $data['fetched_at'] = time();
         $data['validation_key'] = "{$user->login}_{$user->id}_{$user->provider}_{$user->role}";
-
-        if (empty($data)) return false;
 
         self::session()->set(self::SESSION_KEY, $data);
         self::session()->save();
@@ -127,4 +134,5 @@ final class AuthSession
     $key = ltrim(strtolower(preg_replace('/[A-Z]([A-Z]?[^A-Z])/', '_$0', $key)), '_');
     return self::get($key, $arguments[0] ?? null);
   }
+
 }

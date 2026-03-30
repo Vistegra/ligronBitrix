@@ -117,22 +117,24 @@ class AccessRepository
     }
 
 
-    $finalInns = array_keys($innsWithSubFlags);
+
+    $finalInns = array_map('strval', array_keys($innsWithSubFlags));
 
     $salonLinks = DealerSalonTable::getList([
       'select' => ['inn_dealer', 'salon_code'],
       'filter' => ['=inn_dealer' => $finalInns]
     ])->fetchAll();
 
+
     $finalSalons = array_unique(array_column($salonLinks, 'salon_code'));
+
     $dealerToSalonsMap = [];
     foreach ($salonLinks as $link) {
-      $dealerToSalonsMap[trim($link['inn_dealer'])][] = trim($link['salon_code']);
+      $dealerToSalonsMap[trim((string)$link['inn_dealer'])][] = trim((string)$link['salon_code']);
     }
 
     $result = self::hydrateHierarchyTree($innsWithSubFlags, $finalSalons, $dealerToSalonsMap);
     $result['substituting_codes'] = $subCodes;
-    $result['available_inns'] = $finalInns;
 
     return $result;
   }
@@ -144,8 +146,16 @@ class AccessRepository
    */
   private static function hydrateHierarchyTree(array $innsWithSubFlags, array $salonCodes, array $dealerToSalonsMap): array
   {
-    $inns = array_keys($innsWithSubFlags);
-    if (empty($inns)) return ['managed_dealers' => [], 'available_inns' => [], 'available_salons' => []];
+    $inns = array_values(array_map('strval', array_keys($innsWithSubFlags)));
+    $salonCodes = array_values(array_map('strval', $salonCodes));
+
+    if (empty($inns)) {
+      return [
+        'managed_dealers' => [],
+        'available_inns' => [],
+        'available_salons' => []
+      ];
+    }
 
     $dealersData = DealerTable::getList([
       'select' => ['inn_dealer', 'name'],
@@ -159,23 +169,27 @@ class AccessRepository
 
     $salonNamesMap = [];
     foreach ($salonsData as $s) {
-      $salonNamesMap[trim($s['salon_code'])] = trim((string)$s['name']);
+      $salonNamesMap[trim((string)$s['salon_code'])] = trim((string)$s['name']);
     }
 
     $managedDealers = [];
     foreach ($dealersData as $d) {
-      $inn = trim($d['inn_dealer']);
+      $inn = trim((string)$d['inn_dealer']);
       $dealerSalons = [];
 
       foreach (($dealerToSalonsMap[$inn] ?? []) as $sCode) {
-        if (isset($salonNamesMap[$sCode])) {
-          $dealerSalons[] = ['salon_code' => $sCode, 'name' => $salonNamesMap[$sCode]];
+        $sCodeStr = trim((string)$sCode);
+        if (isset($salonNamesMap[$sCodeStr])) {
+          $dealerSalons[] = [
+            'salon_code' => $sCodeStr,
+            'name' => $salonNamesMap[$sCodeStr]
+          ];
         }
       }
 
       $managedDealers[] = [
         'inn' => $inn,
-        'name' => trim($d['name']),
+        'name' => trim((string)$d['name']),
         'is_substituted' => $innsWithSubFlags[$inn] ?? false,
         'salons' => $dealerSalons
       ];
@@ -196,6 +210,7 @@ class AccessRepository
   public static function getLigronManagersForInns(array $inns): array
   {
     if (empty($inns)) return [];
+
     $links = DealerLigronTable::getList([
       'select' => ['user_code'],
       'filter' => ['=inn_dealer' => $inns, '=active' => 1]
@@ -206,6 +221,7 @@ class AccessRepository
 
     $today = new Date();
     $resultManagers = [];
+
     foreach ($baseUserCodes as $code) {
       $sub = FillingTable::getList([
         'select' => ['code_user_filling'],
@@ -214,6 +230,7 @@ class AccessRepository
       ])->fetch();
 
       $activeCode = $sub ? trim((string)$sub['code_user_filling']) : trim((string)$code);
+
       $managerData = LigronUserTable::getList([
         'select' => ['user_code', 'name', 'email', 'phone', 'role_code'],
         'filter' => ['=user_code' => $activeCode, '=active' => 1],
@@ -233,4 +250,5 @@ class AccessRepository
     }
     return $resultManagers;
   }
+
 }

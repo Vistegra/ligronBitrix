@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OrderApiV2\Services\Auth\Session;
 
+use OrderApiV2\Config\ApiConfig;
 use OrderApiV2\Constants\ProviderType;
+use OrderApiV2\Constants\UserRole;
 use OrderApiV2\DTO\Auth\UserDTO;
 use OrderApiV2\DB\Repositories\AccessRepository;
 
@@ -17,6 +19,10 @@ final class DealerAuthSessionProvider implements AuthSessionProviderInterface
 
   public function fetchDetailedData(UserDTO $user): array
   {
+    if ($user->role === UserRole::GOD_DEALER) {
+      return $this->getGotDetail();
+    }
+
     if (!$user->salon_code) return [];
 
     $data = AccessRepository::getDealerHierarchy($user->salon_code);
@@ -47,6 +53,20 @@ final class DealerAuthSessionProvider implements AuthSessionProviderInterface
       'inn' => $primary ? $primary['inn'] : '',
       'dealer_name' => $primary ? $primary['name'] : '',
       'managers' => $managers,
+    ];
+  }
+
+  public function getGotDetail(): ?array
+  {
+    return [
+      'hierarchy' => [],
+      'available_inns' => [],
+      'available_salons' => [],
+      'salon_code' => 'GOD',
+      'salon_name' => 'Все салоны',
+      'inn' => 'GOD',
+      'dealer_name' => 'Полный доступ (Бог)',
+      'managers' => [],
     ];
   }
 }

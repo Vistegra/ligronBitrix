@@ -13,9 +13,35 @@ interface AuthSessionProviderInterface
      */
     public function supports(UserDTO $user): bool;
 
-    /**
-     * Получить детальные данные для сохранения в сессию
-     *
-    */
-    public function fetchDetailedData(UserDTO $user): array;
+  /**
+   * Получить детальные данные для сохранения в сессию.
+   *
+   * Если у пользователя нет прав/салона, должен вернуться пустой массив.
+   *
+   * @param UserDTO $user
+   * @return array{
+   *     hierarchy?: array<int, array{
+   *         inn: string,
+   *         name: string,
+   *         is_substituted: bool,
+   *         salons: array<int, array{salon_code: string, name: string}>
+   *     }>,
+   *     available_inns?: string[],
+   *     available_salons?: string[],
+   *     salon_code?: string,
+   *     salon_name?: string,
+   *     inn?: string,
+   *     dealer_name?: string,
+   *     managers?: array<int, array{
+   *         code_user: string,
+   *         name: string,
+   *         email: string,
+   *         phone: string,
+   *         role: string,
+   *         is_substitute: bool
+   *     }>,
+   *     substituting_codes?: string[]
+   * }|array{}
+   */
+  public function fetchDetailedData(UserDTO $user): array;
 }

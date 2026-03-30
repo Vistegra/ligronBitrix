@@ -21,7 +21,7 @@ class DealerUserRepository
     return DealerUserTable::getList([
       'select' => ['*', 'role_name' => 'role.name'],
       'filter' => ['=username' => trim($username), '=active' => 1],
-      'limit'  => 1
+      'limit' => 1
     ])->fetch() ?: null;
   }
 
@@ -34,27 +34,27 @@ class DealerUserRepository
     $user = DealerUserTable::getList([
       'select' => ['*', 'salon_name' => 'salon.name'],
       'filter' => ['=id' => $userId, '=active' => 1],
-      'limit'  => 1,
+      'limit' => 1,
     ])->fetch();
 
     if (!$user) return null;
 
     $hierarchy = AccessRepository::getDealerHierarchy($user['salon_code']);
 
-    $managers = AccessRepository::getLigronManagersForInns($hierarchy['inn_list']);
+    $managers = AccessRepository::getLigronManagersForInns($hierarchy['available_inns']);
 
     return [
-      'name'             => $user['name'],
-      'phone'            => $user['phone'] ?? '',
-      'email'            => $user['email'] ?? '',
-      'salon_name'       => $user['salon_name'],
-      'salon_code'       => $user['salon_code'],
-      'inn'              => $hierarchy['inn_list'][0] ?? '', // Основной ИНН
-      'dealer_name'      => $hierarchy['dealers'][0]['name'] ?? '',
-      'managers'         => $managers,
-      'available_salons' => $hierarchy['salon_codes'],
-      'available_inns'   => $hierarchy['inn_list'],
-      'fetched_at'       => time(),
+      'name' => $user['name'],
+      'phone' => $user['phone'] ?? '',
+      'email' => $user['email'] ?? '',
+      'salon_name' => $user['salon_name'],
+      'salon_code' => $user['salon_code'],
+      'inn' => $hierarchy['available_inns'][0] ?? '', // Основной ИНН
+      'dealer_name' => $hierarchy['managed_dealers'][0]['name'] ?? '',
+      'managers' => $managers,
+      'available_salons' => $hierarchy['available_salons'],
+      'available_inns' => $hierarchy['available_inns'],
+      'fetched_at' => time(),
     ];
   }
 
@@ -66,7 +66,7 @@ class DealerUserRepository
     return DealerTable::getList([
       'select' => ['id', 'inn_dealer', 'name'],
       'filter' => ['=inn_dealer' => trim($inn), '=active' => 1],
-      'limit'  => 1
+      'limit' => 1
     ])->fetch() ?: null;
   }
 

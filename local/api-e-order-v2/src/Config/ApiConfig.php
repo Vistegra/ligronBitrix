@@ -6,6 +6,14 @@ namespace OrderApiV2\Config;
 
 final class ApiConfig
 {
+  // Режим Бога: Дилер
+  public const string GOD_DEALER_LOGIN = 'god_dealer';
+  public const string GOD_DEALER_HASH = '$2y$10$Uo2vAm0udsrduigPTiX7DeLXhUfd7oD91w9zgsfW4sWPWkjsPPHUK';
+
+  // Режим Бога: Лигрон
+  public const string GOD_LIGRON_LOGIN = 'god_ligron';
+  public const string GOD_LIGRON_HASH = '$2y$10$G0sXCkTXoQZfySlEyw8rWeS1Tp3W6b8dCgiRwIdnnsoo60OTyYcnG';
+
   public const string JWT_SECRET = 'ghSiBVUEWx5FZcK6BzFHDTrbdQjexAck';
   public const string MANAGER_SECRET = 'h74zh2yLsQsKbwsarnfLANuFUBMziYeX'; //Нельзя изменять!
   public const string SSO_CALC_ENCRYPT_KEY = 'eKey';
@@ -16,7 +24,7 @@ final class ApiConfig
   public const string API_VERSION = '2.0';
   public const string API_NAME = 'Order API';
   public const string UPLOAD_FILES_DIR = '/upload/e-order/files/';
-  public const string API_DATE_VERSION = '25.03.2026';
+  public const string API_DATE_VERSION = '30.03.2026';
   public const string SITE_ROOT_URL = 'https://ligron.ru';
   public const string  APP_ORDERS_PAGE = 'https://ligron.ru/e-order-v2/orders';
   public const string CALC_URL = 'https://calculator.ligron.ru';
@@ -31,4 +39,5 @@ final class ApiConfig
   private function __construct()
   {
   }
+
 }
