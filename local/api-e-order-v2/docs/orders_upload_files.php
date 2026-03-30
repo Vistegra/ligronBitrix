@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method post">POST</span>
-        <span class="url">/local/api-e-order/orders/{id}/files</span>
+        <span class="url"><?= $appPath ?>/orders/{id}/files</span>
     </div>
 
     <div class="security-note">
@@ -55,7 +55,7 @@
     <details>
         <summary>Показать пример</summary>
         <pre class="response-content">
-curl --location 'https://ligron.ru/local/api-e-order/orders/65/files' \
+curl --location 'https://ligron.ru<?= $appPath ?>/orders/65/files' \
 --header 'X-Auth-Token: ВАШ_ТОКЕН' \
 --form 'file=@"/C:/Documents/scan.pdf"' \
 --form 'file=@"/C:/Documents/photo.jpg"'

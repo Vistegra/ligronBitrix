@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method delete">DELETE</span>
-        <span class="url">/local/api-e-order/orders/{id}/files/{fileId}</span>
+        <span class="url"><?= $appPath ?>/orders/{id}/files/{fileId}</span>
     </div>
 
     <div class="security-note">
@@ -41,7 +41,7 @@
     <details>
         <summary>Показать пример</summary>
         <pre class="response-content">
-curl --location --request DELETE 'https://ligron.ru/local/api-e-order/orders/65/files/14' \
+curl --location --request DELETE 'https://ligron.ru<?= $appPath ?>/orders/65/files/14' \
 --header 'X-Auth-Token: ВАШ_ТОКЕН'
 </pre>
     </details>

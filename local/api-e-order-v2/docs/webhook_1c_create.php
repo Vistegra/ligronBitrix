@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method post">POST</span>
-        <span class="url">/local/api-e-order/webhook/1c/orders</span>
+        <span class="url"><?= $appPath ?>/webhook/1c/orders</span>
     </div>
 
     <div class="note">

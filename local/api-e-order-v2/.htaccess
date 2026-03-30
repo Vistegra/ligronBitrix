@@ -6,9 +6,9 @@ DirectorySlash Off
 # Исключаем файл санитизации из перенаправлений
 RewriteCond %{REQUEST_URI} !db_sanitize\.php$
 
-# Все запросы → index.php (если не файл и не папка)
+# Все запросы → index.php (кроме реальных существующих файлов)
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# СТРОКУ "RewriteCond %{REQUEST_FILENAME} !-d"
 RewriteRule ^(.*)$ index.php [QSA,L]
 
 #Header always set Access-Control-Allow-Origin "http://localhost:5173"

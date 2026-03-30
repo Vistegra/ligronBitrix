@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method post">POST</span>
-        <span class="url">/local/api-e-order/webhook/1c/orders</span>
+        <span class="url"><?= $appPath ?>/webhook/1c/orders</span>
     </div>
 
     <div class="note">
@@ -104,7 +104,7 @@
 
     <h2>Пример запроса (cURL)</h2>
     <pre class="response-content">
-curl --location 'https://ligron.ru/local/api-e-order/webhook/1c/orders' \
+curl --location 'https://ligron.ru<?= $appPath ?>/webhook/1c/orders' \
 --header 'Content-Type: application/json' \
 --data '{
     "action": "UPDATE",

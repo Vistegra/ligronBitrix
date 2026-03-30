@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OrderApiV2\Controllers;
 
 use OrderApiV2\Config\ApiConfig;
+use OrderApiV2\Config\CacheConfig;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -106,11 +107,13 @@ final class DocsController extends AbstractController
     }
 
     $title = $this->menu[$page]['title'] ?? 'Docs';
-
     $appPath = ApiConfig::APP_PATH;
 
+    // Пробрасываем "сырые" значения TTL прямо из конфига
+    $ttlHierarchy = CacheConfig::TTL_HIERARCHY;
+    $ttlStatuses  = CacheConfig::TTL_STATUSES;
+
     ob_start();
-    // переменная $appPath доступна внутри любого подключаемого файла
     include $filePath;
     $content = ob_get_clean();
 
@@ -132,7 +135,6 @@ final class DocsController extends AbstractController
 
   private function buildBreadcrumbs(string $slug, string $title, string $appPath): array
   {
-    // Используем $appPath для хлебных крошек
     $crumbs =[
       ['title' => 'API Docs', 'link' => $appPath . '/docs/']
     ];
@@ -143,5 +145,4 @@ final class DocsController extends AbstractController
 
     return $crumbs;
   }
-
 }

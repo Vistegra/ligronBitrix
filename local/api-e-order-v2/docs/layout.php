@@ -193,7 +193,7 @@
             <?php endif; ?>
 
             <li>
-                <a href="/local/api-e-order/docs/<?= $slug === 'index' ? '' : $slug ?>"
+                <a href="<?= $appPath ?>/docs/<?= $slug === 'index' ? '' : $slug ?>"
                    class="sidebar-link <?= $activePage === $slug ? 'active' : '' ?>">
                     <?= htmlspecialchars($item['title']) ?>
                 </a>

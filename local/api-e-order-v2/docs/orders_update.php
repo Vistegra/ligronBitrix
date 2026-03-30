@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method put">PUT</span>
-        <span class="url">/local/api-e-order/orders/{id}</span>
+        <span class="url"><?= $appPath ?>/orders/{id}</span>
     </div>
 
     <div class="security-note">
@@ -86,7 +86,7 @@
     <details>
         <summary>Показать пример</summary>
         <pre class="response-content">
-curl --location --request PUT 'https://ligron.ru/local/api-e-order/orders/65' \
+curl --location --request PUT 'https://ligron.ru<?= $appPath ?>/orders/65' \
 --header 'X-Auth-Token: ВАШ_ТОКЕН' \
 --header 'Content-Type: application/json' \
 --data '{

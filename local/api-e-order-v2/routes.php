@@ -97,9 +97,12 @@ return function (App $app) {
     $group->get('/{page}', [DocsController::class, 'page']);
   });
 
-  $app->group('/tools/migration', function (\Slim\Routing\RouteCollectorProxy $group) {
+  /** ИНСТРУМЕНТЫ */
+  $app->group('/tools', function (RouteCollectorProxy $group) {
     $group->get('/cache/clear', CacheController::class . ':clear');
+  });
 
+  $app->group('/tools/migration', function (RouteCollectorProxy $group) {
     //ToDo! удалить после ввода в эксплуатацию
     $group->get('/dictionaries', \OrderApiV2\Controllers\MigrationCheckController::class . ':dictionaries');
     $group->get('/orders', \OrderApiV2\Controllers\MigrationCheckController::class . ':orders');

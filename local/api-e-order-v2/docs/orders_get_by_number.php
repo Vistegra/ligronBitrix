@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method get">GET</span>
-        <span class="url">/local/api-e-order/orders/number/{number}</span>
+        <span class="url"><?= $appPath ?>/orders/number/{number}</span>
     </div>
 
     <div class="security-note">
@@ -37,7 +37,7 @@
     <details>
         <summary>Показать пример</summary>
         <pre class="response-content">
-curl --location 'https://ligron.ru/local/api-e-order/orders/number/72525161' \
+curl --location 'https://ligron.ru<?= $appPath ?>/orders/number/72525161' \
 --header 'X-Auth-Token: ВАШ_ТОКЕН'
 </pre>
     </details>
@@ -61,7 +61,7 @@ curl --location 'https://ligron.ru/local/api-e-order/orders/number/72525161' \
             "name": "Кухня (Иванов)",
             "status_id": 4,
             "created_by": 1,
-            "dealer_prefix": "pro_",
+
             "comment": "Срочный заказ",
             "status_code": "104",
             "status_name": "Оплачен",

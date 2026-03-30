@@ -217,6 +217,67 @@ final readonly class OrderPermission
 
     $inn = (string)($order['inn_dealer'] ?? '');
     $salon = (string)($order['salon_code'] ?? '');
+    $availableInns = AuthSession::getAvailableInns() ?:[];
+
+    // --- ЛОГИКА ДЛЯ ЛИГРОН ---
+    if ($this->user->isLigronStaff()) {
+      if ($inn !== '' && in_array($inn, $availableInns, true)) {
+        return;
+      }
+
+      // ========== ДЕБАГ БЛОК ==========
+      // Собираем типы и длины строк, чтобы найти невидимые символы
+      $debugInfo =[
+        'error_reason' => 'Сработал дебаг для Лигрон (in_array вернул false)',
+        'order_inn_value' => $inn,
+        'order_inn_length' => mb_strlen($inn),
+        'order_inn_type' => gettype($inn),
+        'available_inns' => $availableInns,
+        'available_inns_types' => array_map('gettype', $availableInns),
+        // Проверим, сработает ли нестрогое сравнение (без учета типа)
+        'is_in_array_loose' => in_array($inn, $availableInns, false),
+      ];
+
+      throw new Exception(json_encode($debugInfo, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 403);
+      // ================================
+    }
+
+    // --- ЛОГИКА ДЛЯ ДИЛЕРА ---
+    if ($this->user->isDealer()) {
+      $availableSalons = AuthSession::getAvailableSalons() ?:[];
+
+      $isMySalon = $salon !== '' && in_array($salon, $availableSalons, true);
+      $isMyInn = $inn !== '' && in_array($inn, $availableInns, true);
+
+      if ($isMySalon || $isMyInn) {
+        return;
+      }
+
+      // ========== ДЕБАГ БЛОК ==========
+      $debugInfo =[
+        'error_reason' => 'Сработал дебаг для Дилера',
+        'order_inn' => $inn,
+        'order_salon' => $salon,
+        'available_inns' => $availableInns,
+        'available_salons' => $availableSalons,
+      ];
+      throw new Exception(json_encode($debugInfo, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 403);
+      // ================================
+    }
+
+    throw new Exception('У вас нет прав на просмотр данного заказа.', 403);
+  }
+  /**
+   * @throws Exception
+   */
+/*  private function assertCanView(array $order, array $policy): void
+  {
+    if ($policy['view_all']) {
+      return;
+    }
+
+    $inn = (string)($order['inn_dealer'] ?? '');
+    $salon = (string)($order['salon_code'] ?? '');
     $availableInns = AuthSession::getAvailableInns() ?: [];
 
     if ($this->user->isLigronStaff() && $inn !== '' && in_array($inn, $availableInns, true)) {
@@ -234,7 +295,7 @@ final readonly class OrderPermission
     }
 
     throw new Exception('У вас нет прав на просмотр данного заказа.', 403);
-  }
+  }*/
 
   /**
    * @throws Exception

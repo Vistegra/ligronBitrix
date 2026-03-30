@@ -4,7 +4,7 @@
 
     <div class="api-endpoint">
         <span class="method post">POST</span>
-        <span class="url">/local/api-e-order/orders</span>
+        <span class="url"><?= $appPath ?>/orders</span>
     </div>
 
     <!-- Уведомление об авторизации -->
@@ -67,7 +67,7 @@
     <details>
         <summary>Показать пример</summary>
         <pre class="response-content">
-curl --location 'https://ваш-сайт.ru/local/api-e-order/orders' \
+curl --location 'https://ваш-сайт.ru<?= $appPath ?>/orders' \
 --header 'X-Auth-Token: ВАШ_ТОКЕН' \
 --form 'name="Заказ №555"' \
 --form 'comment="Просьба упаковать в двойную пленку"' \
@@ -97,7 +97,7 @@ curl --location 'https://ваш-сайт.ru/local/api-e-order/orders' \
       "status_id": 4,
       "status_code": "104",
       "status_name": "Оплачен",
-      "dealer_prefix": "pro_",
+
       "created_at": 1701768000,
       "status_history": [
         {

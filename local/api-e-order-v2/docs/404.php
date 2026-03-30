@@ -10,7 +10,7 @@
   </p>
 
   <div style="margin-top: 40px;">
-    <a href="/local/api-e-order/docs/" style="display: inline-block; background: #3498db; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 500; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); transition: all 0.2s;">
+    <a href="<?= $appPath ?>/docs/" style="display: inline-block; background: #3498db; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 500; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); transition: all 0.2s;">
       Вернуться на главную
     </a>
   </div>

@@ -12,7 +12,7 @@ try {
 
     <div class="api-endpoint">
         <span class="method get">GET</span>
-        <span class="url">/local/api-e-order/statuses</span>
+        <span class="url"><?= $appPath ?>/statuses</span>
     </div>
 
     <!-- Уведомление об авторизации -->
