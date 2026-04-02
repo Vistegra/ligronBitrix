@@ -23,8 +23,8 @@ import {useBreadcrumbStore} from "@/store/breadcrumbStore";
 import {cn} from "@/lib/utils";
 import {PAGE} from "@/api/constants.ts";
 import {formatDate} from "@/components/Order/Orders/utils.ts";
-import {OpenInCalculatorButton} from "@/components/Order/OrderEdit/OpenInCalculatorButton.tsx";
 import {useDebounce} from "@/hooks/useDebounce.ts";
+import { CalculatorButton } from "@/components/Sidebar/CalculatorButton";
 
 interface OrderEditProps {
   className?: string;
@@ -192,8 +192,11 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
         <CardFooter className="shrink-0 p-3 border-t bg-background z-10 flex justify-end items-center gap-2">
           <div className="flex justify-end items-center gap-2 md:gap-3">
 
-            {isCalcOrder && !isDraft && (
-              <OpenInCalculatorButton orderNumber={order?.number || null}/>
+            {isCalcOrder && !isDraft && order && order?.number && (
+              <CalculatorButton
+                variant="button"
+                orderNumber={order?.number || null}
+              />
             )}
 
             {isDraft && (<>

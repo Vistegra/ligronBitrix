@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OrderApiV2\Controllers;
 
+use OrderApiV2\Constants\UserRole;
 use OrderApiV2\Services\Auth\Session\AuthSession;
 use OrderApiV2\Services\Auth\Token\AuthCrypto;
 use OrderApiV2\Services\Auth\Token\AuthService;
@@ -106,10 +107,23 @@ final class AuthController extends AbstractController
         $availableSalons = AuthSession::getAvailableSalons() ?: [];
         $availableInns = AuthSession::getAvailableInns() ?: [];
 
-        if (in_array($requestedInn, $availableInns, true) && in_array($requestedSalon, $availableSalons, true)) {
+        // Проверяем, является ли пользователь глобальным менеджером
+        $isGlobalManager = in_array($user->role,
+          [
+            UserRole::LIGRON_OFFICE_MANAGER,
+            UserRole::GOD_LIGRON,
+            UserRole::GOD_DEALER
+          ], true);
+
+        // Разрешаем подмену, если это OML/Бог, или если салон есть в доступных у обычного пользователя
+        if ($isGlobalManager ||
+          (in_array($requestedInn, $availableInns, true) &&
+            in_array($requestedSalon, $availableSalons, true))) {
           $user = $user->withContext($requestedInn, $requestedSalon);
         }
+
       }
+
 
       $ssoService = new SsoLinkGeneratorService($user);
 
