@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Phone, LogOut, Shield, Store, Hash } from "lucide-react";
-import { ROLE_NAMES } from "@/constants/constants";
+import { ROLE_NAMES } from "@/config/roles.ts";
 import type { User as UserType, DealerDetailed } from "@/types/user";
 import { ProfileInfoRow } from "./items/ProfileInfoRow";
 import { getInitials } from "./getInitials";

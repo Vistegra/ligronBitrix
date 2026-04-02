@@ -16,7 +16,7 @@ import {
 import { FileText, LogOut, User, UserPenIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { ROLE_NAMES } from "@/constants/constants.ts";
+import { ROLE_NAMES } from "@/config/roles.ts";
 import { PAGE } from "@/api/constants.ts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

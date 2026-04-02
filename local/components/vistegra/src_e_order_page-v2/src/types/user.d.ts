@@ -1,10 +1,10 @@
 export type ProviderType = 'dealer' | 'ligron';
 
 /** Роли Дилеров: M (Менеджер), MS (Менеджер салона), LM (Лигрон Менеджер у дилера) */
-export type DealerRole = 'M' | 'MS' | 'LM';
+export type DealerRole = 'M' | 'MS' | 'LM' | 'GOD_DEALER';
 
 /** Роли Лигрон: ML (Менеджер Лигрон), OML (Офисный менеджер Лигрон) */
-export type LigronRole = 'ML' | 'OML';
+export type LigronRole = 'ML' | 'OML' | 'GOD_LIGRON';
 
 export type UserRole = DealerRole | LigronRole;
 

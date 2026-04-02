@@ -6,7 +6,7 @@ import {Mail, Phone, PalmtreeIcon, UserPlusIcon} from "lucide-react"
 import {cn} from "@/lib/utils"
 import type {ManagerOfDealer} from "@/types/user"
 import {getInitials} from "@/components/Profile/getInitials.ts";
-import {ROLE_NAMES} from "@/constants/constants";
+import {ROLE_NAMES} from "@/config/roles.ts";
 
 interface ManagerItemProps {
   manager: ManagerOfDealer;

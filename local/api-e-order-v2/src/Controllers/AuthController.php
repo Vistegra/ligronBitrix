@@ -91,39 +91,39 @@ final class AuthController extends AbstractController
    * GET /auth/sso
    * Генерация защищенной ссылки для перехода в Калькулятор.
    */
+  /**
+   * GET /auth/sso
+   */
   public function sso(ServerRequestInterface $request): ResponseInterface
   {
     try {
       $params = $request->getQueryParams();
-      $ligronNumber = $params['ligron_number'] ?? null;
+
       $requestedInn = $params['inn_dealer'] ?? null;
       $requestedSalon = $params['salon_code'] ?? null;
+      $ligronNumber = $params['ligron_number'] ?? null;
 
       /** @var UserDTO $user */
       $user = $request->getAttribute('user');
 
-      // Безопасная подмена контекста
+      $isGlobal = $this->isGlobalRole($user->role);
+
       if ($requestedInn && $requestedSalon) {
-        $availableSalons = AuthSession::getAvailableSalons() ?: [];
-        $availableInns = AuthSession::getAvailableInns() ?: [];
+        if ($isGlobal) {
+          // Офис-менеджер (OML) или Бог
+          $user = $user->withContext((string)$requestedInn, (string)$requestedSalon);
+        } else {
+          // Обычный дилер/менеджер
+          $availableInns = AuthSession::getAvailableInns() ?: [];
+          $availableSalons = AuthSession::getAvailableSalons() ?: [];
 
-        // Проверяем, является ли пользователь глобальным менеджером
-        $isGlobalManager = in_array($user->role,
-          [
-            UserRole::LIGRON_OFFICE_MANAGER,
-            UserRole::GOD_LIGRON,
-            UserRole::GOD_DEALER
-          ], true);
-
-        // Разрешаем подмену, если это OML/Бог, или если салон есть в доступных у обычного пользователя
-        if ($isGlobalManager ||
-          (in_array($requestedInn, $availableInns, true) &&
-            in_array($requestedSalon, $availableSalons, true))) {
-          $user = $user->withContext($requestedInn, $requestedSalon);
+          if (in_array($requestedInn, $availableInns, true) && in_array($requestedSalon, $availableSalons, true)) {
+            $user = $user->withContext((string)$requestedInn, (string)$requestedSalon);
+          } else {
+            return $this->error('У вас нет прав доступа к этому подразделению.', 403);
+          }
         }
-
       }
-
 
       $ssoService = new SsoLinkGeneratorService($user);
 
@@ -132,9 +132,22 @@ final class AuthController extends AbstractController
         : $ssoService->generateLink();
 
       return $this->success('Ссылка сформирована', ['url' => $link]);
+
     } catch (\Throwable $e) {
       return $this->error('Ошибка генерации SSO: ' . $e->getMessage(), 500);
     }
+  }
+
+  /**
+   * Вспомогательный метод проверки "глобальных" ролей
+   */
+  private function isGlobalRole(string $role): bool
+  {
+    return in_array($role, [
+      UserRole::LIGRON_OFFICE_MANAGER,
+      UserRole::GOD_LIGRON,
+      UserRole::GOD_DEALER
+    ], true);
   }
 
   /**

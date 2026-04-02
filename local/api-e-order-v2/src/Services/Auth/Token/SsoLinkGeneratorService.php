@@ -51,7 +51,10 @@ final readonly class SsoLinkGeneratorService
   private function ensureHasContext(): void
   {
     if (empty($this->user->inn_dealer)) {
-      throw new \RuntimeException('Для перехода в калькулятор необходимо выбрать дилера', 403);
+      throw new \RuntimeException('Системе не удалось определить ИНН дилера для входа.', 400);
+    }
+    if (empty($this->user->salon_code)) {
+      throw new \RuntimeException('Системе не удалось определить Салон для входа.', 400);
     }
   }
 
