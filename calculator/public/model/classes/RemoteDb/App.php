@@ -7,6 +7,9 @@ use RedBeanPHP\RedException;
 
 final class App
 {
+
+  use AppSsoTrait;
+
   const QUERY_ALL_DEALERS = 'allDealers';
 
   private static ?self $instance = null;

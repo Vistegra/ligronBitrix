@@ -8,7 +8,7 @@ use Firebase\JWT\JWT;
 use OrderApiV2\Config\ApiConfig;
 use OrderApiV2\Constants\ProviderType;
 use OrderApiV2\Constants\UserRole;
-use OrderApiV2\DB\Repositories\UserRepository;
+use OrderApiV2\DB\Repositories\DealerUserRepository;
 use OrderApiV2\DTO\Auth\{JwtPayload, UserDTO};
 
 class DealerUserAuthProvider implements AuthProviderInterface
@@ -24,7 +24,7 @@ class DealerUserAuthProvider implements AuthProviderInterface
       return $godData;
     }
 
-    $user = UserRepository::findDealerUserByLogin($login);
+    $user = DealerUserRepository::findByUsername($login);
 
     if (!$user || $password !== trim((string)$user['password'])) {
       return null;
@@ -33,7 +33,7 @@ class DealerUserAuthProvider implements AuthProviderInterface
     $userDTO = self::normalizeUser($user);
     $token = $this->generateJwt($userDTO);
 
-    return [
+    return[
       'user' => $userDTO->toArray(),
       'token' => $token,
       'expires_in' => ApiConfig::JWT_EXPIRE,
@@ -41,6 +41,7 @@ class DealerUserAuthProvider implements AuthProviderInterface
       'provider' => self::PROVIDER,
     ];
   }
+
 
   public static function validatePayload(array $payload): bool
   {
@@ -81,7 +82,8 @@ class DealerUserAuthProvider implements AuthProviderInterface
       role: trim((string)$user['role_code']), // M, MS или LM
       email: trim((string)($user['email'] ?? '')),
       phone: trim((string)($user['phone'] ?? '')),
-      salon_code: trim((string)$user['salon_code'])
+      salon_code: trim((string)$user['salon_code']),
+      inn_dealer: trim((string)($user['inn_dealer'] ?? ''))
     );
   }
 

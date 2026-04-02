@@ -18,7 +18,9 @@ final readonly class UserDTO
     public ?string $salon_code = null,
     public ?string $inn_dealer = null,
     public ?string $user_code = null, // Только для менеджеров Лигрон
-  ) {}
+  )
+  {
+  }
 
   public function isDealer(): bool
   {
@@ -43,32 +45,48 @@ final readonly class UserDTO
   public function toArray(): array
   {
     return array_filter([
-      'id'         => $this->id,
-      'login'      => $this->login,
-      'name'       => $this->name,
-      'email'      => $this->email,
-      'phone'      => $this->phone,
+      'id' => $this->id,
+      'login' => $this->login,
+      'name' => $this->name,
+      'email' => $this->email,
+      'phone' => $this->phone,
       'salon_code' => $this->salon_code,
       'inn_dealer' => $this->inn_dealer,
-      'user_code'  => $this->user_code,
-      'provider'   => $this->provider,
-      'role'       => $this->role,
+      'user_code' => $this->user_code,
+      'provider' => $this->provider,
+      'role' => $this->role,
     ], fn($value) => $value !== null);
   }
 
   public static function fromArray(array $data): self
   {
     return new self(
-      id:         (int)$data['id'],
-      login:      $data['login'],
-      name:       $data['name'],
-      provider:   $data['provider'],
-      role:       $data['role'],
-      email:      $data['email'] ?? null,
-      phone:      $data['phone'] ?? null,
+      id: (int)$data['id'],
+      login: $data['login'],
+      name: $data['name'],
+      provider: $data['provider'],
+      role: $data['role'],
+      email: $data['email'] ?? null,
+      phone: $data['phone'] ?? null,
       salon_code: $data['salon_code'] ?? null,
       inn_dealer: $data['inn_dealer'] ?? null,
-      user_code:  $data['user_code'] ?? null,
+      user_code: $data['user_code'] ?? null,
+    );
+  }
+
+  public function withContext(string $innDealer, string $salonCode): self
+  {
+    return new self(
+      id: $this->id,
+      login: $this->login,
+      name: $this->name,
+      provider: $this->provider,
+      role: $this->role,
+      email: $this->email,
+      phone: $this->phone,
+      salon_code: $salonCode, // Переопределяем код салона
+      inn_dealer: $innDealer, // Переопределяем ИНН дилера
+      user_code: $this->user_code
     );
   }
 

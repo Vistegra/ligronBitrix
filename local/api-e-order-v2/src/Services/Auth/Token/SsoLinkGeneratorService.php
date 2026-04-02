@@ -52,7 +52,7 @@ final readonly class SsoLinkGeneratorService
     // Формируем зашифрованный параметр
     $encryptedParam = $this->buildEncryptedPayload($redirectSuffix);
 
-    return $baseUrl . '/?mode=auth&cmsAction=sso&param=' . urlencode($encryptedParam);
+    return $baseUrl . '/?customMode=remoteDB&cmsAction=ssoLogin&param=' . urlencode($encryptedParam);
   }
 
   /**
@@ -61,7 +61,6 @@ final readonly class SsoLinkGeneratorService
   private function buildEncryptedPayload(string $redirectSuffix): string
   {
     //LOGIN | INN_DEALER | SALON_CODE | REDIRECT | TIMESTAMP
-    // ToDo! изменить в самом калькуляторе
     return $this->encrypt(sprintf(
       '%s|%s|%s|%s|%d',
       $this->user->login,
@@ -74,8 +73,8 @@ final readonly class SsoLinkGeneratorService
 
   private function ensureIsDealer(): void
   {
-    if (!$this->user->isDealer() || empty($this->user->dealer_id)) {
-      throw new \RuntimeException('Переход в калькулятор разрешен только для пользователей дилера.', 403);
+    if (!$this->user->isDealer() || empty($this->user->inn_dealer)) {
+      throw new \RuntimeException('Переход в калькулятор разрешен только для пользователей дилера.' . json_encode($this->user->toArray()), 403);
     }
   }
 

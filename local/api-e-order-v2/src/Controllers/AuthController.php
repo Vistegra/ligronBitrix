@@ -19,7 +19,9 @@ final class AuthController extends AbstractController
 {
   public function __construct(
     private readonly AuthService $auth
-  ) {}
+  )
+  {
+  }
 
   /**
    * POST /auth/login
@@ -29,7 +31,7 @@ final class AuthController extends AbstractController
   {
     $input = $request->getParsedBody() ?? [];
 
-    $login    = (string)($input['login'] ?? '');
+    $login = (string)($input['login'] ?? '');
     $password = (string)($input['password'] ?? '');
     $provider = (string)($input['providerType'] ?? '');
 
@@ -79,7 +81,7 @@ final class AuthController extends AbstractController
     $detailedData = AuthSession::publicData();
 
     return $this->success('Данные профиля', [
-      'user'     => $user->toArray(),
+      'user' => $user->toArray(),
       'detailed' => $detailedData
     ]);
   }
@@ -93,9 +95,21 @@ final class AuthController extends AbstractController
     try {
       $params = $request->getQueryParams();
       $ligronNumber = $params['ligron_number'] ?? null;
+      $requestedInn = $params['inn_dealer'] ?? null;
+      $requestedSalon = $params['salon_code'] ?? null;
 
       /** @var UserDTO $user */
       $user = $request->getAttribute('user');
+
+      // Безопасная подмена контекста
+      if ($requestedInn && $requestedSalon) {
+        $availableSalons = AuthSession::getAvailableSalons() ?: [];
+        $availableInns = AuthSession::getAvailableInns() ?: [];
+
+        if (in_array($requestedInn, $availableInns, true) && in_array($requestedSalon, $availableSalons, true)) {
+          $user = $user->withContext($requestedInn, $requestedSalon);
+        }
+      }
 
       $ssoService = new SsoLinkGeneratorService($user);
 

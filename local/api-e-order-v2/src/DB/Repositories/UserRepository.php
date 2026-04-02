@@ -6,6 +6,9 @@ namespace OrderApiV2\DB\Repositories;
 
 use OrderApiV2\DB\Models\DealerUserTable;
 use OrderApiV2\DB\Models\LigronUserTable;
+use OrderApiV2\DB\Models\DealerSalonTable;
+use Bitrix\Main\ORM\Fields\Relations;
+
 
 class UserRepository
 {
@@ -17,8 +20,19 @@ class UserRepository
   {
     try {
       $user = DealerUserTable::getList([
-        'select' => ['*'],
+        'select' => [
+          '*',
+          'inn_dealer' => 'salon_link.inn_dealer'
+        ],
         'filter' => ['=username' => $login, '=active' => 1],
+        'runtime' => [
+          new Relations\Reference(
+            'salon_link',
+            DealerSalonTable::class,
+            ['=this.salon_code' => 'ref.salon_code']
+          )
+        ],
+        'order' => ['salon_link.id' => 'ASC'],
         'limit' => 1,
       ])->fetch();
 
@@ -36,7 +50,7 @@ class UserRepository
     try {
       $user = LigronUserTable::getList([
         'select' => ['*'],
-        'filter' =>['=username' => $login, '=active' => 1],
+        'filter' => ['=username' => $login, '=active' => 1],
         'limit' => 1,
       ])->fetch();
 

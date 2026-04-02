@@ -6,6 +6,8 @@ namespace OrderApiV2\DB\Repositories;
 
 use OrderApiV2\DB\Models\DealerUserTable;
 use OrderApiV2\DB\Models\DealerTable;
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use OrderApiV2\DB\Models\DealerSalonTable;
 
 /**
  * Репозиторий для работы с пользователями дилеров.
@@ -18,12 +20,31 @@ class DealerUserRepository
    */
   public static function findByUsername(string $username): ?array
   {
-    return DealerUserTable::getList([
-      'select' => ['*', 'role_name' => 'role.name'],
-      'filter' => ['=username' => trim($username), '=active' => 1],
-      'limit' => 1
-    ])->fetch() ?: null;
+    try {
+      $user = DealerUserTable::getList([
+        'select' => [
+          '*',
+          'role_name' => 'role.name',
+          'inn_dealer' => 'salon_link.inn_dealer'
+        ],
+        'filter' => ['=username' => trim($username), '=active' => 1],
+        'runtime' => [
+          new Reference(
+            'salon_link',
+            DealerSalonTable::class,
+            ['=this.salon_code' => 'ref.salon_code']
+          )
+        ],
+        'order' => ['salon_link.id' => 'ASC'],
+        'limit' => 1
+      ])->fetch();
+
+      return $user ?: null;
+    } catch (\Throwable $e) {
+      return null;
+    }
   }
+
 
   /**
    * Получение расширенных данных для профиля (me).

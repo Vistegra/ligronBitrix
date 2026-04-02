@@ -27,7 +27,7 @@ final class ApiConfig
   public const string API_DATE_VERSION = '30.03.2026';
   public const string SITE_ROOT_URL = 'https://ligron.ru';
   public const string  APP_ORDERS_PAGE = 'https://ligron.ru/e-order-v2/orders';
-  public const string CALC_URL = 'https://calculator.ligron.ru';
+  public const string CALC_URL = 'https://dev.vistegra.by/ligron/';//https://calculator.ligron.ru';
 
   //'https://ligron.ru/local/api-e-order-v2/fake-1c-webhook'
   public const string  INTEGRATION_1C_ORDER_URL = 'http://193.43.248.24:8989/transitDB/hs/transit1c/get_d';

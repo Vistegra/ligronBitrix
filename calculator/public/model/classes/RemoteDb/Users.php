@@ -6,6 +6,8 @@ use Exception;
 
 class Users
 {
+  use UsersSsoTrait;
+
   private App $app;
 
   /**

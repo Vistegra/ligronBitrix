@@ -1,23 +1,43 @@
-import {useMutation} from "@tanstack/react-query";
+import {useState} from "react";
 import {toast} from "sonner";
-import {queries} from "@/lib/queryFactory";
+import {authApi} from "@/api/authApi";
+import {useContextStore} from "@/store/contextStore";
 
 export function useCalculatorRedirect() {
-  const mutation = useMutation({
-    ...queries.auth.calculatorLink(),
-    onSuccess: (url) => {
-      window.open(url, "_blank", "noopener,noreferrer");
-    },
-    onError: (err) => {
-      toast.error(err.message || "Ошибка при переходе в калькулятор");
+  const [isLoading, setIsLoading] = useState(false);
+  const {inn, salonCode} = useContextStore();
+
+  const openCalculatorWithConfirm = async (ligron_number: string | null = null) => {
+    setIsLoading(true);
+
+    // Сразу открываем пустую вкладку ДО асинхронного запроса
+    const newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
+    try {
+      const params = new URLSearchParams();
+      if (ligron_number) {
+        params.set('ligron_number', ligron_number);
+      } else {
+        if (inn) params.set('inn_dealer', inn);
+        if (salonCode) params.set('salon_code', salonCode);
+      }
+
+      const response = await authApi.getCalculatorLink(params.toString());
+
+      if (response.data?.url && newWindow) {
+        // Подменяем URL в открытой вкладке
+        newWindow.location.href = response.data.url;
+      } else {
+        newWindow?.close();
+        toast.error("Не удалось получить ссылку для входа");
+      }
+    } catch (error: any) {
+      newWindow?.close();
+      toast.error("Ошибка при переходе в калькулятор");
+    } finally {
+      setIsLoading(false);
     }
-  });
-
-  return {
-    // Методы
-    onConfirm: (ligronNumber?: string | null) => mutation.mutate(ligronNumber ?? null),
-
-    // Статусы
-    isLoading: mutation.isPending,
   };
+
+  return {isLoading, onConfirm: openCalculatorWithConfirm};
 }
