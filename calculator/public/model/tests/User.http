@@ -1,0 +1,16 @@
+### Load current user
+GET https://ligron/index.php?customMode=remoteDB&cmsAction=loadCurrentUser
+
+### Load delears
+POST https://ligron/
+Content-Type: application/json
+
+{
+  "customMode": "remoteDB",
+  "cmsAction": "loadDealers",
+  "loginType": "manager",
+  "login": "ladmin1",
+  "password": "pass1"
+}
+
+
