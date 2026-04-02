@@ -4,65 +4,79 @@ namespace RemoteDb;
 
 trait AppSsoTrait
 {
-  /**
-   * @throws \Exception
-   */
+
   public function ssoLogin()
   {
     $token = $this->url->request->get('param', '');
 
     if (!$token) {
-      $this->main->reDirect("login?status=error&sso=empty_token");
+      $this->main->reDirect("login?status=error&sso=no_token");
       die();
     }
 
-    $decrypted = $this->main->decrypt($token);
+    $decrypted = $this->decryptSso($token);
 
-    // Ожидаем 5 частей строке: LOGIN | INN_DEALER | SALON_CODE | REDIRECT_SUFFIX | TIMESTAMP
+    // Ожидаем 6 частей: LOGIN | PROVIDER | INN_DEALER | SALON_CODE | REDIRECT_SUFFIX | TIMESTAMP
     $parts = explode('|', $decrypted);
 
-    if (count($parts) === 5) {
-      $loginFromSso = $parts[0];
-      $innDealer = $parts[1];
-      $salonCode = $parts[2];
-      $redirect = $parts[3];
-      $timestamp = (int)$parts[4];
+    if (count($parts) === 6) {
+      $login     = $parts[0];
+      $provider  = $parts[1]; // 'dealer' || 'ligron'
+      $inn       = $parts[2];
+      $salon     = $parts[3];
+      $redirect  = $parts[4];
+      $timestamp = (int)$parts[5];
 
       // Ссылка действительна 2 минуты
       if (time() - $timestamp < 120) {
 
-        $passed = $this->users->loginBySso($loginFromSso, 'dealer', $innDealer, $salonCode);
+        $loginType = ($provider === 'ligron') ? 'manager' : 'dealer';
+
+        $passed = $this->users->loginBySso($login, $loginType, $inn, $salon);
 
         if ($passed) {
+          //  Ищем дилера в локальной базе калькулятора по ИНН из токена
+          $dealers = $this->dealer->getByTin($inn);
+          $targetDealer = null;
 
-          // ИНН берем из переданного контекста
-          $dealers = $this->dealer->getByTin($innDealer);
-
-          $defDealer = [];
           foreach ($dealers as $d) {
-            if (isset($d['tin']) && $d['tin'] === $innDealer) {
-              $defDealer = $d;
+            if (isset($d['tin']) && $d['tin'] === $inn) {
+              $targetDealer = $d;
               break;
             }
           }
 
-          if (!empty($defDealer)) {
-            // Если дилер новый, создаем его в локальной БД калькулятора
-            if (strpos((string)$defDealer['id'], 'remote') !== false) {
-              $defDealer = $this->dealer->create($defDealer);
+          if ($targetDealer) {
+
+            if (strpos((string)$targetDealer['id'], 'remote') !== false) {
+              $targetDealer = $this->dealer->create($targetDealer);
             }
 
-            $redirectSuffix = $redirect ? '/' . ltrim($redirect, '/') : '';
-            $target = $this->main->url->getBaseUri() . 'dealer/' . $defDealer['id'] . $redirectSuffix;
+            $_SESSION['dealerId'] = $targetDealer['id'];
 
-            header('Location: ' . $target, true, 303);
+            $suffix = $redirect ? '/' . ltrim($redirect, '/') : '';
+            $url = $this->main->url->getBaseUri() . 'dealer/' . $targetDealer['id'] . $suffix;
+
+            header('Location: ' . $url, true, 303);
             die();
           }
         }
       }
     }
 
-    $this->main->reDirect("login?status=error&sso=failed");
+    $this->main->reDirect("login?status=error&sso=invalid_token");
     die();
+  }
+
+  private function decryptSso(string $param): string
+  {
+    $ca = 'aes-256-cbc';
+    $key = 'RzFsgDG0WPtiWH9Zfr94';
+
+    $decoded = base64_decode($param);
+    if (strpos($decoded, '::') === false) return '';
+
+    list($encryptedData, $iv) = explode('::', $decoded, 2);
+    return openssl_decrypt($encryptedData, $ca, $key, 0, $iv) ?: '';
   }
 }

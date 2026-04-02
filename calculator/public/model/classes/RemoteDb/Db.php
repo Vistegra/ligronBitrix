@@ -7,6 +7,7 @@ use RedBeanPHP\RedException;
 
 class Db
 {
+  use DbSsoTrait;
 
   /**
    * @var bool

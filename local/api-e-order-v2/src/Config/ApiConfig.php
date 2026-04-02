@@ -16,7 +16,7 @@ final class ApiConfig
 
   public const string JWT_SECRET = 'ghSiBVUEWx5FZcK6BzFHDTrbdQjexAck';
   public const string MANAGER_SECRET = 'h74zh2yLsQsKbwsarnfLANuFUBMziYeX'; //Нельзя изменять!
-  public const string SSO_CALC_ENCRYPT_KEY = 'eKey';
+  public const string SSO_CALC_ENCRYPT_KEY = 'RzFsgDG0WPtiWH9Zfr94';
   public const string SSO_CALC_ALGO = 'aes-256-cbc';
   public const string JWT_ALGO = 'HS256';
   public const int    JWT_EXPIRE = 36000; // 10 часов

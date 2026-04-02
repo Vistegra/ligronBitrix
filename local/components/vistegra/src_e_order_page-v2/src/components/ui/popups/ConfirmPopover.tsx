@@ -10,7 +10,7 @@ import * as React from "react";
 
 interface ConfirmPopoverProps {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   confirmVariant?:

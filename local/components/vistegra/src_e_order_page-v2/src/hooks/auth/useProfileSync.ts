@@ -1,7 +1,7 @@
 import {useQuery} from "@tanstack/react-query";
 import {useAuthStore} from "@/store/authStore";
 import {useContextStore} from "@/store/contextStore";
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {queries} from "@/lib/queryFactory.ts";
 import type {ApiResponse} from "@/api/client";
 import type {DetailedResponse} from "@/api/authApi";
@@ -12,11 +12,12 @@ interface UseProfileSyncProps {
 
 export function useProfileSync({isTokenProcessing}: UseProfileSyncProps) {
   const {token, user, updateUserDetailed, logout} = useAuthStore();
-  const {inn, _set} = useContextStore();
+  const {_set} = useContextStore();
+
+  const hasInitializedRef = useRef(false);
 
   const query = useQuery({
     ...queries.auth.me(),
-    // Данные из кэша для мгновенного отображения
     initialData: user?.detailed
       ? ({
         status: "success",
@@ -29,12 +30,24 @@ export function useProfileSync({isTokenProcessing}: UseProfileSyncProps) {
 
   // Авто-установка контекста для Дилера при входе
   useEffect(() => {
-    if (user?.provider === "dealer" && !inn) {
-      if (user.inn_dealer && user.salon_code) {
+    // Если юзера нет (вышли из аккаунта), сбрасываем флаг
+    if (!user) {
+      hasInitializedRef.current = false;
+      return;
+    }
+
+    // Если это дилер и мы еще не ставили ему дефолт в этой сессии
+    if (user.provider === "dealer" && !hasInitializedRef.current) {
+      hasInitializedRef.current = true; // Отмечаем, что инициализация прошла
+
+      // Берем текущий ИНН напрямую из стора, чтобы не добавлять его в зависимости useEffect
+      const currentInn = useContextStore.getState().inn;
+
+      if (!currentInn && user.inn_dealer && user.salon_code) {
         _set(user.inn_dealer, user.salon_code);
       }
     }
-  }, [user, inn, _set]);
+  }, [user, _set]);
 
   // Синхронизация данных профиля с состоянием
   useEffect(() => {
@@ -55,8 +68,6 @@ export function useProfileSync({isTokenProcessing}: UseProfileSyncProps) {
   }, [query.data, query.isError, user?.detailed, isTokenProcessing, logout, updateUserDetailed]);
 
   return {
-    // Статусы
     isProfileLoading: !!token && (query.isLoading || !user?.detailed),
   };
-
 }

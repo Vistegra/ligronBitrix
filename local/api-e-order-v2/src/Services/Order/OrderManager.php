@@ -100,23 +100,23 @@ final readonly class OrderManager
   /**
    * Список заказов с ACL-фильтром
    */
-  public function getOrders(array $filter = [], int $limit = 20, int $offset = 0, array $sort = ['updated_at' => 'desc']): array
+  public function getOrders(array $filter, bool $isDraft, int $limit, int $offset, array $sort): array
   {
-    $accessFilter = $this->permission->getAccessFilter();
+    $accessFilter = $this->permission->getAccessFilter($isDraft);
 
-    // Защита от затирания фильтров URL фильтрами прав доступа
-    $finalFilter = [];
-
-    if (!empty($filter) && !empty($accessFilter)) {
+    // Если фильтр безопасности пустой (Режим Бога), используем только фильтр пользователя
+    if (empty($accessFilter)) {
+      $finalFilter = $filter;
+    } // Если пользователь не ввел своих фильтров (просто открыл список), используем только безопасность
+    elseif (empty($filter)) {
+      $finalFilter = $accessFilter;
+    } // Если есть и то и другое — объединяем
+    else {
       $finalFilter = [
         'LOGIC' => 'AND',
         $filter,
         $accessFilter
       ];
-    } elseif (!empty($filter)) {
-      $finalFilter = $filter;
-    } elseif (!empty($accessFilter)) {
-      $finalFilter = $accessFilter;
     }
 
     return [
@@ -129,7 +129,7 @@ final readonly class OrderManager
       'pagination' => [
         'limit' => $limit,
         'offset' => $offset,
-        'total' => OrderRepository::getTotalCount($finalFilter)
+        'total' => (int)OrderRepository::getTotalCount($finalFilter)
       ],
     ];
   }

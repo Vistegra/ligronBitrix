@@ -5,65 +5,42 @@ declare(strict_types=1);
 namespace OrderApiV2\Services\Auth\Token;
 
 use OrderApiV2\Config\ApiConfig;
-use OrderApiV2\DB\Repositories\DealerUserRepository;
 use OrderApiV2\DTO\Auth\UserDTO;
 
 final readonly class SsoLinkGeneratorService
 {
-
   public function __construct(
     private UserDTO $user
   )
   {
   }
 
-  /**
-   * Генерирует ссылку на корень раздела дилера
-   */
   public function generateLink(): string
   {
-    $this->ensureIsDealer();
-
-    // /dealer/{id}
+    $this->ensureHasContext();
     return $this->buildSsoUrl('');
   }
 
-  /**
-   * Генерирует ссылку на конкретный заказ
-   */
   public function generateOrderLink(string $ligronNumber): string
   {
-    $this->ensureIsDealer();
-
-    // Формируем "хвост" ссылки
-    $redirectSuffix = '?ligron_number=' . $ligronNumber;
-
-    return $this->buildSsoUrl($redirectSuffix);
+    $this->ensureHasContext();
+    return $this->buildSsoUrl('?ligron_number=' . $ligronNumber);
   }
 
-  /**
-   * URL для входа
-   */
   private function buildSsoUrl(string $redirectSuffix): string
   {
-    // Базовый URL авторизации (всегда в корень, параметры передаем в payload)
     $baseUrl = rtrim(ApiConfig::CALC_URL, '/');
-
-    // Формируем зашифрованный параметр
     $encryptedParam = $this->buildEncryptedPayload($redirectSuffix);
-
     return $baseUrl . '/?customMode=remoteDB&cmsAction=ssoLogin&param=' . urlencode($encryptedParam);
   }
 
-  /**
-   * Создает зашифрованный payload с 5 параметрами
-   */
   private function buildEncryptedPayload(string $redirectSuffix): string
   {
-    //LOGIN | INN_DEALER | SALON_CODE | REDIRECT | TIMESTAMP
+    // Структура: LOGIN | PROVIDER | INN_DEALER | SALON_CODE | REDIRECT | TIMESTAMP
     return $this->encrypt(sprintf(
-      '%s|%s|%s|%s|%d',
+      '%s|%s|%s|%s|%s|%d',
       $this->user->login,
+      $this->user->provider,
       $this->user->inn_dealer,
       $this->user->salon_code,
       $redirectSuffix,
@@ -71,10 +48,10 @@ final readonly class SsoLinkGeneratorService
     ));
   }
 
-  private function ensureIsDealer(): void
+  private function ensureHasContext(): void
   {
-    if (!$this->user->isDealer() || empty($this->user->inn_dealer)) {
-      throw new \RuntimeException('Переход в калькулятор разрешен только для пользователей дилера.' . json_encode($this->user->toArray()), 403);
+    if (empty($this->user->inn_dealer)) {
+      throw new \RuntimeException('Для перехода в калькулятор необходимо выбрать дилера', 403);
     }
   }
 

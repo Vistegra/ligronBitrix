@@ -12,13 +12,9 @@ use OrderApiV2\Services\Auth\Session\AuthSession;
 
 /**
  * Управление правами доступа к заказам.
- * Вся конфигурация прав для ролей хранится в методе getRolePolicy().
  */
 final readonly class OrderPermission
 {
-  /**
-   * Карта названий полей.
-   */
   private const array FIELD_NAMES_RU = [
     'name' => 'Название/имя клиента',
     'comment' => 'Комментарий',
@@ -30,30 +26,20 @@ final readonly class OrderPermission
     'status_id' => 'Статус заказа',
   ];
 
-  public function __construct(
-    private UserDTO $user
-  )
+  public function __construct(private UserDTO $user)
   {
   }
 
   /**
-   * Вспомогательный метод для получения чпу поля
+   * Настройки прав в зависимости от роли по UserRole
    */
-  private function getFieldName(string $field): string
+  public function getRolePolicy(): array
   {
-    return self::FIELD_NAMES_RU[$field] ?? $field;
-  }
+    return match ($this->user->role) {
 
-  /**
-   * Единый реестр прав (Policy) для всех ролей.
-   */
-  private function getRolePolicy(): array
-  {
-    // ---------------------------
-    // РЕЖИМЫ БОГА
-    // ---------------------------
-    if ($this->user->role === UserRole::GOD_LIGRON) {
-      return [
+      // 1. РЕЖИМЫ БОГА
+      UserRole::GOD_LIGRON,
+      UserRole::GOD_DEALER => [
         'view_all' => true,
         'create_for_any' => true,
         'allowed_update_fields' => ['*'],
@@ -61,26 +47,10 @@ final readonly class OrderPermission
         'can_send_to_1c' => true,
         'can_update_sent_order' => true,
         'can_delete_sent_order' => true,
-      ];
-    }
+      ],
 
-    if ($this->user->role === UserRole::GOD_DEALER) {
-      return [
-        'view_all' => true,
-        'create_for_any' => true,
-        'allowed_update_fields' => ['*'],
-        'can_change_status' => true,
-        'can_send_to_1c' => true,
-        'can_update_sent_order' => true,
-        'can_delete_sent_order' => true,
-      ];
-    }
-
-    // ---------------------------
-    // СТАНДАРТНЫЕ РОЛИ
-    // ---------------------------
-    if ($this->user->isOfficeManager()) {
-      return [
+      // 2. ОФИС-МЕНЕДЖЕР ЛИГРОН (OML)
+      UserRole::LIGRON_OFFICE_MANAGER => [
         'view_all' => true,
         'create_for_any' => true,
         'allowed_update_fields' => ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
@@ -88,11 +58,10 @@ final readonly class OrderPermission
         'can_send_to_1c' => true,
         'can_update_sent_order' => false,
         'can_delete_sent_order' => false,
-      ];
-    }
+      ],
 
-    if ($this->user->isManager()) {
-      return [
+      // 3. ОБЫЧНЫЙ МЕНЕДЖЕР ЛИГРОН (ML)
+      UserRole::LIGRON_MANAGER => [
         'view_all' => false,
         'create_for_any' => false,
         'allowed_update_fields' => ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
@@ -100,11 +69,12 @@ final readonly class OrderPermission
         'can_send_to_1c' => true,
         'can_update_sent_order' => false,
         'can_delete_sent_order' => false,
-      ];
-    }
+      ],
 
-    if ($this->user->isDealer()) {
-      return [
+      // 4. ВСЕ МЕНЕДЖЕРЫ ДИЛЕРА (M, MS, LM)
+      UserRole::DEALER_SALON_MANAGER,
+      UserRole::DEALER_LIGRON_MANAGER,
+      UserRole::DEALER_MANAGER => [
         'view_all' => false,
         'create_for_any' => false,
         'allowed_update_fields' => ['name', 'comment'],
@@ -112,205 +82,181 @@ final readonly class OrderPermission
         'can_send_to_1c' => true,
         'can_update_sent_order' => false,
         'can_delete_sent_order' => false,
-      ];
-    }
+      ],
 
-    return [
-      'view_all' => false,
-      'create_for_any' => false,
-      'allowed_update_fields' => [],
-      'can_change_status' => false,
-      'can_send_to_1c' => false,
-      'can_update_sent_order' => false,
-      'can_delete_sent_order' => false,
-    ];
+      default => [
+        'view_all' => false, 'create_for_any' => false, 'allowed_update_fields' => [],
+        'can_change_status' => false, 'can_send_to_1c' => false,
+        'can_update_sent_order' => false, 'can_delete_sent_order' => false,
+      ],
+    };
   }
 
   /**
-   * Главный метод проверки прав.
-   * Перенаправляет на конкретные методы assert..., которые сами выбросят детальную ошибку.
-   *
+   * Главный метод проверки прав
    * @throws Exception
    */
   public function verify(string $action, array $order = [], array $data = []): void
   {
     $policy = $this->getRolePolicy();
+    $o = array_change_key_case($order, CASE_LOWER);
 
     match ($action) {
       OrderAction::CREATE => $this->assertCanCreate($data, $policy),
-      OrderAction::VIEW => $this->assertCanView($order, $policy),
-      OrderAction::UPDATE => $this->assertCanUpdate($order, $data, $policy),
-      OrderAction::DELETE => $this->assertCanDelete($order, $policy),
-      OrderAction::CHANGE_STATUS => $this->assertCanChangeStatus($order, $policy),
-      OrderAction::SEND_TO_1C => $this->assertCanSendTo1C($order, $policy),
+      OrderAction::VIEW => $this->assertCanView($o, $policy),
+      OrderAction::UPDATE => $this->assertCanUpdate($o, $data, $policy),
+      OrderAction::DELETE => $this->assertCanDelete($o, $policy),
+      OrderAction::CHANGE_STATUS => $this->assertCanChangeStatus($o, $policy),
+      OrderAction::SEND_TO_1C => $this->assertCanSendTo1C($o, $policy),
       default => throw new Exception("Неизвестное действие: {$action}", 400),
     };
   }
 
-  public function getAccessFilter(): array
+  /**
+   * Генерация фильтра для списков (SQL).
+   */
+  public function getAccessFilter(bool $isDraft): array
   {
     $policy = $this->getRolePolicy();
 
-    if ($policy['view_all']) {
-      return [];
+    // 1. Режим Бога или Офис-менеджер видят все реальные заказы
+    if ($policy['view_all'] && !$isDraft) return [];
+
+    // 2. Логика для черновиков
+    // Строго по author_id и провайдеру (created_by)
+    if ($isDraft) {
+      return [
+        '=author_id' => $this->user->id,
+        '=created_by' => $this->user->isDealer() ? 1 : 2,
+        '=status_id' => false // IS NULL
+      ];
     }
 
-    $availableInns = AuthSession::getAvailableInns() ?: [];
+    // 3. Логика для обычных заказов
+    $inns = AuthSession::getAvailableInns() ?: [];
+    $salons = AuthSession::getAvailableSalons() ?: [];
 
     if ($this->user->isLigronStaff()) {
-      return empty($availableInns) ? ['=id' => 0] : ['=inn_dealer' => $availableInns];
+      return empty($inns) ? ['=id' => 0] : ['=inn_dealer' => $inns];
     }
 
     if ($this->user->isDealer()) {
-      $availableSalons = AuthSession::getAvailableSalons() ?: [];
-
-      if (empty($availableSalons) && empty($availableInns)) {
-        return ['=id' => 0];
-      }
-
-      return [
-        'LOGIC' => 'OR',
-        ['=salon_code' => $availableSalons], ['=inn_dealer' => $availableInns]
-      ];
+      return (empty($inns) && empty($salons))
+        ? ['=id' => 0]
+        : ['LOGIC' => 'OR', ['=salon_code' => $salons], ['=inn_dealer' => $inns]];
     }
 
     return ['=id' => 0];
   }
 
-  // -----------------------------------------------------------
-  // Внутренние проверки (Выбрасывают подробные исключения)
-  // -----------------------------------------------------------
+  // -----------------
+  // Приватные хелперы
+  // -----------------
 
-  /**
-   * @throws Exception
-   */
+  private function isDraft(array $o): bool
+  {
+    return empty($o['status_id']) && empty($o['number']);
+  }
+
+  private function isContextAllowed(string $inn, string $salon): bool
+  {
+    $inns = AuthSession::getAvailableInns() ?: [];
+    $salons = AuthSession::getAvailableSalons() ?: [];
+    return in_array($inn, $inns, true) || in_array($salon, $salons, true);
+  }
+  // ---------------------
+  // Проверки
+  // ---------------------
+
+  /** @throws Exception */
   private function assertCanCreate(array $data, array $policy): void
   {
-    if ($policy['create_for_any']) {
-      return; // Режимы с полным доступом
-    }
+    if ($policy['create_for_any']) return;
 
     $inn = (string)($data['inn_dealer'] ?? '');
     $salon = (string)($data['salon_code'] ?? '');
 
     if ($inn === '' || $salon === '') {
-      throw new Exception('Для оформления заказа необходимо указать ИНН дилера и код салона.', 400);
+      throw new Exception('Необходимо указать ИНН дилера и код салона.', 400);
     }
 
-    $availableInns = AuthSession::getAvailableInns() ?: [];
-    $availableSalons = AuthSession::getAvailableSalons() ?: [];
-
-    // Единая логика для Дилеров и Менеджеров Лигрон:
-    // Переданные ИНН и Салон должны быть в списке доступных из сессии (собрано BFS)
-    if (!in_array($inn, $availableInns, true) || !in_array($salon, $availableSalons, true)) {
-      throw new Exception('У вас нет доступа к оформлению заказа на выбранного дилера или салон.', 403);
+    if (!$this->isContextAllowed($inn, $salon)) {
+      throw new Exception('У вас нет доступа к выбранному дилеру или салону.', 403);
     }
   }
 
-  /**
-   * @throws Exception
-   */
-  private function assertCanView(array $order, array $policy): void
+  /** @throws Exception */
+  private function assertCanView(array $o, array $policy): void
   {
-    if ($policy['view_all']) {
-      return;
+    // Защита черновика
+    if ($this->isDraft($o)) {
+      if ((int)($o['author_id'] ?? 0) === $this->user->id) return;
+      throw new Exception('Доступ к чужому черновику запрещен.', 403);
     }
 
-    $inn = (string)($order['inn_dealer'] ?? '');
-    $salon = (string)($order['salon_code'] ?? '');
-    $availableInns = AuthSession::getAvailableInns() ?: [];
+    // Режим Бога / OML
+    if ($policy['view_all']) return;
 
-    if ($this->user->isLigronStaff() && $inn !== '' && in_array($inn, $availableInns, false)) {
+    // Проверка облака
+    if ($this->isContextAllowed((string)($o['inn_dealer'] ?? ''), (string)($o['salon_code'] ?? ''))) {
       return;
-    }
-
-    if ($this->user->isDealer()) {
-      $availableSalons = AuthSession::getAvailableSalons() ?: [];
-      $isMySalon = $salon !== '' && in_array($salon, $availableSalons, true);
-      $isMyInn = $inn !== '' && in_array($inn, $availableInns, true);
-
-      if ($isMySalon || $isMyInn) {
-        return;
-      }
     }
 
     throw new Exception('У вас нет прав на просмотр данного заказа.', 403);
   }
 
-  /**
-   * @throws Exception
-   */
-  private function assertCanUpdate(array $order, array $data, array $policy): void
+  /** @throws Exception */
+  private function assertCanUpdate(array $o, array $data, array $policy): void
   {
-    // Сначала проверяем, видит ли он вообще этот заказ
-    $this->assertCanView($order, $policy);
+    $this->assertCanView($o, $policy);
 
-    $isSentTo1c = !empty($order['number']);
-
-    if ($isSentTo1c && !$policy['can_update_sent_order']) {
-      throw new Exception('Редактирование заказа запрещено, так как он уже передан в производство (присвоен номер Лигрон).', 403);
+    if (!empty($o['number']) && !$policy['can_update_sent_order']) {
+      throw new Exception('Редактирование заказа в производстве запрещено.', 403);
     }
 
-    if (empty($data)) {
-      return;
-    }
+    if (empty($data)) return;
 
-    $allowedFields = $policy['allowed_update_fields'];
-    if (in_array('*', $allowedFields, true)) {
-      return;
-    }
+    $allowed = $policy['allowed_update_fields'];
+    if (in_array('*', $allowed, true)) return;
 
     foreach (array_keys($data) as $field) {
-      if (!in_array($field, $allowedFields, true)) {
-        $fieldName = $this->getFieldName($field);
-        throw new Exception("У вас нет прав на изменение поля '{$fieldName}'.", 403);
+      if (!in_array($field, $allowed, true)) {
+        throw new Exception("Нет прав на изменение поля '{$this->getFieldName($field)}'.", 403);
       }
     }
   }
 
-  /**
-   * @throws Exception
-   */
-  private function assertCanDelete(array $order, array $policy): void
+  /** @throws Exception */
+  private function assertCanDelete(array $o, array $policy): void
   {
-    $this->assertCanView($order, $policy);
+    $this->assertCanView($o, $policy);
 
-    $hasChildren = (int)($order['children_count'] ?? 0) > 0;
-    if ($hasChildren) {
-      throw new Exception('Нельзя удалить заказ, у которого есть вложенные подзаказы. Сначала удалите их.', 403);
+    if ((int)($o['children_count'] ?? 0) > 0) {
+      throw new Exception('Сначала удалите вложенные заказы.', 403);
     }
 
-    $isSentTo1c = !empty($order['number']);
-    if ($isSentTo1c && !$policy['can_delete_sent_order']) {
-      throw new Exception('Нельзя удалить заказ, который уже передан в производство (присвоен номер Лигрон).', 403);
+    if (!empty($o['number']) && !$policy['can_delete_sent_order']) {
+      throw new Exception('Удаление отправленного заказа запрещено.', 403);
     }
   }
 
-  /**
-   * @throws Exception
-   */
-  private function assertCanChangeStatus(array $order, array $policy): void
+  /** @throws Exception */
+  private function assertCanChangeStatus(array $o, array $policy): void
   {
-    if (!$policy['can_change_status']) {
-      throw new Exception('У вашей роли нет прав на ручную смену статуса заказа.', 403);
-    }
-
-    $this->assertCanView($order, $policy);
+    if (!$policy['can_change_status']) throw new Exception('Нет прав на смену статуса.', 403);
+    $this->assertCanView($o, $policy);
   }
 
-  /**
-   * @throws Exception
-   */
-  private function assertCanSendTo1C(array $order, array $policy): void
+  /** @throws Exception */
+  private function assertCanSendTo1C(array $o, array $policy): void
   {
-    if (!$policy['can_send_to_1c']) {
-      throw new Exception('У вас нет прав на отправку заказов в Лигрон.', 403);
-    }
+    if (!$policy['can_send_to_1c']) throw new Exception('Нет прав на отправку в Лигрон.', 403);
+    if (!empty($o['number'])) throw new Exception('Заказ уже был отправлен.', 400);
+    $this->assertCanView($o, $policy);
+  }
 
-    if (!empty($order['number'])) {
-      throw new Exception('Этот заказ уже был отправлен в Лигрон ранее.', 400);
-    }
-
-    $this->assertCanView($order, $policy);
+  private function getFieldName(string $field): string
+  {
+    return self::FIELD_NAMES_RU[$field] ?? $field;
   }
 }

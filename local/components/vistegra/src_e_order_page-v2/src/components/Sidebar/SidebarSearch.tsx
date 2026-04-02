@@ -12,7 +12,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> =
   ({
      value,
      onChange,
-     placeholder = "Поиск..."
+     placeholder = "Поиск дилера или салона ..."
    }) => {
     return (
       <div className="px-2 mb-2 group-data-[collapsible=icon]:hidden">

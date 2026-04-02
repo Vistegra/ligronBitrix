@@ -3,25 +3,33 @@ import {useNavigate} from "react-router-dom";
 import {useContextStore} from "@/store/contextStore";
 import {useAuthStore} from "@/store/authStore";
 import {PAGE} from "@/api/constants";
+import type {DealerNode, SalonNode} from "@/types/user";
+
+export interface WorkspaceContext {
+  inn: string | null;
+  salonCode: string | null;
+  dealerName: string | null;
+  salonName: string | null;
+}
 
 export function useWorkspace() {
   const {inn, salonCode, _set, _clear} = useContextStore();
   const {user} = useAuthStore();
   const navigate = useNavigate();
 
-  const hierarchy = user?.detailed?.hierarchy || [];
-
-  const current = useMemo(() => {
-    // Если в сторе совсем пусто — данных нет
+  const current = useMemo<WorkspaceContext | null>(() => {
+    // Если в сторе совсем пусто - данных нет
     if (!inn && !salonCode) return null;
 
-    let foundDealer = hierarchy.find(d => d.inn === inn);
-    let foundSalon = null;
+    const hierarchy: DealerNode[] = user?.detailed?.hierarchy || [];
+
+    let foundDealer: DealerNode | undefined = hierarchy.find(d => d.inn === inn);
+    let foundSalon: SalonNode | undefined = undefined;
 
     if (foundDealer) {
       foundSalon = foundDealer.salons.find(s => s.salon_code === salonCode);
     } else if (salonCode) {
-      // Поиск бесппризорного салона
+      // Поиск беспризорного салона
       for (const dNode of hierarchy) {
         const s = dNode.salons.find(item => item.salon_code === salonCode);
         if (s) {
@@ -38,10 +46,11 @@ export function useWorkspace() {
       dealerName: foundDealer?.name || (inn ? `ИНН ${inn}` : null),
       salonName: foundSalon?.name || (salonCode ? `Салон ${salonCode}` : null),
     };
-  }, [inn, salonCode, hierarchy]);
 
-  //Формирование ссылок с контекстом для сохранения контекста между страницами
-  const getContextLink = useCallback((basePath: string) => {
+  }, [inn, salonCode, user?.detailed?.hierarchy]);
+
+  // Формирование ссылок с контекстом для сохранения контекста между страницами
+  const getContextLink = useCallback((basePath: string): string => {
     if (!inn && !salonCode) return basePath;
 
     const params = new URLSearchParams();
@@ -54,8 +63,7 @@ export function useWorkspace() {
     return `${basePath}?${params.toString()}`;
   }, [inn, salonCode]);
 
-
-  const setWorkspace = useCallback((newInn: string | null, newSalon: string | null) => {
+  const setWorkspace = useCallback((newInn: string | null, newSalon: string | null): void => {
     _set(newInn, newSalon);
 
     const params = new URLSearchParams();
@@ -66,7 +74,7 @@ export function useWorkspace() {
     navigate(`${PAGE.ORDERS}?${params.toString()}`);
   }, [_set, navigate]);
 
-  const resetWorkspace = useCallback(() => {
+  const resetWorkspace = useCallback((): void => {
     _clear();
     navigate(PAGE.ORDERS);
   }, [_clear, navigate]);

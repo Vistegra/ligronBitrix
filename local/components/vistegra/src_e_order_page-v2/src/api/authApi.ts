@@ -10,6 +10,12 @@ export interface LoginResponse {
   provider: ProviderType;
 }
 
+export interface SsoLinkParams {
+  ligron_number?: string | null;
+  inn_dealer?: string | null;
+  salon_code?: string | null;
+}
+
 export type DetailedResponse = { detailed: ManagerDetailed } | { detailed: DealerDetailed };
 
 export interface LoginCredentials {
@@ -44,14 +50,17 @@ export const authApi = {
    * Получение SSO ссылки для калькулятора
    * Если передан ligron_number, генерируется ссылка на конкретный заказ
    */
-  getCalculatorLink(ligron_number: string | null = null) {
-    const url = ligron_number
-      ? `${ENDPOINT.AUTH_SSO}?ligron_number=${ligron_number}`
-      : ENDPOINT.AUTH_SSO;
+  getCalculatorLink(params: SsoLinkParams = {}) {
+    const searchParams = new URLSearchParams();
 
-    return makeRequest<{ url: string }>(() =>
-      api.get(url)
-    );
+    if (params.ligron_number) searchParams.append('ligron_number', params.ligron_number);
+    if (params.inn_dealer) searchParams.append('inn_dealer', params.inn_dealer);
+    if (params.salon_code) searchParams.append('salon_code', params.salon_code);
+
+    const queryString = searchParams.toString();
+    const url = queryString ? `${ENDPOINT.AUTH_SSO}?${queryString}` : ENDPOINT.AUTH_SSO;
+
+    return makeRequest<{ url: string }>(() => api.get(url));
   },
 
 };

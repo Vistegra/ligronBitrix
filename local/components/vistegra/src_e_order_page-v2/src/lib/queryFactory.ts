@@ -1,5 +1,5 @@
 import {queryOptions} from "@tanstack/react-query";
-import {authApi, type LoginCredentials} from "@/api/authApi";
+import {authApi, type LoginCredentials, type SsoLinkParams} from "@/api/authApi";
 import {orderApi, type OrdersRequest} from "@/api/orderApi";
 
 
@@ -41,8 +41,8 @@ export const queries = {
 
     // Получение ссылки для SSO
     calculatorLink: () => ({
-      mutationFn: async (ligronNumber: string | null) => {
-        const res = await authApi.getCalculatorLink(ligronNumber);
+      mutationFn: async (params?: SsoLinkParams) => {
+        const res = await authApi.getCalculatorLink(params || {});
         if (!res.data?.url) throw new Error("Ссылка не получена");
         return res.data.url;
       }
