@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "react-router-dom";
+import {Link} from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useBreadcrumbs } from "@/hooks/sidebar/useBreadcrumbs";
+import {useBreadcrumbs} from "@/hooks/sidebar/useBreadcrumbs";
 import React from "react";
 
 export function AppBreadcrumbs() {
@@ -17,21 +17,29 @@ export function AppBreadcrumbs() {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="flex-nowrap">
         {breadcrumbs.map((crumb, index) => (
           <React.Fragment key={index}>
-            {index > 0 && <BreadcrumbSeparator />}
-            <BreadcrumbItem>
+            {index > 0 && <BreadcrumbSeparator className="shrink-0"/>}
+            <BreadcrumbItem className="shrink min-w-0">
               {crumb.to ? (
-                <BreadcrumbLink asChild>
-                  <Link to={crumb.to}>{crumb.label}</Link>
+                <BreadcrumbLink asChild className="max-w-[100px] sm:max-w-[200px] truncate block">
+                  <Link to={crumb.to} title={crumb.label}>{crumb.label}</Link>
                 </BreadcrumbLink>
               ) : crumb.isGroup ? (
-                <span className="text-muted-foreground font-medium">
+                <span
+                  className="text-muted-foreground font-medium max-w-[100px] sm:max-w-[200px] truncate block"
+                  title={crumb.label}
+                >
                   {crumb.label}
                 </span>
               ) : (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                <BreadcrumbPage
+                  className="max-w-[100px] sm:max-w-[200px] truncate block"
+                  title={crumb.label}
+                >
+                  {crumb.label}
+                </BreadcrumbPage>
               )}
             </BreadcrumbItem>
           </React.Fragment>

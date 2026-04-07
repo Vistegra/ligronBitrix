@@ -61,7 +61,7 @@ export function CalculatorButton({variant = "sidebar", orderNumber = null, class
     dealerUser?.detailed?.salon_name || (dealerUser?.salon_code ? `Код: ${dealerUser.salon_code}` : 'Не выбран');
 
 
-  // 1. РЕНДЕР ПРЕДУПРЕЖДЕНИЯ (Если нет контекста)
+  // Рендер предупреждения (Если нет контекста)
   if (!hasContext) {
     if (variant === "button") return null;
 
@@ -74,18 +74,18 @@ export function CalculatorButton({variant = "sidebar", orderNumber = null, class
               <span>Калькулятор</span>
             </SidebarMenuButton>
           </PopoverTrigger>
-          {/* Исправлен Z-index и фон (bg-white), чтобы не было прозрачности как на скрине */}
+
           <PopoverContent
             side="right"
             align="end"
             sideOffset={12}
-            className="z-[100] w-80 p-4 shadow-xl border-amber-200 bg-white opacity-100"
+            className="z-[100] w-80 p-4 shadow-xl border-amber-200 bg-amber-50"
           >
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5"/>
+              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5"/>
               <div className="space-y-1.5">
-                <h4 className="text-sm font-bold text-amber-900 leading-none">Выберите организацию</h4>
-                <p className="text-[11px] text-amber-800/90 leading-relaxed">
+                <h4 className="text-sm font-semibold text-amber-700 leading-none">Выберите организацию</h4>
+                <p className="text-[11px] text-amber-600 leading-relaxed">
                   {isDealerUser
                     ? "Для перехода в калькулятор сначала выберите салон в левом меню."
                     : "Чтобы перейти в калькулятор, выберите дилера и салон в левом меню. Вы зайдете от их лица."}
@@ -93,12 +93,13 @@ export function CalculatorButton({variant = "sidebar", orderNumber = null, class
               </div>
             </div>
           </PopoverContent>
+
         </Popover>
       </SidebarMenuItem>
     );
   }
 
-  // 2. ОПИСАНИЕ ДЛЯ ПОДТВЕРЖДЕНИЯ (Если контекст есть)
+  // Описание для подтверждения (Если контекст есть)
   const popoverDescription = (
     <div className="flex flex-col gap-3 mt-1">
       <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -126,8 +127,12 @@ export function CalculatorButton({variant = "sidebar", orderNumber = null, class
   const buttonText = variant === "sidebar" ? "Калькулятор" : "Открыть в калькуляторе";
 
   const triggerButton = variant === "sidebar" ? (
-    <SidebarMenuButton asChild tooltip="Перейти в калькулятор" disabled={isLoading}
-                       className="w-full justify-start cursor-pointer">
+    <SidebarMenuButton
+      asChild
+      tooltip="Перейти в калькулятор"
+      disabled={isLoading}
+      className={cn("w-full justify-start cursor-pointer", className)}
+    >
       <div className="flex items-center w-full">{buttonContent}<span>{buttonText}</span></div>
     </SidebarMenuButton>
   ) : (
