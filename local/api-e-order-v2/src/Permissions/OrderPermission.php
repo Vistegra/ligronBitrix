@@ -31,69 +31,74 @@ final readonly class OrderPermission
   }
 
   /**
-   * Настройки прав в зависимости от роли по UserRole
+   * Настройки прав в зависимости от роли
    */
-  public function getRolePolicy(): array
+  public function getRolePolicy(): RolePolicy
   {
     return match ($this->user->role) {
 
       // 1. РЕЖИМЫ БОГА
       UserRole::GOD_LIGRON,
-      UserRole::GOD_DEALER => [
-        'view_all' => true,
-        'create_for_any' => true,
-        'allowed_update_fields' => ['*'],
-        'can_change_status' => true,
-        'can_send_to_1c' => true,
-        'can_update_sent_order' => true,
-        'can_delete_sent_order' => true,
-      ],
+      UserRole::GOD_DEALER => new RolePolicy(
+        viewAll: true,
+        createForAny: true,
+        allowedUpdateFields: ['*'],
+        canChangeStatus: true,
+        canSendTo1c: true,
+        canUpdateSentOrder: true,
+        canDeleteSentOrder: true
+      ),
 
       // 2. ОФИС-МЕНЕДЖЕР ЛИГРОН (OML)
-      UserRole::LIGRON_OFFICE_MANAGER => [
-        'view_all' => true,
-        'create_for_any' => true,
-        'allowed_update_fields' => ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
-        'can_change_status' => false,
-        'can_send_to_1c' => true,
-        'can_update_sent_order' => false,
-        'can_delete_sent_order' => false,
-      ],
+      UserRole::LIGRON_OFFICE_MANAGER => new RolePolicy(
+        viewAll: true,
+        createForAny: true,
+        allowedUpdateFields: ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
+        canChangeStatus: false,
+        canSendTo1c: true,
+        canUpdateSentOrder: false,
+        canDeleteSentOrder: false
+      ),
 
       // 3. ОБЫЧНЫЙ МЕНЕДЖЕР ЛИГРОН (ML)
-      UserRole::LIGRON_MANAGER => [
-        'view_all' => false,
-        'create_for_any' => false,
-        'allowed_update_fields' => ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
-        'can_change_status' => false,
-        'can_send_to_1c' => true,
-        'can_update_sent_order' => false,
-        'can_delete_sent_order' => false,
-      ],
+      UserRole::LIGRON_MANAGER => new RolePolicy(
+        viewAll: false,
+        createForAny: false,
+        allowedUpdateFields: ['name', 'comment', 'production_time', 'ready_date', 'status_history', 'due_payment', 'percent_payment'],
+        canChangeStatus: false,
+        canSendTo1c: true,
+        canUpdateSentOrder: false,
+        canDeleteSentOrder: false
+      ),
 
       // 4. ВСЕ МЕНЕДЖЕРЫ ДИЛЕРА (M, MS, LM)
       UserRole::DEALER_SALON_MANAGER,
       UserRole::DEALER_LIGRON_MANAGER,
-      UserRole::DEALER_MANAGER => [
-        'view_all' => false,
-        'create_for_any' => false,
-        'allowed_update_fields' => ['name', 'comment'],
-        'can_change_status' => false,
-        'can_send_to_1c' => true,
-        'can_update_sent_order' => false,
-        'can_delete_sent_order' => false,
-      ],
+      UserRole::DEALER_MANAGER => new RolePolicy(
+        viewAll: false,
+        createForAny: false,
+        allowedUpdateFields: ['name', 'comment'],
+        canChangeStatus: false,
+        canSendTo1c: true,
+        canUpdateSentOrder: false,
+        canDeleteSentOrder: false
+      ),
 
-      default => [
-        'view_all' => false, 'create_for_any' => false, 'allowed_update_fields' => [],
-        'can_change_status' => false, 'can_send_to_1c' => false,
-        'can_update_sent_order' => false, 'can_delete_sent_order' => false,
-      ],
+      // ДЕФОЛТ
+      default => new RolePolicy(
+        viewAll: false,
+        createForAny: false,
+        allowedUpdateFields: [],
+        canChangeStatus: false,
+        canSendTo1c: false,
+        canUpdateSentOrder: false,
+        canDeleteSentOrder: false
+      ),
     };
   }
 
   /**
-   * Главный метод проверки прав
+   * Главный метод защиты API-эндпоинтов
    * @throws Exception
    */
   public function verify(string $action, array $order = [], array $data = []): void
@@ -101,15 +106,45 @@ final readonly class OrderPermission
     $policy = $this->getRolePolicy();
     $o = array_change_key_case($order, CASE_LOWER);
 
-    match ($action) {
-      OrderAction::CREATE => $this->assertCanCreate($data, $policy),
-      OrderAction::VIEW => $this->assertCanView($o, $policy),
-      OrderAction::UPDATE => $this->assertCanUpdate($o, $data, $policy),
-      OrderAction::DELETE => $this->assertCanDelete($o, $policy),
-      OrderAction::CHANGE_STATUS => $this->assertCanChangeStatus($o, $policy),
-      OrderAction::SEND_TO_1C => $this->assertCanSendTo1C($o, $policy),
+    $result = match ($action) {
+      OrderAction::CREATE => $this->checkCanCreate($data, $policy),
+      OrderAction::VIEW => $this->checkCanView($o, $policy),
+      OrderAction::UPDATE => $this->checkCanUpdate($o, $data, $policy),
+      OrderAction::DELETE => $this->checkCanDelete($o, $policy),
+      OrderAction::CHANGE_STATUS => $this->checkCanChangeStatus($o, $policy),
+      OrderAction::SEND_TO_1C => $this->checkCanSendTo1C($o, $policy),
       default => throw new Exception("Неизвестное действие: {$action}", 400),
     };
+
+    if (!$result->isAllowed) {
+      // Для ошибки CREATE (отсутствие полей) возвращаем 400, для остальных доступов 403
+      $code = str_contains((string)$result->errorMessage, 'Необходимо указать') ? 400 : 403;
+      throw new Exception($result->errorMessage, $code);
+    }
+  }
+
+  /**
+   * Возвращает карту разрешений (действий) для отрисовки кнопок на фронтенде
+   */
+  public function getFrontendPermissions(array $order): array
+  {
+    $o = array_change_key_case($order, CASE_LOWER);
+    $policy = $this->getRolePolicy();
+
+    $inn = (string)($o['inn_dealer'] ?? '');
+    $isAttached = in_array($inn, AuthSession::getAvailableInns() ?: [], true);
+
+    // Права на калькулятор: заказ из калькулятора + (Пользователь Бог ИЛИ привязан к дилеру)
+    $canOpenCalc = ($o['origin_type'] == 2) && ($this->user->isGod() || $isAttached);
+
+    return [
+      'can_open_calc' => $canOpenCalc,
+      // Пустой массив данных в Update означает проверку возможности редактирования
+      'can_update' => $this->checkCanUpdate($o, [], $policy)->isAllowed,
+      'can_delete' => $this->checkCanDelete($o, $policy)->isAllowed,
+      'can_change_status' => $this->checkCanChangeStatus($o, $policy)->isAllowed,
+      'can_send_to_1c' => $this->checkCanSendTo1C($o, $policy)->isAllowed,
+    ];
   }
 
   /**
@@ -120,7 +155,7 @@ final readonly class OrderPermission
     $policy = $this->getRolePolicy();
 
     // 1. Режим Бога или Офис-менеджер видят все реальные заказы
-    if ($policy['view_all'] && !$isDraft) return [];
+    if ($policy->viewAll && !$isDraft) return [];
 
     // 2. Логика для черновиков
     // Строго по author_id и провайдеру (created_by)
@@ -149,8 +184,109 @@ final readonly class OrderPermission
     return ['=id' => 0];
   }
 
+  // ---------------------------------------------------------
+  // БАЗОВАЯ ЛОГИКА ПРОВЕРОК (Возвращают PermissionResult)
+  // ---------------------------------------------------------
+
+  private function checkCanCreate(array $data, RolePolicy $policy): PermissionResult
+  {
+    if ($policy->createForAny) return PermissionResult::allow();
+
+    $inn = (string)($data['inn_dealer'] ?? '');
+    $salon = (string)($data['salon_code'] ?? '');
+
+    if ($inn === '' || $salon === '') {
+      return PermissionResult::deny('Необходимо указать ИНН дилера и код салона.');
+    }
+
+    if (!$this->isContextAllowed($inn, $salon)) {
+      return PermissionResult::deny('У вас нет доступа к выбранному дилеру или салону.');
+    }
+
+    return PermissionResult::allow();
+  }
+
+  private function checkCanView(array $o, RolePolicy $policy): PermissionResult
+  {
+    // Защита черновика
+    if ($this->isDraft($o)) {
+      if ((int)($o['author_id'] ?? 0) === $this->user->id) {
+        return PermissionResult::allow();
+      }
+      return PermissionResult::deny('Доступ к чужому черновику запрещен.');
+    }
+
+    // Режим Бога / OML
+    if ($policy->viewAll) return PermissionResult::allow();
+
+    // Проверка облака (привязан ли дилер/салон к текущему юзеру)
+    if ($this->isContextAllowed((string)($o['inn_dealer'] ?? ''), (string)($o['salon_code'] ?? ''))) {
+      return PermissionResult::allow();
+    }
+
+    return PermissionResult::deny('У вас нет прав на просмотр данного заказа.');
+  }
+
+  private function checkCanUpdate(array $o, array $data, RolePolicy $policy): PermissionResult
+  {
+    $viewCheck = $this->checkCanView($o, $policy);
+    if (!$viewCheck->isAllowed) return $viewCheck;
+
+    if (!empty($o['number']) && !$policy->canUpdateSentOrder) {
+      return PermissionResult::deny('Редактирование заказа в производстве запрещено.');
+    }
+
+    if (empty($data)) return PermissionResult::allow();
+
+    $allowed = $policy->allowedUpdateFields;
+    if (in_array('*', $allowed, true)) return PermissionResult::allow();
+
+    foreach (array_keys($data) as $field) {
+      if (!in_array($field, $allowed, true)) {
+        return PermissionResult::deny("Нет прав на изменение поля '{$this->getFieldName($field)}'.");
+      }
+    }
+
+    return PermissionResult::allow();
+  }
+
+  private function checkCanDelete(array $o, RolePolicy $policy): PermissionResult
+  {
+    $viewCheck = $this->checkCanView($o, $policy);
+    if (!$viewCheck->isAllowed) return $viewCheck;
+
+    if ((int)($o['children_count'] ?? 0) > 0) {
+      return PermissionResult::deny('Сначала удалите вложенные заказы.');
+    }
+
+    if (!empty($o['number']) && !$policy->canDeleteSentOrder) {
+      return PermissionResult::deny('Удаление отправленного заказа запрещено.');
+    }
+
+    return PermissionResult::allow();
+  }
+
+  private function checkCanChangeStatus(array $o, RolePolicy $policy): PermissionResult
+  {
+    if (!$policy->canChangeStatus) {
+      return PermissionResult::deny('Нет прав на смену статуса.');
+    }
+    return $this->checkCanView($o, $policy);
+  }
+
+  private function checkCanSendTo1C(array $o, RolePolicy $policy): PermissionResult
+  {
+    if (!$policy->canSendTo1c) {
+      return PermissionResult::deny('Нет прав на отправку в Лигрон.');
+    }
+    if (!empty($o['number'])) {
+      return PermissionResult::deny('Заказ уже был отправлен.');
+    }
+    return $this->checkCanView($o, $policy);
+  }
+
   // -----------------
-  // Приватные хелперы
+  // ХЕЛПЕРЫ
   // -----------------
 
   private function isDraft(array $o): bool
@@ -164,99 +300,10 @@ final readonly class OrderPermission
     $salons = AuthSession::getAvailableSalons() ?: [];
     return in_array($inn, $inns, true) || in_array($salon, $salons, true);
   }
-  // ---------------------
-  // Проверки
-  // ---------------------
-
-  /** @throws Exception */
-  private function assertCanCreate(array $data, array $policy): void
-  {
-    if ($policy['create_for_any']) return;
-
-    $inn = (string)($data['inn_dealer'] ?? '');
-    $salon = (string)($data['salon_code'] ?? '');
-
-    if ($inn === '' || $salon === '') {
-      throw new Exception('Необходимо указать ИНН дилера и код салона.', 400);
-    }
-
-    if (!$this->isContextAllowed($inn, $salon)) {
-      throw new Exception('У вас нет доступа к выбранному дилеру или салону.', 403);
-    }
-  }
-
-  /** @throws Exception */
-  private function assertCanView(array $o, array $policy): void
-  {
-    // Защита черновика
-    if ($this->isDraft($o)) {
-      if ((int)($o['author_id'] ?? 0) === $this->user->id) return;
-      throw new Exception('Доступ к чужому черновику запрещен.', 403);
-    }
-
-    // Режим Бога / OML
-    if ($policy['view_all']) return;
-
-    // Проверка облака
-    if ($this->isContextAllowed((string)($o['inn_dealer'] ?? ''), (string)($o['salon_code'] ?? ''))) {
-      return;
-    }
-
-    throw new Exception('У вас нет прав на просмотр данного заказа.', 403);
-  }
-
-  /** @throws Exception */
-  private function assertCanUpdate(array $o, array $data, array $policy): void
-  {
-    $this->assertCanView($o, $policy);
-
-    if (!empty($o['number']) && !$policy['can_update_sent_order']) {
-      throw new Exception('Редактирование заказа в производстве запрещено.', 403);
-    }
-
-    if (empty($data)) return;
-
-    $allowed = $policy['allowed_update_fields'];
-    if (in_array('*', $allowed, true)) return;
-
-    foreach (array_keys($data) as $field) {
-      if (!in_array($field, $allowed, true)) {
-        throw new Exception("Нет прав на изменение поля '{$this->getFieldName($field)}'.", 403);
-      }
-    }
-  }
-
-  /** @throws Exception */
-  private function assertCanDelete(array $o, array $policy): void
-  {
-    $this->assertCanView($o, $policy);
-
-    if ((int)($o['children_count'] ?? 0) > 0) {
-      throw new Exception('Сначала удалите вложенные заказы.', 403);
-    }
-
-    if (!empty($o['number']) && !$policy['can_delete_sent_order']) {
-      throw new Exception('Удаление отправленного заказа запрещено.', 403);
-    }
-  }
-
-  /** @throws Exception */
-  private function assertCanChangeStatus(array $o, array $policy): void
-  {
-    if (!$policy['can_change_status']) throw new Exception('Нет прав на смену статуса.', 403);
-    $this->assertCanView($o, $policy);
-  }
-
-  /** @throws Exception */
-  private function assertCanSendTo1C(array $o, array $policy): void
-  {
-    if (!$policy['can_send_to_1c']) throw new Exception('Нет прав на отправку в Лигрон.', 403);
-    if (!empty($o['number'])) throw new Exception('Заказ уже был отправлен.', 400);
-    $this->assertCanView($o, $policy);
-  }
 
   private function getFieldName(string $field): string
   {
     return self::FIELD_NAMES_RU[$field] ?? $field;
   }
+
 }

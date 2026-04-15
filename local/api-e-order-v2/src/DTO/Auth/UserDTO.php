@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace OrderApiV2\DTO\Auth;
 
 use OrderApiV2\Constants\ProviderType;
+use OrderApiV2\Constants\UserRole;
 
 final readonly class UserDTO
 {
@@ -20,6 +21,14 @@ final readonly class UserDTO
     public ?string $user_code = null, // Только для менеджеров Лигрон
   )
   {
+  }
+
+  public function isGod(): bool
+  {
+    return in_array($this->role, [
+      UserRole::GOD_LIGRON,
+      UserRole::GOD_DEALER
+    ], true);
   }
 
   public function isDealer(): bool

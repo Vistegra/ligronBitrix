@@ -106,10 +106,9 @@ final class AuthController extends AbstractController
       /** @var UserDTO $user */
       $user = $request->getAttribute('user');
 
-      $isGlobal = $this->isGlobalRole($user->role);
 
       if ($requestedInn && $requestedSalon) {
-        if ($isGlobal) {
+        if ($user->isGod()) {
           // Офис-менеджер (OML) или Бог
           $user = $user->withContext((string)$requestedInn, (string)$requestedSalon);
         } else {
@@ -138,17 +137,6 @@ final class AuthController extends AbstractController
     }
   }
 
-  /**
-   * Вспомогательный метод проверки "глобальных" ролей
-   */
-  private function isGlobalRole(string $role): bool
-  {
-    return in_array($role, [
-      UserRole::LIGRON_OFFICE_MANAGER,
-      UserRole::GOD_LIGRON,
-      UserRole::GOD_DEALER
-    ], true);
-  }
 
   /**
    * POST /auth/crypt
