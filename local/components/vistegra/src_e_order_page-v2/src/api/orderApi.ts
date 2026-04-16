@@ -1,6 +1,19 @@
 import api, {makeRequest} from "./client";
 import {ENDPOINT} from "./constants";
 
+
+export const ORDER_ACTION = {
+  OPEN_CALC: 'can_open_calc',
+  UPDATE: 'can_update',
+  DELETE: 'can_delete',
+  CHANGE_STATUS: 'can_change_status',
+  SEND_TO_1C: 'can_send_to_1c',
+} as const;
+
+export type OrderActionType = typeof ORDER_ACTION[keyof typeof ORDER_ACTION];
+
+export type OrderPermissions = Record<OrderActionType, boolean>;
+
 export type CreateOrderData = {
   name: string;
   comment?: string;
@@ -66,6 +79,8 @@ export type Order = {
   percent_payment: number | null;
   origin_type: number;
   due_payment: number | null;
+
+  _permissions?: OrderPermissions;
 };
 
 

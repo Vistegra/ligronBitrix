@@ -24,7 +24,10 @@ import {cn} from "@/lib/utils";
 import {PAGE} from "@/api/constants.ts";
 import {formatDate} from "@/components/Order/Orders/utils.ts";
 import {useDebounce} from "@/hooks/useDebounce.ts";
-import { CalculatorButton } from "@/components/Sidebar/CalculatorButton";
+import {CalculatorButton} from "@/components/Sidebar/CalculatorButton";
+import {Can} from "@/components/ui/custom/Can.tsx";
+import {useOrderPermissions} from "@/hooks/order/useOrderPermissions.ts";
+import {ORDER_ACTION} from "@/api/orderApi.ts"; // Добавили хук!
 
 interface OrderEditProps {
   className?: string;
@@ -38,17 +41,15 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
   const [activeTab, setActiveTab] = useState("description");
 
-  const { order, isLoading, error, files, refetch } = useOrder(orderId);
+  const {order, isLoading, error, files, refetch} = useOrder(orderId);
   const {children, loading: childLoading} = useChildOrders(orderId);
 
-  // Создаем дебаунс-версию функции refetch
-  const debouncedRefetch = useDebounce(() => {
-    refetch();
-  }, 3000);
+  // Получаем права для текущего заказа
+  const permissions = useOrderPermissions(order);
 
+  const debouncedRefetch = useDebounce(() => refetch(), 3000);
   const navigate = useNavigate();
   const location = useLocation();
-
 
   const {
     update,
@@ -64,17 +65,11 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
     return () => setOrderNumber(null);
   }, [order?.number, setOrderNumber]);
 
-  const isCalcOrder = order?.origin_type === 2;
-
   const handleBack = () => {
-    if (location.key !== "default") {
-      navigate(-1);
-    } else {
-      navigate(isDraft ? PAGE.DRAFTS : PAGE.ORDERS);
-    }
+    if (location.key !== "default") navigate(-1);
+    else navigate(isDraft ? PAGE.DRAFTS : PAGE.ORDERS);
   };
 
-  // Сначала показываем загрузку
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -85,20 +80,13 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
   // Если загрузка завершена, но есть ошибка от API
   if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+    return <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
   }
 
   // Если загрузка завершена, ошибок нет, но заказа в базе не существует
   if (!order) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>Заказ №{orderId} не найден в системе</AlertDescription>
-      </Alert>
-    );
+    return <Alert variant="destructive"><AlertDescription>Заказ №{orderId} не найден в
+      системе</AlertDescription></Alert>;
   }
 
 
@@ -111,13 +99,12 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
 
   return (
     <div className={cn('bg-background h-full flex flex-col overflow-hidden relative', className)}>
-
       <Card className="w-full h-full border-none shadow-none md:border md:shadow-sm flex flex-col overflow-hidden">
 
+        {/* HEADER */}
         <CardHeader className="px-3 pt-3 pb-2 md:px-6 md:pt-6 shrink-0">
           <div
             className="flex flex-col gap-1 flex-start items-start w-full md:flex md:flex-row md:flex-center md:flex-start">
-
             <Button
               variant="ghost"
               className="md:hidden h-auto p-0 text-primary hover:bg-transparent hover:text-primary/80 shrink-0 justify-self-start"
@@ -130,7 +117,7 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
             <div className="min-w-0 flex justify-center md:justify-start md:flex-1 md:px-4">
               <OrderNameEditor
                 name={order.name}
-                isDraft={isDraft}
+                canEdit={permissions.can_update}
                 isSaving={update.isPending}
                 onSave={(newName) => update.mutateAsync({name: newName})}
               />
@@ -141,23 +128,22 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
           </div>
         </CardHeader>
 
+        {/* Tabs */}
         <CardContent className="px-0 md:px-6 flex-1 flex flex-col overflow-hidden min-h-0">
-
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
-
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="flex flex-col h-full"
+          >
             <div className="bg-background pb-2 md:p-0 shrink-0">
-              <TabsList className={cn(
-                "w-full h-auto p-1 bg-muted rounded-lg",
-                "flex overflow-x-auto justify-start no-scrollbar",
-                "md:grid md:grid-cols-4"
-              )}>
+              <TabsList
+                className="w-full h-auto p-1 bg-muted rounded-lg flex overflow-x-auto justify-start no-scrollbar md:grid md:grid-cols-4">
                 <TabsTrigger value="description" className="flex-1 min-w-[100px]">Описание</TabsTrigger>
                 <TabsTrigger value="documents" className="flex-1 min-w-[110px]">Документы</TabsTrigger>
                 {!isDraft && <>
                   <TabsTrigger value="statuses" className="flex-1 min-w-[90px]">Статусы</TabsTrigger>
                   <TabsTrigger value="nested" className="flex-1 min-w-[110px]">Вложенные</TabsTrigger>
-                </>
-                }
+                </>}
               </TabsList>
             </div>
 
@@ -165,6 +151,7 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
               <TabsContent value="description" className="mt-0 animate-in fade-in-50 h-full">
                 <DescriptionTab
                   comment={order.comment}
+                  canUpdate={permissions.can_update}
                   onUpdate={async (comment) => update.mutateAsync({comment})}
                 />
               </TabsContent>
@@ -173,6 +160,7 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
                 <DocumentsTab
                   files={files}
                   uploading={uploadFiles.isPending}
+                  canUpdate={permissions.can_update}
                   onUpload={async (files) => uploadFiles.mutateAsync(files)}
                   onDelete={async (fileId) => deleteFile.mutateAsync(fileId)}
                 />
@@ -186,20 +174,20 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
                 <NestedOrdersTab orders={children} loading={childLoading}/>
               </TabsContent>
             </div>
-
           </Tabs>
         </CardContent>
+
+        {/* Footer */}
         <CardFooter className="shrink-0 p-3 border-t bg-background z-10 flex justify-end items-center gap-2">
           <div className="flex justify-end items-center gap-2 md:gap-3">
 
-            {isCalcOrder && !isDraft && order && order?.number && (
-              <CalculatorButton
-                variant="button"
-                orderNumber={order?.number || null}
-              />
-            )}
+            {/* Калькулятор */}
+            <Can action={ORDER_ACTION.OPEN_CALC} order={order}>
+              <CalculatorButton variant="button" orderNumber={order.number}/>
+            </Can>
 
-            {isDraft && (<>
+            {/* Удаление */}
+            <Can action={ORDER_ACTION.DELETE} order={order}>
               <Button
                 variant="ghost"
                 onClick={() => showDeleteConfirmToast({
@@ -210,36 +198,37 @@ export default function OrderEdit({isDraft = false, className}: OrderEditProps) 
                 disabled={isWorking}
                 className="rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 px-3"
               >
-                {deleteOrder.isPending ?
-                  <Loader2 className="h-5 w-5 animate-spin"/> :
-                  <Trash2Icon className="h-5 w-5"/>
-                }
+                {deleteOrder.isPending ? <Loader2 className="h-5 w-5 animate-spin"/> :
+                  <Trash2Icon className="h-5 w-5"/>}
                 <span className="hidden sm:inline ml-2">Удалить</span>
               </Button>
+            </Can>
 
+            {/* Отправка в 1С и показ json */}
+            <Can action={ORDER_ACTION.SEND_TO_1C} order={order}>
+
+              {/* Показ JSON */}
+              <OrderJsonModal
+                orderId={orderId}
+                className="rounded-lg w-10 h-10 hover:bg-muted text-muted-foreground"
+              />
+
+              {/* Кнопка в 1С */}
               <Button
                 size="default"
                 onClick={() => sendToLigron.mutate()}
                 disabled={isWorking}
                 className="bg-green-600 hover:bg-green-700 text-white shadow-sm rounded-lg px-4"
               >
-                {sendToLigron.isPending ?
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :
-                  <SendIcon className="mr-2 h-4 w-4"/>
-                }
+                {sendToLigron.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :
+                  <SendIcon className="mr-2 h-4 w-4"/>}
                 <span className="font-medium">Отправить в Лигрон</span>
               </Button>
 
-              <OrderJsonModal
-                orderId={orderId}
-                className="rounded-lg w-10 h-10 hover:bg-muted text-muted-foreground"
-              />
-            </>)}
-
+            </Can>
 
           </div>
         </CardFooter>
-
       </Card>
     </div>
   );

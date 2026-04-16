@@ -12,10 +12,12 @@ const schema = z.object({comment: z.string().optional()});
 
 type Props = {
   comment: string | null;
-  onUpdate: (comment?: string) => void;
+  canUpdate: boolean;
+  onUpdate: (comment?: string) => Promise<any>;
 };
 
-export function DescriptionTab({comment, onUpdate}: Props) {
+
+export function DescriptionTab({comment, canUpdate, onUpdate}: Props) {
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -41,16 +43,18 @@ export function DescriptionTab({comment, onUpdate}: Props) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-              Сохранение...
-            </>
-          ) : (
-            "Обновить"
-          )}
-        </Button>
+        {canUpdate && (
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                Сохранение...
+              </>
+            ) : (
+              "Обновить"
+            )}
+          </Button>
+        )}
       </form>
     </Form>
   );

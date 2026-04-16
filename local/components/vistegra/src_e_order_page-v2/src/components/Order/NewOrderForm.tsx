@@ -5,26 +5,45 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
 import {
-  Loader2, Trash2, UploadIcon, AlertCircle,
-  CheckCircle2, SendIcon, SaveIcon, Info, Building2, Store
+  Loader2,
+  Trash2,
+  UploadIcon,
+  AlertCircle,
+  CheckCircle2,
+  SendIcon,
+  SaveIcon,
+  Info,
+  Building2,
+  Store
 } from "lucide-react";
+import {toast} from "sonner";
 
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
-import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle
+} from "@/components/ui/item";
 import {Dropzone} from "@/components/ui/shadcn-io/dropzone";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
-import {useCreateOrder} from "@/hooks/order/useCreateOrder.ts";
-import {useFileDropzone} from "@/hooks/order/useFileDropzone.ts";
-import {useAuthStore} from "@/store/authStore.ts";
-import {useWorkspace} from "@/hooks/common/useWorkspace.ts";
-import {toast} from "sonner";
+import {useCreateOrder} from "@/hooks/order/useCreateOrder";
+import {useFileDropzone} from "@/hooks/order/useFileDropzone";
+import {useAuthStore} from "@/store/authStore";
+import {useWorkspace} from "@/hooks/common/useWorkspace";
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 20;
@@ -46,6 +65,7 @@ export default function NewOrderForm() {
   const {isSet, current} = useWorkspace();
 
   const isDealer = user?.provider === "dealer";
+
   const {create, isPending, error, isSuccess} = useCreateOrder();
   const {onDropRejected, onDropError} = useFileDropzone();
 
@@ -88,34 +108,46 @@ export default function NewOrderForm() {
     <Card className="w-full max-w-2xl mx-auto p-0 m-0 border-none shadow-none">
       <CardContent className="p-0 m-0">
 
-        {/* Блок контекста */}
+        {/* Блок контекста: показываем выбранного дилера и салон */}
         {isSet && current ? (
           <div className="mb-6 p-4 rounded-xl border border-dashed bg-slate-50/50 space-y-3">
+
+            {/* Информация о дилере */}
             <div className="flex items-start gap-3">
               <div className="mt-1 p-1.5 bg-primary/10 rounded-md text-primary shrink-0">
                 <Building2 className="h-4 w-4"/>
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span
-                  className="text-[10px] font-bold text-muted-foreground tracking-wider">Дилер</span>
-                <span className="text-sm font-bold leading-tight truncate">{current.dealerName}</span>
-                <span className="text-[11px] text-muted-foreground">ИНН: {current.inn}</span>
+                <span className="text-[10px] font-bold text-muted-foreground tracking-wider">
+                  Дилер
+                </span>
+                <span className="text-sm font-bold leading-tight truncate">
+                  {current.dealerName}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  ИНН: {current.inn}
+                </span>
               </div>
             </div>
 
+            {/* Информация о салоне */}
             <div className="flex items-start gap-3 pt-2 border-t border-slate-200">
               <div className="mt-1 p-1.5 bg-slate-100 rounded-md text-slate-500 shrink-0">
                 <Store className="h-4 w-4"/>
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span
-                  className="text-[10px] font-bold text-muted-foreground tracking-wider">Салон</span>
+                <span className="text-[10px] font-bold text-muted-foreground tracking-wider">
+                  Салон
+                </span>
                 <span className="text-sm font-medium leading-tight truncate">
                   {current.salonName || "Не выбран"}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Код: {current.salonCode || "—"}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Код: {current.salonCode || "—"}
+                </span>
               </div>
             </div>
+
           </div>
         ) : (
           /* Предупреждение, если контекст не выбран */
@@ -131,6 +163,8 @@ export default function NewOrderForm() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+            {/* Поле названия */}
             <FormField
               control={form.control}
               name="name"
@@ -138,13 +172,18 @@ export default function NewOrderForm() {
                 <FormItem>
                   <FormLabel>Название заказа</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите название или ФИО клиента" {...field} disabled={isPending || !isSet}/>
+                    <Input
+                      placeholder="Введите название или ФИО клиента"
+                      {...field}
+                      disabled={isPending || !isSet}
+                    />
                   </FormControl>
                   <FormMessage/>
                 </FormItem>
               )}
             />
 
+            {/* Поле комментария */}
             <FormField
               control={form.control}
               name="comment"
@@ -164,6 +203,7 @@ export default function NewOrderForm() {
               )}
             />
 
+            {/* Зона загрузки файлов */}
             <div className="space-y-4">
               <Dropzone
                 maxSize={MAX_SIZE_BYTES}
@@ -186,13 +226,16 @@ export default function NewOrderForm() {
                 </div>
               </Dropzone>
 
+              {/* Список прикрепленных файлов */}
               {files.length > 0 && (
                 <div className="space-y-2">
                   {files.map((file, index) => (
                     <Item key={index} variant="outline" size="sm">
                       <ItemContent>
                         <ItemTitle className="text-sm">{file.name}</ItemTitle>
-                        <ItemDescription className="text-xs">{(file.size / 1024).toFixed(0)} КБ</ItemDescription>
+                        <ItemDescription className="text-xs">
+                          {(file.size / 1024).toFixed(0)} КБ
+                        </ItemDescription>
                       </ItemContent>
                       <ItemActions>
                         <Button
@@ -211,6 +254,7 @@ export default function NewOrderForm() {
               )}
             </div>
 
+            {/* Ошибка api */}
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4"/>
@@ -219,15 +263,20 @@ export default function NewOrderForm() {
               </Alert>
             )}
 
+            {/* Успех api */}
             {isSuccess && (
               <Alert className="border-green-500 bg-green-50 text-green-900">
                 <CheckCircle2 className="h-4 w-4 text-green-600"/>
                 <AlertTitle>Успешно!</AlertTitle>
-                <AlertDescription>Заказ создан. Перенаправление на детальную страницу...</AlertDescription>
+                <AlertDescription>
+                  Заказ создан. Перенаправление на детальную страницу...
+                </AlertDescription>
               </Alert>
             )}
 
+            {/* Кнопки сохранения */}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              {/* Только дилер может сохранять черновики */}
               {isDealer && (
                 <Button
                   type="submit"
@@ -245,6 +294,7 @@ export default function NewOrderForm() {
                 </Button>
               )}
 
+              {/* Отправка в Лигрон */}
               <Button
                 type="submit"
                 disabled={isPending || isSuccess || !isSet}
@@ -259,10 +309,10 @@ export default function NewOrderForm() {
                 Отправить в Лигрон
               </Button>
             </div>
+
           </form>
         </Form>
       </CardContent>
     </Card>
   );
-
 }

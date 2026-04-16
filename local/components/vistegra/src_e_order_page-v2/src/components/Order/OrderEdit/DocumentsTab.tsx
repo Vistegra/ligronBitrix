@@ -18,11 +18,12 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 type Props = {
   files: OrderFile[];
   uploading: boolean;
-  onUpload: (files: File[]) => void;
-  onDelete: (id: number) => void;
+  canUpdate: boolean;
+  onUpload: (files: File[]) => Promise<any>;
+  onDelete: (id: number) => Promise<any>;
 };
 
-export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
+export function DocumentsTab({files, uploading, canUpdate, onUpload, onDelete}: Props) {
 
   const {onDropRejected, onDropError} = useFileDropzone();
 
@@ -48,7 +49,9 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        toast.error("Ошибка на сервере при скачивании файла");
+        console.error(`HTTP error! Status: ${response.status}`);
+        return;
       }
 
       const blob = await response.blob();
@@ -67,33 +70,36 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
 
       toast.success(`Скачивание "${file.name}" начато`);
     } catch (err) {
-      toast.error("Ошибка при скачивании файла");
+      toast.error("Сетевая ошибка при скачивании файла");
       console.error("Download error:", err);
     }
   };
 
   return (
     <div className="space-y-6">
-      <Dropzone
-        maxSize={MAX_SIZE_BYTES}
-        multiple
-        maxFiles={MAX_FILES}
-        onDropAccepted={handleDrop}
-        onDropRejected={onDropRejected}
-        onError={onDropError}
-        disabled={uploading}
-        className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
-      >
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-            <UploadIcon size={16}/>
+      {canUpdate && (
+        <Dropzone
+          maxSize={MAX_SIZE_BYTES}
+          multiple
+          maxFiles={MAX_FILES}
+          onDropAccepted={handleDrop}
+          onDropRejected={onDropRejected}
+          onError={onDropError}
+          disabled={uploading}
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary"
+        >
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <UploadIcon size={16}/>
+            </div>
+            <p className="font-medium">Перетащите файлы или кликните для выбора</p>
+            <p className="text-xs text-muted-foreground">
+              До 20 МБ, любые типы файлов
+            </p>
           </div>
-          <p className="font-medium">Перетащите файлы или кликните для выбора</p>
-          <p className="text-xs text-muted-foreground">
-            До 20 МБ, любые типы файлов
-          </p>
-        </div>
-      </Dropzone>
+        </Dropzone>
+      )}
+
 
       {uploading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -129,17 +135,20 @@ export function DocumentsTab({files, uploading, onUpload, onDelete}: Props) {
                 </Button>
 
                 {/* Кнопка удаления */}
-                <ConfirmPopover
-                  title={`Удалить файл "${file.name}"?`}
-                  description="Файл будет удалён навсегда."
-                  confirmText="Удалить"
-                  confirmVariant="destructive"
-                  onConfirm={() => handleDelete(file.id)}
-                >
-                  <Button variant="ghost" size="icon" disabled={uploading}>
-                    <Trash2 className="h-4 w-4"/>
-                  </Button>
-                </ConfirmPopover>
+                {canUpdate && (
+                  <ConfirmPopover
+                    title={`Удалить файл "${file.name}"?`}
+                    description="Файл будет удалён навсегда."
+                    confirmText="Удалить"
+                    confirmVariant="destructive"
+                    onConfirm={() => handleDelete(file.id)}
+                  >
+                    <Button variant="ghost" size="icon" disabled={uploading}>
+                      <Trash2 className="h-4 w-4"/>
+                    </Button>
+                  </ConfirmPopover>
+                )}
+
               </ItemActions>
             </Item>
           ))}

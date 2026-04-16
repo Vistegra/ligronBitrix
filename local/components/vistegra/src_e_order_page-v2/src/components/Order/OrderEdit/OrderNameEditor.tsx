@@ -8,12 +8,13 @@ import {CheckIcon, Loader2, PencilIcon, XIcon} from "lucide-react";
 
 interface OrderNameEditorProps {
   name: string;
-  isDraft: boolean;
+  canEdit: boolean;
   isSaving: boolean;
   onSave: (newName: string) => Promise<any>;
 }
 
-export function OrderNameEditor({name, isDraft, isSaving, onSave}: OrderNameEditorProps) {
+export function OrderNameEditor({name, canEdit, isSaving, onSave}: OrderNameEditorProps) {
+
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(name);
 
@@ -72,7 +73,7 @@ export function OrderNameEditor({name, isDraft, isSaving, onSave}: OrderNameEdit
         {name}
       </CardTitle>
 
-      {isDraft && (
+      {canEdit && (
         <Button
           variant="ghost"
           size="icon"

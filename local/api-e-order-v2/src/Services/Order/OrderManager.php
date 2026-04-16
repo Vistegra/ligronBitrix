@@ -62,6 +62,9 @@ final readonly class OrderManager
       $order = $this->sendToLigron((int)$order['id']) ?? $order;
     }
 
+    // права для фронтенда
+    $order['_permissions'] = $this->permission->getFrontendPermissions($order);
+
     return new OrderCreateResult(true, $order, $fileResults);
   }
 
@@ -78,6 +81,9 @@ final readonly class OrderManager
 
     $order['files'] = OrderFileRepository::getByOrderId($id) ?: [];
 
+    // права для фронтенда
+    $order['_permissions'] = $this->permission->getFrontendPermissions($order);
+
     return $order;
   }
 
@@ -93,6 +99,9 @@ final readonly class OrderManager
     $this->permission->verify(OrderAction::VIEW, $order);
 
     $order['files'] = OrderFileRepository::getByOrderId((int)$order['id']) ?: [];
+
+    // права для фронтенда
+    $order['_permissions'] = $this->permission->getFrontendPermissions($order);
 
     return $order;
   }
@@ -119,13 +128,21 @@ final readonly class OrderManager
       ];
     }
 
+    $orders = OrderRepository::queryList([
+      'filter' => $finalFilter,
+      'limit' => $limit,
+      'offset' => $offset,
+      'order' => $sort
+    ]);
+
+    // Обогащаем каждый заказ в списке правами для кнопок в таблице
+    foreach ($orders as &$order) {
+      $order['_permissions'] = $this->permission->getFrontendPermissions($order);
+    }
+    unset($order);
+
     return [
-      'orders' => OrderRepository::queryList([
-        'filter' => $finalFilter,
-        'limit' => $limit,
-        'offset' => $offset,
-        'order' => $sort
-      ]),
+      'orders' => $orders,
       'pagination' => [
         'limit' => $limit,
         'offset' => $offset,
@@ -141,10 +158,14 @@ final readonly class OrderManager
   public function updateOrder(int $id, array $data): array
   {
     $order = $this->getOrder($id); // Внутри встроен verify(VIEW)
-
     $this->permission->verify(OrderAction::UPDATE, $order, $data);
 
-    return OrderRepository::update($id, $data);
+    $updatedOrder = OrderRepository::update($id, $data);
+
+    // Возвращаем обновленный заказ вместе с актуальными правами
+    $updatedOrder['_permissions'] = $this->permission->getFrontendPermissions($updatedOrder);
+
+    return $updatedOrder;
   }
 
   /**
@@ -242,7 +263,12 @@ final readonly class OrderManager
       $updateData['status_history'] = $default['status_history'];
     }
 
-    return OrderRepository::update($orderId, $updateData);
+    $updatedOrder = OrderRepository::update($orderId, $updateData);
+
+    // Добавляем права
+    $updatedOrder['_permissions'] = $this->permission->getFrontendPermissions($updatedOrder);
+
+    return $updatedOrder;
   }
 
   /**
