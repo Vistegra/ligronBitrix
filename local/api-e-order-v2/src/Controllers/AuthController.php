@@ -137,31 +137,4 @@ final class AuthController extends AbstractController
     }
   }
 
-  /**
-   * POST /auth/crypt
-   * Вспомогательный метод для шифрования/дешифрования параметров.
-   */
-  public function crypt(ServerRequestInterface $request): ResponseInterface
-  {
-    $params = $request->getParsedBody() ?? [];
-
-    // Шифрование
-    if (!empty($params['encrypt']) && !empty($params['code'])) {
-      return $this->success('Результат шифрования', [
-        'param' => AuthCrypto::encrypt((string)$params['code'])
-      ]);
-    }
-
-    // Дешифрование
-    if (!empty($params['decrypt']) && !empty($params['token'])) {
-      $result = AuthCrypto::decrypt((string)$params['token']);
-      if (!$result) {
-        return $this->error('Неверный токен для дешифрования', 400);
-      }
-      return $this->success('Результат дешифрования', ['param' => $result]);
-    }
-
-    return $this->error('Не переданы необходимые параметры (encrypt/code или decrypt/token)', 400);
-  }
-
 }

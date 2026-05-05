@@ -13,104 +13,132 @@ use OrderApiV2\DTO\Auth\{JwtPayload, UserDTO};
 
 class LigronUserAuthProvider implements AuthProviderInterface
 {
-  public const string PROVIDER = ProviderType::LIGRON;
+    public const string PROVIDER = ProviderType::LIGRON;
 
-  public function login(string $login, string $password): ?array
-  {
-    // Проверяем Режим Бога
-    if ($godData = $this->handleGodMode($login, $password)) {
-      return $godData;
+    public function login(string $login, string $password): ?array
+    {
+        // Проверяем Режим Бога
+        if ($godData = $this->handleGodMode($login, $password)) {
+            return $godData;
+        }
+
+        if (!$login || !$password) return null;
+
+        $user = UserRepository::findLigronUserByLogin($login);
+
+        if (!$user || trim((string)$user['password']) !== $password) {
+            return null;
+        }
+
+        $userDTO = self::normalizeUser($user);
+        $token = $this->generateJwt($userDTO);
+
+        return [
+            'user' => $userDTO->toArray(),
+            'token' => $token,
+            'expires_in' => ApiConfig::JWT_EXPIRE,
+            'token_type' => 'Bearer',
+            'provider' => self::PROVIDER,
+        ];
     }
 
-    if (!$login || !$password) return null;
+    /**
+     * Авторизация пользователя по логину (без проверки пароля)
+     *
+     * @param string $login Логин пользователя
+     * @return array{
+     *     user: array,
+     *     token: string,
+     *     expires_in: int,
+     *     token_type: string,
+     *     provider: string
+     * }|null Возвращает null, если логин пуст или пользователь не найден в БД
+     */
+    public function loginWithoutPassword(string $login): ?array
+    {
+        if (!$login) return null;
 
-    $user = UserRepository::findLigronUserByLogin($login);
+        $user = UserRepository::findLigronUserByLogin($login);
 
-    if (!$user || trim((string)$user['password']) !== $password) {
-      return null;
+        if (!$user) {
+            return null;
+        }
+
+        $userDTO = self::normalizeUser($user);
+        $token = $this->generateJwt($userDTO);
+
+        return [
+            'user' => $userDTO->toArray(),
+            'token' => $token,
+            'expires_in' => ApiConfig::JWT_EXPIRE,
+            'token_type' => 'Bearer',
+            'provider' => self::PROVIDER,
+        ];
     }
 
-    $userDTO = self::normalizeUser($user);
-    $token = $this->generateJwt($userDTO);
+    public static function validatePayload(array $payload): bool
+    {
+        $userData = $payload['user'] ?? [];
 
-    return [
-      'user' => $userDTO->toArray(),
-      'token' => $token,
-      'expires_in' => ApiConfig::JWT_EXPIRE,
-      'token_type' => 'Bearer',
-      'provider' => self::PROVIDER,
-    ];
-  }
+        $allowedRoles = [
+            UserRole::LIGRON_MANAGER,
+            UserRole::LIGRON_OFFICE_MANAGER,
 
-  public function loginByToken(string $token): ?array
-  {
-    //ToDo реализовать поиск по токену в ligron_users
-    return null;
-  }
+            UserRole::GOD_LIGRON
+        ];
 
-  public static function validatePayload(array $payload): bool
-  {
-    $userData = $payload['user'] ?? [];
-
-    $allowedRoles = [
-      UserRole::LIGRON_MANAGER,
-      UserRole::LIGRON_OFFICE_MANAGER,
-
-      UserRole::GOD_LIGRON
-    ];
-
-    return ($userData['provider'] ?? '') === self::PROVIDER
-      && in_array($userData['role'] ?? '', $allowedRoles, true);
-  }
-
-  private function generateJwt(UserDTO $user): string
-  {
-    $now = new \DateTimeImmutable();
-    $payload = new JwtPayload(
-      iss: ApiConfig::API_NAME,
-      iat: $now->getTimestamp(),
-      exp: $now->modify('+' . ApiConfig::JWT_EXPIRE . ' seconds')->getTimestamp(),
-      user: $user
-    );
-    return JWT::encode($payload->toArray(), ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
-  }
-
-  public static function normalizeUser(array $user): UserDTO
-  {
-    return new UserDTO(
-      id: (int)$user['id'],
-      login: trim((string)$user['username']),
-      name: trim((string)$user['name']),
-      provider: self::PROVIDER,
-      role: trim((string)$user['role_code']),
-      email: trim((string)($user['email'] ?? '')),
-      phone: trim((string)($user['phone'] ?? '')),
-      user_code: trim((string)$user['user_code']),
-    );
-  }
-
-  public function handleGodMode(string $login, string $password): ?array
-  {
-    if ($login === ApiConfig::GOD_LIGRON_LOGIN && password_verify($password, ApiConfig::GOD_LIGRON_HASH)) {
-      $userDTO = new UserDTO(
-        id: 0,
-        login: $login,
-        name: 'Бог Лигрон',
-        provider: self::PROVIDER,
-        role: UserRole::GOD_LIGRON,
-        user_code: 'GOD'
-      );
-
-      return [
-        'user' => $userDTO->toArray(),
-        'token' => $this->generateJwt($userDTO),
-        'expires_in' => ApiConfig::JWT_EXPIRE,
-        'token_type' => 'Bearer',
-        'provider' => self::PROVIDER,
-      ];
+        return ($userData['provider'] ?? '') === self::PROVIDER
+            && in_array($userData['role'] ?? '', $allowedRoles, true);
     }
 
-    return null;
-  }
+    private function generateJwt(UserDTO $user): string
+    {
+        $now = new \DateTimeImmutable();
+        $payload = new JwtPayload(
+            iss: ApiConfig::API_NAME,
+            iat: $now->getTimestamp(),
+            exp: $now->modify('+' . ApiConfig::JWT_EXPIRE . ' seconds')->getTimestamp(),
+            user: $user
+        );
+        return JWT::encode($payload->toArray(), ApiConfig::JWT_SECRET, ApiConfig::JWT_ALGO);
+    }
+
+    public static function normalizeUser(array $user): UserDTO
+    {
+        return new UserDTO(
+            id: (int)$user['id'],
+            login: trim((string)$user['username']),
+            name: trim((string)$user['name']),
+            provider: self::PROVIDER,
+            role: trim((string)$user['role_code']),
+            email: trim((string)($user['email'] ?? '')),
+            phone: trim((string)($user['phone'] ?? '')),
+            user_code: trim((string)$user['user_code']),
+        );
+    }
+
+    public function handleGodMode(string $login, string $password): ?array
+    {
+        if ($login === ApiConfig::GOD_LIGRON_LOGIN && password_verify($password, ApiConfig::GOD_LIGRON_HASH)) {
+            $userDTO = new UserDTO(
+                id: 0,
+                login: $login,
+                name: 'Бог Лигрон',
+                provider: self::PROVIDER,
+                role: UserRole::GOD_LIGRON,
+                user_code: 'GOD'
+            );
+
+            return [
+                'user' => $userDTO->toArray(),
+                'token' => $this->generateJwt($userDTO),
+                'expires_in' => ApiConfig::JWT_EXPIRE,
+                'token_type' => 'Bearer',
+                'provider' => self::PROVIDER,
+            ];
+        }
+
+        return null;
+    }
 
 }

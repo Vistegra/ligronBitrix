@@ -1,31 +1,56 @@
 <?php
-
 declare(strict_types=1);
 
 namespace OrderApiV2\Services\Auth\Token;
 
 use OrderApiV2\Config\ApiConfig;
+use RuntimeException;
 
 class AuthCrypto
 {
-  public static function encrypt(string $data): string
-  {
-    $secret = ApiConfig::MANAGER_SECRET;
+    /**
+     * Шифрование для SSO ссылок
+     */
+    public static function encryptSso(string $value): string
+    {
+        $key = ApiConfig::SSO_CALC_ENCRYPT_KEY ?: 'eKey';
+        $algorithm = ApiConfig::SSO_CALC_ALGO ?: 'aes-256-cbc';
 
-    $key = substr(hash('sha256', $secret, true), 0, 16);
-    $encrypted = openssl_encrypt($data, 'AES-128-ECB', $key, OPENSSL_RAW_DATA);
+        $ivLength = openssl_cipher_iv_length($algorithm);
+        if ($ivLength === false) {
+            throw new RuntimeException("Invalid algorithm: $algorithm");
+        }
 
-    return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($encrypted));
-  }
+        $iv = openssl_random_pseudo_bytes($ivLength);
+        $encrypted = openssl_encrypt($value, $algorithm, $key, 0, $iv);
 
-  public static function decrypt(string $encryptedData): false|string
-  {
-    $secret = ApiConfig::MANAGER_SECRET;
+        if ($encrypted === false) {
+            throw new RuntimeException("Encryption failed: " . openssl_error_string());
+        }
 
-    $key = substr(hash('sha256', $secret, true), 0, 16);
-    $data = base64_decode(str_replace(['-', '_'], ['+', '/'], $encryptedData));
+        $result = $encrypted . '::' . $iv;
 
-    return openssl_decrypt($data, 'AES-128-ECB', $key, OPENSSL_RAW_DATA);
-  }
+        return base64_encode($result);
+    }
+
+    /**
+     * Дешифрование SSO токенов
+     */
+    public static function decryptSso(string $token): ?string
+    {
+        $decoded = base64_decode($token);
+        if ($decoded === false || !str_contains($decoded, '::')) {
+            return null;
+        }
+
+        [$encrypted, $iv] = explode('::', $decoded, 2);
+
+        $key = ApiConfig::SSO_CALC_ENCRYPT_KEY ?: 'eKey';
+        $algorithm = ApiConfig::SSO_CALC_ALGO ?: 'aes-256-cbc';
+
+        $decrypted = openssl_decrypt($encrypted, $algorithm, $key, 0, $iv);
+
+        return $decrypted !== false ? $decrypted : null;
+    }
 
 }
