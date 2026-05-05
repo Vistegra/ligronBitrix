@@ -25,6 +25,11 @@ interface AuthProviderInterface
    */
   public function login(string $login, string $password): ?array;
 
+    /**
+     * Авторизация пользователя по логину (после валидации внешнего токена)
+     */
+    public function loginWithoutPassword(string $login): ?array;
+
   /**
    * Проверяет, подходит ли расшифрованный Payload токена для данного провайдера.
    *
